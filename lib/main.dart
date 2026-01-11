@@ -1,5 +1,5 @@
 import 'package:bemyday/constants/sizes.dart';
-import 'package:bemyday/features/authentication/start_screen.dart';
+import 'package:bemyday/features/navigation/navigation_screen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -22,6 +22,8 @@ class BeMyDay extends StatelessWidget {
       title: 'Be My Day',
       // 라이트 모드 테마
       theme: ThemeData(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         brightness: Brightness.light,
         primaryColor: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
@@ -29,13 +31,13 @@ class BeMyDay extends StatelessWidget {
           backgroundColor: Colors.white,
           foregroundColor: Colors.black, //아이콘 색상
           elevation: 0,
-          titleTextStyle: appBarTitleStyle.copyWith(
-            color: Colors.black,
-          ),
+          titleTextStyle: appBarTitleStyle.copyWith(color: Colors.black),
         ),
       ),
       // 다크 모드 테마
       darkTheme: ThemeData(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         brightness: Brightness.dark,
         primaryColor: Colors.blue,
         scaffoldBackgroundColor: Colors.black,
@@ -43,14 +45,12 @@ class BeMyDay extends StatelessWidget {
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
           elevation: 0,
-          titleTextStyle: appBarTitleStyle.copyWith(
-            color: Colors.white,
-          ),
+          titleTextStyle: appBarTitleStyle.copyWith(color: Colors.white),
         ),
       ),
       // 시스템 설정 따라가기
       themeMode: ThemeMode.system,
-      home: StartScreen(),
+      home: NavigationScreen(),
     );
   }
 }

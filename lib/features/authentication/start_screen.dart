@@ -19,27 +19,56 @@ class StartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                "Sign Up For Be My Day",
-                style: TextStyle(
-                  fontSize: Sizes.size20,
-                  fontWeight: FontWeight.w700,
+        child: SizedBox.expand(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 20,
+                  child: Column(
+                    children: [
+                      Text(
+                        "Sign Up For Be My Day",
+                        style: TextStyle(
+                          fontSize: Sizes.size20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      Gaps.v12,
+                      Text("Create a Profile", textAlign: TextAlign.center),
+                    ],
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              Gaps.v12,
-              Text("Create a Profile", textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: Paddings.scaffoldH,
+            vertical: Sizes.size16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               GestureDetector(
                 onTap: () => _onStart(context),
                 child: AuthButton(
                   icon: FaIcon(FontAwesomeIcons.google),
                   label: "Start with Google",
                 ),
+              ),
+              Gaps.v12,
+              Text(
+                'consdklfjs',
+                style: TextStyle(),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

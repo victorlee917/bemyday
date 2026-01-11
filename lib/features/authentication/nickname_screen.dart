@@ -1,5 +1,7 @@
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/authentication/widgets/form_button.dart';
+import 'package:bemyday/features/home/home_screen.dart';
+import 'package:bemyday/features/navigation/navigation_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -55,6 +57,13 @@ class _NicknameScreenState extends State<NicknameScreen> {
         }
       }
     });
+  }
+
+  void _onFinish() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => NavigationScreen()),
+      (route) => false,
+    );
   }
 
   @override
