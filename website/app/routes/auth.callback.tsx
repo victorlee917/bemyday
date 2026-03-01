@@ -11,25 +11,39 @@ const APP_SCHEME = "com.bemyday://login-callback";
 
 export default function AuthCallback() {
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const hash = window.location.hash;
-    if (hash && hash.includes("access_token") && !hash.includes("error=")) {
-      // Redirect to app with tokens; app will recover session
+    const search = window.location.search;
+
+    // Implicit flow: tokens in hash (#access_token=...)
+    const hasHashTokens =
+      hash && hash.includes("access_token") && !hash.includes("error=");
+    // PKCE flow: code in query (?code=...)
+    const hasCode = search && search.includes("code=") && !search.includes("error=");
+
+    if (hasHashTokens) {
       window.location.replace(`${APP_SCHEME}${hash}`);
+    } else if (hasCode) {
+      window.location.replace(`${APP_SCHEME}${search}`);
     }
   }, []);
 
   const hash = typeof window !== "undefined" ? window.location.hash : "";
-  const hasTokens = hash.includes("access_token") && !hash.includes("error=");
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  const hasHashTokens = hash.includes("access_token") && !hash.includes("error=");
+  const hasCode = search.includes("code=") && !search.includes("error=");
+  const hasAuthData = hasHashTokens || hasCode;
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
-      {hasTokens ? (
+      {hasAuthData ? (
         <>
           <p className="text-lg mb-4">Opening Be My Day...</p>
           <p className="text-gray-500 text-sm mb-8">
             If the app doesn't open,{" "}
             <a
-              href={`${APP_SCHEME}${hash}`}
+              href={`${APP_SCHEME}${hasHashTokens ? hash : search}`}
               className="text-blue-600 underline"
             >
               tap here

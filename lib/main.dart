@@ -1,3 +1,4 @@
+import 'package:app_links/app_links.dart';
 import 'package:bemyday/config/supabase_config.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/core/providers.dart';
@@ -14,6 +15,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// https://bemyday.app/invite/:token → /invite/:token
+String? _invitePathFromUri(Uri? uri) {
+  if (uri == null) return null;
+  if (uri.path.startsWith('/invite/')) return uri.path;
+  return null;
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -28,7 +36,38 @@ void main() async {
   );
 
   final authStateNotifier = AuthStateNotifier();
-  final router = createRouter(authStateNotifier);
+
+  // 딥링크: 앱이 링크로 실행된 경우 초기 경로 설정
+  String? initialLocation;
+  try {
+    final initialUri = await AppLinks().getInitialLink();
+    if (initialUri != null) {
+      // OAuth 콜백(Google 로그인 등): Supabase에 세션 복구 요청
+      final isAuthCallback = initialUri.fragment.contains('access_token') ||
+          initialUri.queryParameters.containsKey('code');
+      if (isAuthCallback) {
+        await Supabase.instance.client.auth.getSessionFromUrl(initialUri);
+      } else {
+        initialLocation = _invitePathFromUri(initialUri);
+      }
+    }
+  } catch (_) {}
+
+  final router = createRouter(authStateNotifier, initialLocation: initialLocation);
+
+  // 딥링크: 앱이 백그라운드에서 링크로 열린 경우
+  AppLinks().uriLinkStream.listen((uri) async {
+    final isAuthCallback = uri.fragment.contains('access_token') ||
+        uri.queryParameters.containsKey('code');
+    if (isAuthCallback) {
+      try {
+        await Supabase.instance.client.auth.getSessionFromUrl(uri);
+      } catch (_) {}
+      return;
+    }
+    final path = _invitePathFromUri(uri);
+    if (path != null) router.go(path);
+  });
 
   // SharedPreferences 미리 초기화
   final prefs = await SharedPreferences.getInstance();
