@@ -1,79 +1,94 @@
+import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
+import 'package:bemyday/common/widgets/stat/stats_collection.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
-import 'package:bemyday/features/friends/widgets/stat_column.dart';
+import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/features/group/models/group.dart';
+import 'package:bemyday/features/group/providers/group_provider.dart';
+import 'package:bemyday/features/group/utils.dart';
+import 'package:bemyday/features/party/party_screen.dart';
+import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class FriendCard extends StatelessWidget {
-  const FriendCard({super.key, required this.weekday});
+class FriendCard extends ConsumerWidget {
+  const FriendCard({super.key, required this.weekday, this.group});
 
   final String weekday;
+  final Group? group;
+
+  void _onCardTap(BuildContext context) {
+    context.push(PartyScreen.routeUrl, extra: group);
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: Sizes.size16,
-        vertical: Sizes.size16,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.blue,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(radius: 24, child: Text("B")),
-                  Gaps.h12,
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Bogus",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        "since YYYY-MM-DD",
-                        style: TextStyle(
-                          fontSize: Sizes.size10,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Gaps.v16,
-          SizedBox(
-            height: 60,
-            child: Row(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weeks = group != null ? groupWeekNumber(group!) : 0;
+    final streaks = group?.streak ?? 0;
+    final posts = group?.postCount ?? 0;
+
+    final memberNicknamesAsync =
+        group != null ? ref.watch(groupMemberNicknamesProvider(group!.id)) : null;
+    final memberCountAsync =
+        group != null ? ref.watch(groupMemberCountProvider(group!.id)) : null;
+
+    final info = groupDisplayInfo(group, memberNicknamesAsync?.valueOrNull);
+    final displayText = group == null
+        ? weekday
+        : (info.subTitle ?? info.nickname);
+    final memberCount = memberCountAsync?.valueOrNull ?? 0;
+    final subTitle = memberCount == 1
+        ? '1 member'
+        : memberCount == 0
+            ? '0 members'
+            : '$memberCount members';
+
+    return GestureDetector(
+      onTap: () => _onCardTap(context),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: Sizes.size16,
+          vertical: Sizes.size16,
+        ),
+        decoration: BoxDecoration(
+          color: isDarkMode(context)
+              ? CustomColors.clickableAreaDark
+              : CustomColors.clickableAreaLight,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AvatarPackage(
+                  nickname: displayText.length >= 1
+                      ? displayText.substring(0, 1).toLowerCase()
+                      : "?",
+                  title: displayText,
+                  subTitle: memberCountAsync?.isLoading == true ? '…' : subTitle,
+                ),
+              ],
+            ),
+            Gaps.v16,
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                StatColumn(title: "Weeks", stat: 24),
-                VerticalDivider(
-                  width: Sizes.size64,
-                  thickness: 1,
-                  indent: 20,
-                  endIndent: 20,
+                Expanded(
+                  child: StatsCollection(
+                    stats: [
+                      StatItem(title: "Weeks", value: weeks),
+                      StatItem(title: "Streaks", value: streaks),
+                      StatItem(title: "Posts", value: posts),
+                    ],
+                  ),
                 ),
-                StatColumn(title: "Streaks", stat: 6),
-                VerticalDivider(
-                  width: Sizes.size64,
-                  thickness: 1,
-                  indent: 20,
-                  endIndent: 20,
-                ),
-                StatColumn(title: "Posts", stat: 23),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

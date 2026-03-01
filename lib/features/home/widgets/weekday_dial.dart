@@ -1,5 +1,8 @@
+import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/data/weekdays.dart';
+import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// AppBar에 표시되는 요일 선택기 위젯
 /// HomeScreen의 PageView 스와이프에 따라 자동으로 회전하며,
@@ -25,12 +28,6 @@ class _WeekdayDialState extends State<WeekdayDial> {
       initialPage: initialPage,
       viewportFraction: 0.15, // 각 페이지가 화면의 15%만 차지 (여러 요일이 동시에 보임)
     );
-    // 첫 로드 시 애니메이션 효과가 바로 적용되도록 강제 리빌드
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
   }
 
   /// 부모로부터 weekdayIndex가 변경되면 호출됨
@@ -52,7 +49,13 @@ class _WeekdayDialState extends State<WeekdayDial> {
     final currentWeekdayIndex = currentPage % 7; // 현재 요일 (0-6)
     final diff = (widget.weekdayIndex - currentWeekdayIndex) % 7; // 목표까지 거리
     // diff > 3이면 반대방향이 더 가까움 (예: 6→0은 +1이 -6보다 가까움)
-    final targetPage = currentPage + (diff == 0 ? 0 : diff > 3 ? diff - 7 : diff);
+    final targetPage =
+        currentPage +
+        (diff == 0
+            ? 0
+            : diff > 3
+            ? diff - 7
+            : diff);
 
     _pageController.animateToPage(
       targetPage,
@@ -71,7 +74,8 @@ class _WeekdayDialState extends State<WeekdayDial> {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 40,
-      child: IgnorePointer( // 사용자의 터치 입력을 무시 (읽기 전용)
+      child: IgnorePointer(
+        // 사용자의 터치 입력을 무시 (읽기 전용)
         child: PageView.builder(
           controller: _pageController,
           itemCount: _multiplier * 7 * 2, // 충분히 큰 수 (양방향 무한 스크롤)
@@ -83,17 +87,16 @@ class _WeekdayDialState extends State<WeekdayDial> {
             return AnimatedBuilder(
               animation: _pageController,
               builder: (context, child) {
-                double value = 1.0; // 투명도
-                double scale = 1.0; // 크기
+                // 초기 로드 시 haveDimensions가 false인 경우 initialPage로 계산해 플래시 방지
+                final currentPage = _pageController.position.haveDimensions
+                    ? (_pageController.page ?? 0)
+                    : _pageController.initialPage.toDouble();
+                final distance = (currentPage - index).abs();
 
-                if (_pageController.position.haveDimensions) {
-                  final currentPage = _pageController.page ?? 0;
-                  final distance = (currentPage - index).abs(); // 중심에서 거리
-
-                  // 중심(0)에서 멀어질수록 투명해지고 작아짐
-                  value = 1.0 - (distance * 0.3).clamp(0.0, 1.0); // 투명도: 1.0 → 0.7
-                  scale = 0.6 + (0.4 * (1.0 - distance.clamp(0.0, 1.0))); // 크기: 1.0 → 0.6
-                }
+                final value =
+                    1.0 - (distance * 0.3).clamp(0.0, 1.0);
+                final scale =
+                    0.8 + (0.4 * (1.0 - distance.clamp(0.0, 1.0)));
 
                 return Transform.scale(
                   scale: scale, // 크기 조정
@@ -102,16 +105,20 @@ class _WeekdayDialState extends State<WeekdayDial> {
                       opacity: value, // 투명도 조정
                       child: Text(
                         weekday.shortestName, // M, T, W, T, F, S, S
-                        style: TextStyle(
-                          // 현재 선택된 요일은 검은색, 나머지는 회색
-                          color: weekdayIndex == widget.weekdayIndex
-                              ? Colors.black
-                              : Colors.grey,
-                          fontSize: 16,
-                          // 현재 선택된 요일은 볼드체
-                          fontWeight: weekdayIndex == widget.weekdayIndex
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                        style: GoogleFonts.darumadropOne(
+                          textStyle: TextStyle(
+                            // 현재 선택된 요일은 검은색, 나머지는 회색
+                            color: weekdayIndex == widget.weekdayIndex
+                                ? isDarkMode(context)
+                                      ? Colors.white
+                                      : Colors.black
+                                : Colors.grey,
+                            fontSize: Sizes.size16,
+                            // 현재 선택된 요일은 볼드체
+                            fontWeight: weekdayIndex == widget.weekdayIndex
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
                         ),
                       ),
                     ),

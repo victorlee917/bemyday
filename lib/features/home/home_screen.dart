@@ -1,30 +1,45 @@
-import 'package:bemyday/common/widgets/vacant_button.dart';
+import 'package:bemyday/common/widgets/async_value_builder.dart';
+import 'package:bemyday/common/widgets/vacant_page.dart';
 import 'package:bemyday/data/weekdays.dart';
+import 'package:bemyday/features/group/models/group.dart';
+import 'package:bemyday/features/group/providers/group_provider.dart';
+import 'package:bemyday/features/group/utils.dart';
+import 'package:bemyday/features/home/providers/home_provider.dart';
 import 'package:bemyday/features/home/widgets/weekday_dial.dart';
 import 'package:bemyday/features/home/widgets/weekday_occupied.dart';
+import 'package:bemyday/features/invite/invite_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key, required this.bottomPadding});
 
   final double bottomPadding;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   late final PageController _pageController;
   late final AnimationController _animationController;
   int _weekdayIndex = 0;
+  bool _hasInitializedFocus = false;
+
+  /// 최초 포커스 요일: 남은 시간 가장 적은 그룹 → 없으면 당일 요일
+  int _computeInitialFocusWeekdayIndex(List<Group> groups) {
+    return computeSoonestWeekdayIndex(groups);
+  }
+
+  static const int _pageCount = 21;
+  static const int _initialPage = 10;
 
   @override
   void initState() {
     super.initState();
-    // initialPage를 weekdayIndex와 맞춤 (5000은 4번째 요일, 5000-4 = 4996은 0번째 요일)
     _pageController = PageController(
-      initialPage: 5000 - (5000 % 7) + _weekdayIndex,
+      initialPage: _initialPage,
       viewportFraction: 0.9,
     );
     _animationController = AnimationController(
@@ -34,6 +49,16 @@ class _HomeScreenState extends State<HomeScreen>
       value: 3,
       duration: Duration(milliseconds: 200),
     );
+    _pageController.addListener(_syncWeekdayFromPage);
+  }
+
+  void _syncWeekdayFromPage() {
+    if (!_pageController.hasClients) return;
+    final page = _pageController.page?.round() ?? _pageController.initialPage;
+    final index = page % 7;
+    if (ref.read(homeWeekdayIndexProvider) != index) {
+      ref.read(homeWeekdayIndexProvider.notifier).state = index;
+    }
   }
 
   void _onPageChanged(int page) {
@@ -47,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    _pageController.removeListener(_syncWeekdayFromPage);
     _pageController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -56,59 +82,91 @@ class _HomeScreenState extends State<HomeScreen>
   //   return Future.delayed(const Duration(seconds: 3));
   // }
 
-  // void _onCommentsTap(BuildContext context) async {
-  //   await showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     backgroundColor: Colors.transparent,
-  //     builder: (context) => const CommentsSheet(),
-  //   );
-  // }
+  void _onInviteTap(int weekdayIndex) {
+    showInviteSheet(context, selectedWeekdayIndex: weekdayIndex);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final groupsAsync = ref.watch(currentUserGroupsProvider);
+
     return Column(
       children: [
         AppBar(title: WeekdayDial(weekdayIndex: _weekdayIndex)),
         Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: 10000,
-            onPageChanged: _onPageChanged,
-            itemBuilder: (context, index) {
-              return AnimatedBuilder(
-                animation: _pageController,
-                builder: (context, child) {
-                  double value = 1.0;
-                  if (_pageController.position.haveDimensions) {
-                    value = _pageController.page! - index;
-                    value = (1 - (value.abs() * 0.3)).clamp(0.0, 1.0);
+          child: AsyncValueBuilder<List<Group>>(
+            value: groupsAsync,
+            data: (groups) {
+              if (!_hasInitializedFocus) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_hasInitializedFocus || !_pageController.hasClients) {
+                    return;
                   }
+                  _hasInitializedFocus = true;
+                  final targetIndex = _computeInitialFocusWeekdayIndex(groups);
+                  final targetPage = 7 + targetIndex;
+                  _pageController.jumpToPage(targetPage);
+                  setState(() => _weekdayIndex = targetIndex);
+                  ref.read(homeWeekdayIndexProvider.notifier).state =
+                      targetIndex;
+                });
+              }
+              final groupByWeekday = {
+                for (final g in groups) g.weekday: g,
+              };
 
-                  // 회전 각도 계산 (원형 효과)
-                  double rotationValue = 0.0;
-                  if (_pageController.position.haveDimensions) {
-                    rotationValue = (_pageController.page! - index) * 0.3;
-                  }
+              return PageView.builder(
+                controller: _pageController,
+                itemCount: _pageCount,
+                onPageChanged: _onPageChanged,
+                itemBuilder: (context, index) {
+                  final weekdayIndex = index % 7;
+                  final dbWeekday = weekdayIndex + 1;
+                  final group = groupByWeekday[dbWeekday];
 
-                  return Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.identity()
-                      ..setEntry(3, 2, 0.001) // 원근감
-                      ..rotateY(rotationValue), // Y축 회전 (좌우로 회전)
-                    child: Opacity(opacity: value, child: child),
+                  return RepaintBoundary(
+                    child: AnimatedBuilder(
+                      animation: _pageController,
+                      builder: (context, child) {
+                        double value = 1.0;
+                        if (_pageController.position.haveDimensions) {
+                          value = _pageController.page! - index;
+                          value =
+                              (1 - (value.abs() * 0.3)).clamp(0.0, 1.0);
+                        }
+                        double rotationValue = 0.0;
+                        if (_pageController.position.haveDimensions) {
+                          rotationValue =
+                              (_pageController.page! - index) * 0.3;
+                        }
+
+                        return Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..rotateY(rotationValue),
+                          child: Opacity(opacity: value, child: child),
+                        );
+                      },
+                      child: Padding(
+                        padding: EdgeInsetsGeometry.only(
+                          bottom: widget.bottomPadding,
+                        ),
+                        child: group != null
+                            ? WeekdayOccupied(
+                                weekdayIndex: weekdayIndex,
+                                group: group,
+                              )
+                            : VacantPage(
+                                message:
+                                    "Who's your ${weekdays[weekdayIndex].name}?",
+                                onInviteTap: () =>
+                                    _onInviteTap(weekdayIndex),
+                              ),
+                      ),
+                    ),
                   );
                 },
-                child: Padding(
-                  padding: EdgeInsetsGeometry.only(
-                    bottom: widget.bottomPadding,
-                  ),
-                  child: WeekdayOccupied(weekdayIndex: _weekdayIndex),
-                ),
-                // VacantButton(
-                //   text: "Who's your ${weekdays[_weekdayIndex].name}?",
-                //   label: "Invite Friend",
-                // ),
               );
             },
           ),

@@ -1,0 +1,12 @@
+{
+  "signUpTitle": "Sign up for {nameOfTheApp}",
+  "@signUpTitle": {
+    "description": "The Title..",
+    "placeholders": {
+      "nameOfTheApp": {
+        "type": "String",
+        "example": "Be My Day"
+      }
+    }
+  }
+}
