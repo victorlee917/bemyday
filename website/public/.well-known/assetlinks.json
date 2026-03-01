@@ -4,7 +4,9 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.bemyday",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_SHA256_FINGERPRINT"]
+      "sha256_cert_fingerprints": [
+        "80:65:53:9F:0C:D6:43:4F:50:F1:B5:28:41:86:4B:58:D7:A7:41:C5:4C:4E:4F:B2:67:1D:BF:FF:0C:50:38:2B"
+      ]
     }
   }
 ]

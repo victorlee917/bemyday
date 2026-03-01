@@ -49,19 +49,9 @@ export default function InviteToken() {
 
   if (!invitation) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
-          textAlign: "center",
-        }}
-      >
-        <h1>Invalid or expired invitation</h1>
-        <Link to="/" style={{ marginTop: "1rem", color: "#666" }}>
+      <main className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
+        <h1 className="text-xl font-semibold">Invalid or expired invitation</h1>
+        <Link to="/" className="mt-4 text-gray-500 hover:text-gray-700">
           Back to home
         </Link>
       </main>
@@ -71,38 +61,16 @@ export default function InviteToken() {
   const weekdayName = WEEKDAYS[(invitation.weekday ?? 1) - 1];
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-        textAlign: "center",
-      }}
-    >
-      <h1 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>
-        {invitation.inviter_nickname} invited you
-      </h1>
-      <p style={{ fontSize: "1.25rem", marginBottom: "2rem" }}>
-        Would You Be My {weekdayName}?
-      </p>
-      <p style={{ color: "#666", marginBottom: "2rem" }}>
-        Install the app to accept the invitation
-      </p>
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+    <main className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
+      <h1 className="text-2xl mb-2">{invitation.inviter_nickname} invited you</h1>
+      <p className="text-xl mb-8">Would You Be My {weekdayName}?</p>
+      <p className="text-gray-500 mb-8">Install the app to accept the invitation</p>
+      <div className="flex gap-4 flex-wrap justify-center">
         <a
           href="https://apps.apple.com/app/bemyday"
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            padding: "0.75rem 1.5rem",
-            backgroundColor: "#000",
-            color: "#fff",
-            textDecoration: "none",
-            borderRadius: "8px",
-          }}
+          className="px-6 py-3 bg-black text-white no-underline rounded-lg hover:bg-gray-800 transition-colors"
         >
           App Store
         </a>
@@ -110,18 +78,12 @@ export default function InviteToken() {
           href="https://play.google.com/store/apps/details?id=com.bemyday"
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            padding: "0.75rem 1.5rem",
-            backgroundColor: "#000",
-            color: "#fff",
-            textDecoration: "none",
-            borderRadius: "8px",
-          }}
+          className="px-6 py-3 bg-black text-white no-underline rounded-lg hover:bg-gray-800 transition-colors"
         >
           Google Play
         </a>
       </div>
-      <Link to="/" style={{ marginTop: "2rem", color: "#666" }}>
+      <Link to="/" className="mt-8 text-gray-500 hover:text-gray-700">
         Back to home
       </Link>
     </main>

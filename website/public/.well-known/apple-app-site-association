@@ -3,8 +3,10 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAM_ID.com.bemyday",
-        "paths": ["/invite/*"]
+        "appID": "38RXGUJVA3.com.bemyday",
+        "paths": [
+          "/invite/*"
+        ]
       }
     ]
   }

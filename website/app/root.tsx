@@ -7,6 +7,8 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 
+import tailwindStylesheet from "./tailwind.css?url";
+
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -18,6 +20,7 @@ export const links: LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
   },
+  { rel: "stylesheet", href: tailwindStylesheet },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -29,7 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body style={{ fontFamily: "Inter, system-ui, sans-serif", margin: 0 }}>
+      <body className="font-sans m-0 antialiased" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
         {children}
         <ScrollRestoration />
         <Scripts />

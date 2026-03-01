@@ -28,6 +28,8 @@ Vercel 배포 시 Project Settings → Environment Variables에 설정.
 ## 딥링크 설정
 
 - `public/.well-known/apple-app-site-association` - iOS
+  - `TEAM_ID`를 Apple Developer Team ID로 교체 (예: `ABCD1234.com.example.bemyday`)
 - `public/.well-known/assetlinks.json` - Android
-
-배포 전 `TEAM_ID`, `sha256_cert_fingerprints`를 실제 값으로 교체하세요.
+  - `REPLACE_WITH_SHA256_FINGERPRINT`를 앱 서명 SHA256으로 교체
+  - 디버그: `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey`
+  - 릴리즈: 앱 서명 키스토어의 SHA256

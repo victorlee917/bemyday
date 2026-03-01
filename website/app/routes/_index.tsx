@@ -11,40 +11,14 @@ export const meta: MetaFunction = () => [
 
 export default function Index() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-        textAlign: "center",
-      }}
-    >
-      <h1 style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>
-        Be My Day
-      </h1>
-      <p style={{ opacity: 0.7, marginBottom: "2rem" }}>
-        Pals who make my day
-      </p>
-      <nav style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-        <Link
-          to="/privacy"
-          style={{
-            color: "#666",
-            textDecoration: "underline",
-          }}
-        >
+    <main className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
+      <h1 className="text-4xl mb-2">Be My Day</h1>
+      <p className="opacity-70 mb-8">Pals who make my day</p>
+      <nav className="flex gap-4 flex-wrap justify-center">
+        <Link to="/privacy" className="text-gray-500 underline hover:text-gray-700">
           Privacy Policy
         </Link>
-        <Link
-          to="/terms"
-          style={{
-            color: "#666",
-            textDecoration: "underline",
-          }}
-        >
+        <Link to="/terms" className="text-gray-500 underline hover:text-gray-700">
           Terms of Service
         </Link>
       </nav>
