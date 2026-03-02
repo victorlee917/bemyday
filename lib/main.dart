@@ -5,6 +5,7 @@ import 'package:bemyday/core/providers.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/generated/l10n.dart';
 import 'package:bemyday/features/theme/viewmodels/theme_viewmodel.dart';
+import 'package:bemyday/features/start/start_screen.dart';
 import 'package:bemyday/router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -50,7 +51,17 @@ void main() async {
       final isAuthCallback = initialUri.fragment.contains('access_token') ||
           initialUri.queryParameters.containsKey('code');
       if (isAuthCallback) {
-        await Supabase.instance.client.auth.getSessionFromUrl(initialUri);
+        try {
+          await Supabase.instance.client.auth.getSessionFromUrl(initialUri);
+        } on AuthException catch (e) {
+          // 앱이 백그라운드에서 종료되면 code_verifier 손실, flow_state 만료 등 → 재시도 안내
+          final msg = e.message.toLowerCase();
+          if (msg.contains('code verifier') ||
+              msg.contains('flow state') ||
+              msg.contains('flow_state')) {
+            initialLocation = '${StartScreen.routeUrl}?auth_error=retry';
+          }
+        }
       } else {
         initialLocation = _invitePathFromUri(initialUri);
       }
@@ -66,6 +77,15 @@ void main() async {
     if (isAuthCallback) {
       try {
         await Supabase.instance.client.auth.getSessionFromUrl(uri);
+        // redirect 재평가 유도 (onAuthStateChange와 타이밍 겹칠 수 있음)
+        router.refresh();
+      } on AuthException catch (e) {
+        final msg = e.message.toLowerCase();
+        if (msg.contains('code verifier') ||
+            msg.contains('flow state') ||
+            msg.contains('flow_state')) {
+          router.go('${StartScreen.routeUrl}?auth_error=retry');
+        }
       } catch (_) {}
       return;
     }

@@ -41,9 +41,36 @@ GoRouter createRouter(
   return GoRouter(
     refreshListenable: authStateNotifier,
     initialLocation: initialLocation ?? StartScreen.routeUrl,
+    // 플랫폼이 com.bemyday://invite/xxx 전달 시 initialLocation(변환된 경로) 우선 사용
+    overridePlatformDefaultLocation: initialLocation != null,
+    onException: (context, state, router) {
+      // GoException "no routes for location: com.bemyday://invite/TOKEN" → /invite/TOKEN 리다이렉트
+      final err = state.error;
+      if (err is GoException) {
+        final match = RegExp(r'no routes for location: (com\.bemyday://invite/[^"\s]+)')
+            .firstMatch(err.message);
+        if (match != null) {
+          final uriStr = match.group(1)!;
+          final tokenMatch = RegExp(r'com\.bemyday://invite/([^/?#]+)').firstMatch(uriStr);
+          if (tokenMatch != null) {
+            router.go('/invite/${tokenMatch.group(1)!}');
+            return;
+          }
+        }
+      }
+      // 그 외: 기본 에러 화면 (재throw 없음)
+    },
     redirect: (context, state) async {
+      // uri.toString()으로 location 확인 (go_router 17: location → uri.toString())
+      final location = state.uri.toString();
+
+      // com.bemyday://invite/TOKEN → /invite/TOKEN (플랫폼이 전체 URI를 전달하는 경우)
+      final schemeMatch = RegExp(r'^com\.bemyday://invite/([^/?#]+)').firstMatch(location);
+      if (schemeMatch != null) {
+        return '/invite/${schemeMatch.group(1)!}';
+      }
+
       final session = Supabase.instance.client.auth.currentSession;
-      final location = state.matchedLocation;
 
       // 로그아웃 상태
       if (session == null) {
@@ -97,8 +124,9 @@ GoRouter createRouter(
           // 최초 가입 플로우: 닉네임 설정 후 /home으로 이동
           return '${ProfileScreen.routeUrl}?from=onboarding';
         }
-        // 커스텀 닉네임: /start, /tutorial에 있으면 /home으로
-        if (location == StartScreen.routeUrl || location == TutorialScreen.routeUrl) {
+        // 커스텀 닉네임: /start, /tutorial에 있으면 /home으로 (쿼리 파라미터 무시)
+        final path = state.uri.path;
+        if (path == StartScreen.routeUrl || path == TutorialScreen.routeUrl) {
           return '/home';
         }
       } catch (_) {
@@ -117,7 +145,10 @@ GoRouter createRouter(
       path: StartScreen.routeUrl,
       name: StartScreen.routeName,
       pageBuilder: (context, state) {
-        return fadeOutTransitionPage(child: StartScreen());
+        final authError = state.uri.queryParameters['auth_error'];
+        return fadeOutTransitionPage(
+          child: StartScreen(authErrorRetry: authError == 'retry'),
+        );
       },
     ),
     GoRoute(

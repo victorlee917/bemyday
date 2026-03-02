@@ -43,7 +43,11 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   }
 
   void _onCloseTap() {
-    context.pop();
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+    } else {
+      context.go('/home');
+    }
   }
 
   void _onPageChanged(int index) {

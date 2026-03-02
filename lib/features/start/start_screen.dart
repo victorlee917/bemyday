@@ -15,10 +15,33 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 
-class StartScreen extends StatelessWidget {
-  const StartScreen({super.key});
+class StartScreen extends StatefulWidget {
+  const StartScreen({super.key, this.authErrorRetry = false});
   static const routeName = "start";
   static const routeUrl = "/start";
+
+  final bool authErrorRetry;
+
+  @override
+  State<StartScreen> createState() => _StartScreenState();
+}
+
+class _StartScreenState extends State<StartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.authErrorRetry) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('로그인이 완료되지 않았습니다. 다시 시도해 주세요.'),
+            ),
+          );
+        }
+      });
+    }
+  }
 
   Future<void> _signInWithApple(BuildContext context) async {
     try {
@@ -76,9 +99,10 @@ class StartScreen extends StatelessWidget {
   }
 
   Future<void> _signInWithGoogle() async {
+    // 모바일: 브라우저 → Google OAuth → Supabase → bemyday.app/auth/callback → 앱(com.bemyday://login-callback)
     await Supabase.instance.client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: kIsWeb ? null : 'https://www.bemyday.app/auth/callback',
+      redirectTo: kIsWeb ? null : 'https://bemyday.app/auth/callback',
       authScreenLaunchMode: LaunchMode.externalApplication,
     );
   }

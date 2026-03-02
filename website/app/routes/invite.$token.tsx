@@ -106,7 +106,7 @@ export default function InviteToken() {
   const weekdayName = WEEKDAYS[(invitation.weekday ?? 1) - 1];
   const { token } = useParams<{ token: string }>();
 
-  // 카카오톡 등 인앱 브라우저에서는 Universal Link가 동작하지 않음 → Intent URL / 커스텀 스킴 사용
+  // 카카오톡 등 인앱 브라우저: Intent URL(Android) / 커스텀 스킴(iOS)
   const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
   const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const appOpenUrl = isAndroid
