@@ -15,10 +15,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// https://bemyday.app/invite/:token → /invite/:token
+/// https://bemyday.app/invite/:token 또는 com.bemyday://invite/:token → /invite/:token
 String? _invitePathFromUri(Uri? uri) {
   if (uri == null) return null;
   if (uri.path.startsWith('/invite/')) return uri.path;
+  // 카카오톡 인앱 브라우저용: com.bemyday://invite/TOKEN
+  if (uri.scheme == 'com.bemyday' && uri.host == 'invite' && uri.pathSegments.isNotEmpty) {
+    return '/invite/${uri.pathSegments.first}';
+  }
   return null;
 }
 

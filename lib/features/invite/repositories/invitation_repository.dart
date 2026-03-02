@@ -44,13 +44,10 @@ class InvitationRepository {
       if (existing == null) break;
     } while (true);
 
-    final expiresAt =
-        DateTime.now().add(const Duration(hours: 1)).toUtc().toIso8601String();
-
+    // expires_at은 DB default (now() + 1 hour) 사용 → 서버 UTC 기준, 클라이언트 시계 무관
     final row = <String, dynamic>{
       'token': token,
       'inviter_id': userId,
-      'expires_at': expiresAt,
       'metadata': metadata ?? {},
     };
 

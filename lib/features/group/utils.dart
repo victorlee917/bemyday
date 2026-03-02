@@ -147,7 +147,8 @@ int computeSoonestWeekdayIndex(List<Group> groups) {
 /// - 두 번째 {요일} 전: Week 2
 int groupWeekNumber(Group group) {
   final now = DateTime.now();
-  final createdAt = group.createdAt;
+  // DB는 UTC로 저장 → 로컬 시간으로 변환해 now와 비교
+  final createdAt = group.createdAt.toLocal();
   final targetWeekday = group.weekday; // 1=Mon ~ 7=Sun
 
   final createDate = DateTime(createdAt.year, createdAt.month, createdAt.day);

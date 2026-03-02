@@ -33,6 +33,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
   List<AssetPathEntity> _albums = [];
   AssetPathEntity? _selectedAlbum;
   bool _isLoading = true;
+  bool _isLoadingAlbumPicker = false;
   bool _hasPermission = false;
   final Map<String, Uint8List> _thumbnailCache = {};
 
@@ -176,41 +177,47 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
     return common.DropdownButton(
       label: _selectedAlbum?.name ?? 'Album',
       onTap: _showAlbumPicker,
+      isLoading: _isLoadingAlbumPicker,
     );
   }
 
   Future<void> _showAlbumPicker() async {
-    // 앨범 카운트를 미리 가져옴
-    final albumCounts = await Future.wait(
-      _albums.map((album) => album.assetCountAsync),
-    );
+    if (_isLoadingAlbumPicker) return;
+    setState(() => _isLoadingAlbumPicker = true);
 
-    if (!mounted) return;
+    try {
+      // 앨범 카운트를 미리 가져옴
+      final albumCounts = await Future.wait(
+        _albums.map((album) => album.assetCountAsync),
+      );
 
-    // 카운트가 1 이상인 앨범만 필터링
-    final filteredAlbums = <({AssetPathEntity album, int count})>[];
-    for (var i = 0; i < _albums.length; i++) {
-      if (albumCounts[i] >= 1) {
-        filteredAlbums.add((album: _albums[i], count: albumCounts[i]));
+      if (!mounted) return;
+
+      // 카운트가 1 이상인 앨범만 필터링
+      final filteredAlbums = <({AssetPathEntity album, int count})>[];
+      for (var i = 0; i < _albums.length; i++) {
+        if (albumCounts[i] >= 1) {
+          filteredAlbums.add((album: _albums[i], count: albumCounts[i]));
+        }
       }
-    }
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return SheetSelect(
-          maxHeight: MediaQuery.of(context).size.height * 0.5,
-          items: filteredAlbums.map((item) {
-            return SheetItem(
-              title: '${item.album.name} (${item.count})',
-              onTap: () => _onAlbumChanged(item.album),
-            );
-          }).toList(),
-        );
-      },
-    );
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return SheetSelect(
+            items: filteredAlbums.map((item) {
+              return SheetItem(
+                title: item.album.name,
+                onTap: () => _onAlbumChanged(item.album),
+              );
+            }).toList(),
+          );
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _isLoadingAlbumPicker = false);
+    }
   }
 
   Widget _buildPermissionDenied() {

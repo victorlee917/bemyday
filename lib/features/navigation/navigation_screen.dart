@@ -3,9 +3,9 @@ import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/home/providers/home_provider.dart';
+import 'package:bemyday/features/invite/invite_utils.dart';
 import 'package:bemyday/features/friends/friends_screen.dart';
 import 'package:bemyday/features/home/home_screen.dart';
-import 'package:bemyday/features/invite/invite_utils.dart';
 import 'package:bemyday/features/my/my_screen.dart';
 import 'package:bemyday/features/navigation/widgets/navigation_tab.dart';
 import 'package:bemyday/features/posting/posting_album_screen.dart';
@@ -31,17 +31,46 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
     with SingleTickerProviderStateMixin {
   final List<String> _tabs = ["friends", "home", "my"];
 
-  late int _selectedIndex = _tabs.indexOf(widget.tab);
+  late int _selectedIndex;
 
   late final AnimationController _animationController = AnimationController(
     vsync: this,
-    duration: Duration(milliseconds: 200),
+    duration: const Duration(milliseconds: 200),
   );
 
   late final Animation<double> _animation = Tween(
     begin: 0.0,
     end: 0.125, // 45도 = X자
   ).animate(_animationController);
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = _tabs.indexOf(widget.tab);
+    if (_selectedIndex != 1) {
+      _animationController.value = 0.125;
+    }
+  }
+
+  @override
+  void didUpdateWidget(NavigationScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 딥링크 등으로 탭 변경 시 동기화
+    if (widget.tab != oldWidget.tab) {
+      _selectedIndex = _tabs.indexOf(widget.tab);
+      if (_selectedIndex != 1 && _animationController.value != 0.125) {
+        _animationController.value = 0.125;
+      } else if (_selectedIndex == 1 && _animationController.value != 0) {
+        _animationController.value = 0;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   void _onNavTap(int index) {
     if (index != 1) {
@@ -50,11 +79,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
       _animationController.reverse();
     }
 
-    context.go("/${_tabs[index]}");
-
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
 
   void _onCenterButtonTap() {
@@ -95,11 +120,18 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
     return Scaffold(
       body: Stack(
         children: [
-          _selectedIndex == 0
-              ? FriendsScreen(bottomPadding: totalBottomPadding)
-              : _selectedIndex == 1
-                  ? HomeScreen(bottomPadding: totalBottomPadding)
-                  : MyScreen(bottomPadding: totalBottomPadding),
+          Offstage(
+            offstage: _selectedIndex != 0,
+            child: FriendsScreen(bottomPadding: totalBottomPadding),
+          ),
+          Offstage(
+            offstage: _selectedIndex != 1,
+            child: HomeScreen(bottomPadding: totalBottomPadding),
+          ),
+          Offstage(
+            offstage: _selectedIndex != 2,
+            child: MyScreen(bottomPadding: totalBottomPadding),
+          ),
           // 하단 그라데이션
           if (_selectedIndex != 1)
             Positioned(

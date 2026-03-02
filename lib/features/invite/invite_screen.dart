@@ -92,9 +92,16 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     if (!context.mounted) return;
     final inviteUrl = 'https://bemyday.app/invite/$token';
     final weekdayName = weekdays[effectiveIndex].name;
+    final size = MediaQuery.sizeOf(context);
+    final shareOrigin = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: 10,
+      height: 10,
+    );
     await Share.share(
       'Would you be my $weekdayName? $inviteUrl',
       subject: 'Be My Day - Invitation',
+      sharePositionOrigin: shareOrigin,
     );
   }
 

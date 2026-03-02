@@ -53,7 +53,7 @@ class WeekdayOccupied extends ConsumerWidget {
                         "$displayName is\nMy ${weekdays[weekdayIndex].name}",
                         style: GoogleFonts.darumadropOne(
                           textStyle: TextStyle(
-                            fontSize: Sizes.size32,
+                            fontSize: Sizes.size28,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -69,7 +69,7 @@ class WeekdayOccupied extends ConsumerWidget {
                         "… is\nMy ${weekdays[weekdayIndex].name}",
                         style: GoogleFonts.darumadropOne(
                           textStyle: TextStyle(
-                            fontSize: Sizes.size32,
+                            fontSize: Sizes.size28,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -85,7 +85,7 @@ class WeekdayOccupied extends ConsumerWidget {
                         "My Day is\nMy ${weekdays[weekdayIndex].name}",
                         style: GoogleFonts.darumadropOne(
                           textStyle: TextStyle(
-                            fontSize: Sizes.size32,
+                            fontSize: Sizes.size28,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -98,10 +98,8 @@ class WeekdayOccupied extends ConsumerWidget {
             ),
           ),
           Gaps.v16,
-          Opacity(opacity: 0.3, child: Text("Week ${groupWeekNumber(group)}")),
-          Gaps.v12,
           TimeleftChip(targetWeekday: group.weekday),
-          Gaps.v24,
+          Gaps.v16,
           Expanded(
             child: Center(
               child: ref
@@ -116,9 +114,8 @@ class WeekdayOccupied extends ConsumerWidget {
                   ),
             ),
           ),
-          Gaps.v20,
+          Gaps.v14,
           MoreButton(group: group),
-          Gaps.v6,
         ],
       ),
     );

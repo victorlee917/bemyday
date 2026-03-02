@@ -20,7 +20,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+const _pendingInviteTokenKey = 'pending_invite_token';
 
 /// GoRouter의 [refreshListenable]에 사용. 인증 상태 변경 시 redirect 재평가.
 class AuthStateNotifier extends ChangeNotifier {
@@ -31,10 +34,13 @@ class AuthStateNotifier extends ChangeNotifier {
   }
 }
 
-GoRouter createRouter(AuthStateNotifier authStateNotifier) {
+GoRouter createRouter(
+  AuthStateNotifier authStateNotifier, {
+  String? initialLocation,
+}) {
   return GoRouter(
     refreshListenable: authStateNotifier,
-    initialLocation: StartScreen.routeUrl,
+    initialLocation: initialLocation ?? StartScreen.routeUrl,
     redirect: (context, state) async {
       final session = Supabase.instance.client.auth.currentSession;
       final location = state.matchedLocation;
@@ -43,7 +49,30 @@ GoRouter createRouter(AuthStateNotifier authStateNotifier) {
       if (session == null) {
         final isPublicRoute = location == StartScreen.routeUrl ||
             location == TutorialScreen.routeUrl;
-        return isPublicRoute ? null : StartScreen.routeUrl;
+        if (!isPublicRoute) {
+          // /invite/:token → 로그인 먼저. 토큰 저장 후 /start로
+          final match = RegExp(r'/invite/([^/?#]+)').firstMatch(location);
+          if (match != null) {
+            final token = match.group(1)!;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(_pendingInviteTokenKey, token);
+            return '${StartScreen.routeUrl}?invite_token=$token';
+          }
+          return StartScreen.routeUrl;
+        }
+        return null;
+      }
+
+      // 로그인 상태: 대기 중인 초대 토큰이 있으면 InvitationScreen으로
+      final prefs = await SharedPreferences.getInstance();
+      final pendingToken = prefs.getString(_pendingInviteTokenKey);
+      if (pendingToken != null) {
+        await prefs.remove(_pendingInviteTokenKey);
+        return '/invite/$pendingToken';
+      }
+      final inviteToken = state.uri.queryParameters['invite_token'];
+      if (inviteToken != null && location.startsWith(StartScreen.routeUrl)) {
+        return '/invite/$inviteToken';
       }
 
       // 로그인 상태: 프로필 닉네임 확인 (currentProfileProvider 캐시 활용)

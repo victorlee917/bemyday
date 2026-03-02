@@ -145,16 +145,13 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                     TileBrowse(title: "Instagram", url: "https://naver.com"),
                     TileBrowse(
                       title: "Privacy Policy",
-                      url: "https://naver.com",
+                      url: "https://www.bemyday.app/privacy",
                     ),
                     TileBrowse(
                       title: "Terms of Service",
-                      url: "https://naver.com",
+                      url: "https://www.bemyday.app/terms",
                     ),
-                    TileAct(
-                      title: "Open Source License",
-                      action: () {},
-                    ),
+                    TileAct(title: "Open Source License", action: () {}),
                   ],
                 ),
                 TilesSection(

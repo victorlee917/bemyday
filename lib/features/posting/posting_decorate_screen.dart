@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_weekday_picker.dart';
 import 'package:bemyday/features/group/utils.dart';
@@ -44,6 +46,7 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
   bool _isPosting = false;
   bool _hasScheduledRedirect = false;
   bool _hasSyncedWeekdayFromGroups = false;
+  Uint8List? _highResImage;
 
   int _currentWeekdayIndex() {
     final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
@@ -68,6 +71,27 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) _animationController.forward();
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadHighResImage());
+  }
+
+  Future<void> _loadHighResImage() async {
+    if (!mounted) return;
+    final size = MediaQuery.of(context).size;
+    final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+    var w = (size.width * pixelRatio).round();
+    var h = (size.height * pixelRatio).round();
+    const maxEdge = 2048;
+    if (w > maxEdge || h > maxEdge) {
+      final scale = maxEdge / (w > h ? w : h);
+      w = (w * scale).round();
+      h = (h * scale).round();
+    }
+    final data = await widget.asset.thumbnailDataWithSize(
+      ThumbnailSize(w, h),
+    );
+    if (data != null && mounted) {
+      setState(() => _highResImage = data);
+    }
   }
 
   @override
@@ -182,7 +206,7 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(RValues.island),
                     child: Image.memory(
-                      widget.thumbnail!,
+                      _highResImage ?? widget.thumbnail!,
                       fit: BoxFit.cover,
                       gaplessPlayback: true,
                     ),
