@@ -1,39 +1,78 @@
-import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
-import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/features/comments/providers/comment_provider.dart';
+import 'package:bemyday/features/comments/widgets/comment_input_avatar.dart';
+import 'package:bemyday/features/comments/widgets/comment_tile.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CommentsSheet extends StatefulWidget {
+class CommentsSheet extends ConsumerStatefulWidget {
   const CommentsSheet({
     super.key,
-    required this.scrollController,
+    required this.postId,
+    this.scrollController,
     required this.autofocus,
+    this.onCommentAdded,
   });
 
+  final String postId;
   final bool autofocus;
-
-  final ScrollController scrollController;
+  final ScrollController? scrollController;
+  final VoidCallback? onCommentAdded;
 
   @override
-  State<CommentsSheet> createState() => _CommentsSheetState();
+  ConsumerState<CommentsSheet> createState() => _CommentsSheetState();
 }
 
-class _CommentsSheetState extends State<CommentsSheet> {
+class _CommentsSheetState extends ConsumerState<CommentsSheet> {
   final TextEditingController _commentController = TextEditingController();
   String _comment = "";
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = widget.scrollController ?? ScrollController();
+  }
 
   @override
   void dispose() {
+    if (widget.scrollController == null) {
+      _scrollController.dispose();
+    }
     _commentController.dispose();
     super.dispose();
   }
 
   void _onCommentChanged(String value) {
-    setState(() {
-      _comment = value;
+    setState(() => _comment = value);
+  }
+
+  Future<void> _onSendComment() async {
+    final content = _comment.trim();
+    if (content.isEmpty) return;
+    _commentController.clear();
+    setState(() => _comment = '');
+    await ref
+        .read(commentRepositoryProvider)
+        .createComment(widget.postId, content);
+    ref.invalidate(commentsProvider(widget.postId));
+    widget.onCommentAdded?.call();
+
+    if (!mounted) return;
+    FocusScope.of(context).unfocus();
+
+    final comments = await ref.read(commentsProvider(widget.postId).future);
+    if (!mounted || comments.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -53,185 +92,184 @@ class _CommentsSheetState extends State<CommentsSheet> {
       ),
       child: Scaffold(
         backgroundColor: isDarkMode(context)
-            ? CustomColors.backgroundColorDark
-            : CustomColors.backgroundColorLight,
+            ? CustomColors.sheetColorDark
+            : CustomColors.sheetColorLight,
         body: Stack(
           children: [
-            CustomScrollView(
-              controller: widget.scrollController,
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  automaticallyImplyLeading: false,
-                  backgroundColor: isDarkMode(context)
-                      ? CustomColors.backgroundColorDark
-                      : CustomColors.backgroundColorLight,
-                  shape: Border(
-                    bottom: BorderSide(
-                      color: isDarkMode(context)
-                          ? CustomColors.borderDark
-                          : CustomColors.borderLight,
-                      width: Widths.devider,
-                    ),
-                  ),
-                  title: Text("Comments"),
-                  actions: [
-                    GestureDetector(
-                      onTap: _onClosePressed,
-                      child: FaIcon(
-                        FontAwesomeIcons.circleXmark,
-                        size: Sizes.size20,
-                      ),
-                    ),
-                  ],
+            GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              behavior: HitTestBehavior.opaque,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const ClampingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
-                SliverPadding(
-                  padding: EdgeInsets.only(
-                    left: Paddings.scaffoldH,
-                    right: Paddings.scaffoldH,
-                    top: Paddings.scaffoldV,
-                    bottom:
-                        kToolbarHeight +
-                        MediaQuery.of(context).padding.bottom +
-                        Paddings.scaffoldV * 2 +
-                        Sizes.size10,
-                  ),
-                  sliver: SliverList.separated(
-                    itemBuilder: (context, index) => Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: Sizes.size16,
-                        vertical: Sizes.size16,
-                      ),
-                      width: double.infinity,
-                      decoration: BoxDecoration(
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    automaticallyImplyLeading: false,
+                    backgroundColor: isDarkMode(context)
+                        ? CustomColors.sheetColorDark
+                        : CustomColors.sheetColorLight,
+                    shape: Border(
+                      bottom: BorderSide(
                         color: isDarkMode(context)
-                            ? CustomColors.nonClickableAreaDark
-                            : CustomColors.nonClickableAreaLight,
-                        borderRadius: BorderRadius.circular(Sizes.size24),
+                            ? CustomColors.borderDark
+                            : CustomColors.borderLight,
+                        width: Widths.devider,
                       ),
-                      child: Row(
-                        children: [
-                          AvatarDefault(
-                            nickname: "Bogus",
-                            radius: CustomSizes.avatarComment,
+                    ),
+                    title: Text("Comments"),
+                    actions: [
+                      GestureDetector(
+                        onTap: _onClosePressed,
+                        child: FaIcon(
+                          FontAwesomeIcons.circleXmark,
+                          size: Sizes.size20,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.only(
+                      bottom:
+                          kToolbarHeight +
+                          MediaQuery.of(context).padding.bottom +
+                          Paddings.scaffoldV * 2 +
+                          Sizes.size10,
+                    ),
+                    sliver: ref
+                        .watch(commentsProvider(widget.postId))
+                        .when(
+                          data: (comments) => SliverList.separated(
+                            itemBuilder: (context, index) {
+                              final comment = comments[index];
+                              return CommentTile(
+                                key: ValueKey(comment.id),
+                                commentId: comment.id,
+                                postId: widget.postId,
+                                authorId: comment.authorId,
+                                content: comment.content,
+                                createdAt: comment.createdAt,
+                                onCommentDeleted: widget.onCommentAdded,
+                              );
+                            },
+                            separatorBuilder: (context, index) =>
+                                SizedBox(height: 0),
+                            itemCount: comments.length,
                           ),
-                          CustomSizes.commentLeadingGap,
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      "Bogus",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    CustomSizes.commentDateGap,
-                                    Opacity(
-                                      opacity: 0.3,
-                                      child: Text(
-                                        "1hour before",
-                                        style: TextStyle(
-                                          fontSize: Sizes.size10,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  "commentsssss",
-                                  style: TextStyle(fontSize: Sizes.size12),
-                                ),
-                              ],
+                          loading: () => SliverToBoxAdapter(
+                            child: Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(Paddings.scaffoldV),
+                                child: CircularProgressIndicator(),
+                              ),
                             ),
                           ),
-                          FaIcon(FontAwesomeIcons.heart, size: Sizes.size20),
-                        ],
-                      ),
-                    ),
-                    separatorBuilder: (context, index) => Gaps.v16,
-                    itemCount: 20,
+                          error: (e, _) => SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.all(Paddings.scaffoldV),
+                              child: Text("Error: $e"),
+                            ),
+                          ),
+                        ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             Positioned(
               bottom: 0,
-              width: MediaQuery.of(context).size.width,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: isDarkMode(context)
-                          ? CustomColors.borderDark
-                          : CustomColors.borderLight,
-                      width: Widths.devider,
-                    ),
-                  ),
-                ),
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                top: false,
                 child: BottomAppBar(
                   padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
-                  color: isDarkMode(context)
-                      ? CustomColors.backgroundColorDark
-                      : CustomColors.backgroundColorLight,
                   child: Row(
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: _commentController,
-                          onChanged: _onCommentChanged,
-                          style: TextStyle(fontSize: Sizes.size14),
-                          cursorHeight: Sizes.size14,
-                          decoration: InputDecoration(
-                            prefixIcon: Padding(
-                              padding: EdgeInsets.only(left: 8, right: 8),
-                              child: AvatarDefault(
-                                nickname: "Bogus",
-                                radius: Sizes.size16,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(RValues.button),
+                          child: BackdropFilter(
+                            filter: Blurs.backdrop,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDarkMode(context)
+                                    ? Blurs.overlayColorDark
+                                    : Blurs.overlayColorLight,
+                                borderRadius: BorderRadius.circular(
+                                  RValues.button,
+                                ),
+                                border: Border.all(
+                                  color: isDarkMode(context)
+                                      ? CustomColors.borderDark
+                                      : CustomColors.borderLight,
+                                ),
                               ),
-                            ),
-                            prefixIconConstraints: BoxConstraints(
-                              minWidth: 0,
-                              minHeight: 0,
-                            ),
-                            suffixIcon: _comment.isNotEmpty
-                                ? Padding(
-                                    padding: EdgeInsets.only(right: 16),
-                                    child: FaIcon(
-                                      FontAwesomeIcons.circleArrowUp,
-                                      size: Sizes.size20,
+                              child: TextField(
+                                controller: _commentController,
+                                onChanged: _onCommentChanged,
+                                style: TextStyle(fontSize: Sizes.size14),
+                                cursorHeight: Sizes.size14,
+                                decoration: InputDecoration(
+                                  prefixIcon: Padding(
+                                    padding: EdgeInsets.only(
+                                      left: Paddings.buttonH,
+                                      right: Sizes.size8,
+                                      top: Paddings.buttonV,
+                                      bottom: Paddings.buttonV,
                                     ),
-                                  )
-                                : null,
-                            suffixIconConstraints: BoxConstraints(
-                              minWidth: 0,
-                              minHeight: 0,
-                            ),
-                            hintText: "Leave a comment...",
-                            hintStyle: TextStyle(
-                              color: isDarkMode(context)
-                                  ? CustomColors.hintColorDark
-                                  : CustomColors.hintColorLight,
-                            ),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: Paddings.buttonH,
-                              vertical: Paddings.buttonV,
-                            ),
-                            filled: true,
-                            fillColor: isDarkMode(context)
-                                ? CustomColors.clickableAreaDark
-                                : CustomColors.clickableAreaLight,
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(
-                                RValues.button,
+                                    child: CommentInputAvatar(),
+                                  ),
+                                  prefixIconConstraints: BoxConstraints(
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                  ),
+                                  suffixIcon: _comment.trim().isNotEmpty
+                                      ? GestureDetector(
+                                          onTap: _onSendComment,
+                                          child: Padding(
+                                            padding: EdgeInsets.only(
+                                              right: Paddings.buttonH,
+                                              left: Sizes.size8,
+                                              top: Paddings.buttonV,
+                                              bottom: Paddings.buttonV,
+                                            ),
+                                            child: FaIcon(
+                                              FontAwesomeIcons.circleArrowUp,
+                                              size: Sizes.size20,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                  suffixIconConstraints: BoxConstraints(
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                  ),
+                                  hintText: "Leave a comment...",
+                                  hintStyle: TextStyle(
+                                    color: isDarkMode(context)
+                                        ? CustomColors.hintColorDark
+                                        : CustomColors.hintColorLight,
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: Paddings.buttonH,
+                                    vertical: Paddings.buttonV,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.transparent,
+                                  border: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(
+                                      RValues.button,
+                                    ),
+                                  ),
+                                ),
+                                autocorrect: false,
+                                autofocus: widget.autofocus,
                               ),
                             ),
                           ),
-                          autocorrect: false,
-                          autofocus: widget.autofocus,
                         ),
                       ),
                     ],

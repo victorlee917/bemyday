@@ -23,7 +23,7 @@ class FriendsScreen extends ConsumerStatefulWidget {
 
 class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   void _onInviteTap() {
-    showInviteSheet(context);
+    showInviteSheet(context, ref);
   }
 
   @override

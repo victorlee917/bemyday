@@ -1,3 +1,4 @@
+import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
 import 'package:bemyday/common/widgets/stat/stats_collection.dart';
 import 'package:bemyday/constants/gaps.dart';
@@ -28,10 +29,12 @@ class FriendCard extends ConsumerWidget {
     final streaks = group?.streak ?? 0;
     final posts = group?.postCount ?? 0;
 
-    final memberNicknamesAsync =
-        group != null ? ref.watch(groupMemberNicknamesProvider(group!.id)) : null;
-    final memberCountAsync =
-        group != null ? ref.watch(groupMemberCountProvider(group!.id)) : null;
+    final memberNicknamesAsync = group != null
+        ? ref.watch(groupMemberNicknamesProvider(group!.id))
+        : null;
+    final memberCountAsync = group != null
+        ? ref.watch(groupMemberCountProvider(group!.id))
+        : null;
 
     final info = groupDisplayInfo(group, memberNicknamesAsync?.valueOrNull);
     final displayText = group == null
@@ -41,8 +44,8 @@ class FriendCard extends ConsumerWidget {
     final subTitle = memberCount == 1
         ? '1 member'
         : memberCount == 0
-            ? '0 members'
-            : '$memberCount members';
+        ? '0 members'
+        : '$memberCount members';
 
     return GestureDetector(
       onTap: () => _onCardTap(context),
@@ -56,6 +59,11 @@ class FriendCard extends ConsumerWidget {
               ? CustomColors.clickableAreaDark
               : CustomColors.clickableAreaLight,
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDarkMode(context)
+                ? CustomColors.borderDark
+                : CustomColors.borderLight,
+          ),
         ),
         child: Column(
           children: [
@@ -63,11 +71,19 @@ class FriendCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 AvatarPackage(
-                  nickname: displayText.length >= 1
+                  nickname: displayText.isNotEmpty
                       ? displayText.substring(0, 1).toLowerCase()
-                      : "?",
+                      : '?',
                   title: displayText,
-                  subTitle: memberCountAsync?.isLoading == true ? '…' : subTitle,
+                  avatarWidget: group != null
+                      ? AvatarGroupStack(
+                          groupId: group!.id,
+                          radius: CustomSizes.avatarComment,
+                        )
+                      : null,
+                  subTitle: memberCountAsync?.isLoading == true
+                      ? '…'
+                      : subTitle,
                 ),
               ],
             ),

@@ -107,6 +107,11 @@ class ConfirmDialog extends StatelessWidget {
                             ? CustomColors.clickableAreaDark
                             : CustomColors.clickableAreaLight,
                         borderRadius: BorderRadius.circular(RValues.button),
+                        border: Border.all(
+                          color: dark
+                              ? CustomColors.borderDark
+                              : CustomColors.borderLight,
+                        ),
                       ),
                       child: Text(
                         cancelLabel,
@@ -131,6 +136,11 @@ class ConfirmDialog extends StatelessWidget {
                             ? CustomColors.clickableAreaDark
                             : CustomColors.clickableAreaLight,
                         borderRadius: BorderRadius.circular(RValues.button),
+                        border: Border.all(
+                          color: dark
+                              ? CustomColors.borderDark
+                              : CustomColors.borderLight,
+                        ),
                       ),
                       child: Text(
                         confirmLabel,

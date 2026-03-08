@@ -7,11 +7,15 @@ class WeekdayPickerItem {
     required this.weekdayIndex,
     this.subTitle,
     this.group,
+    this.memberCount,
   });
 
   final int weekdayIndex;
   final String? subTitle;
   final Group? group;
+
+  /// invite 모드 dimmed 판단용. null이면 provider에서 조회
+  final int? memberCount;
 
   Weekday get weekday => weekdays[weekdayIndex];
 }
@@ -19,13 +23,22 @@ class WeekdayPickerItem {
 /// 요일 피커용 WeekdayPickerItem 목록 생성
 ///
 /// [postingOnly]: true면 참여 그룹이 있는 요일만 반환
+/// [memberCounts]: invite 모드 dimmed 판단용. group.id → 멤버 수
 List<WeekdayPickerItem> buildWeekdayPickerItems(
   List<Group> groups, {
   bool postingOnly = false,
+  Map<String, int>? memberCounts,
 }) {
   final items = weekdays.asMap().entries.map((e) {
     final group = groupForWeekday(groups, e.key);
-    return WeekdayPickerItem(weekdayIndex: e.key, group: group);
+    final count = group != null && memberCounts != null
+        ? memberCounts[group.id]
+        : null;
+    return WeekdayPickerItem(
+      weekdayIndex: e.key,
+      group: group,
+      memberCount: count,
+    );
   });
   if (postingOnly) {
     return items.where((i) => i.group != null).toList();
@@ -141,23 +154,36 @@ int computeSoonestWeekdayIndex(List<Group> groups) {
   return (soonest!.weekday - 1) % 7;
 }
 
-/// 그룹별 주차: 생성 후 해당 요일이 몇 번 지났는지
+/// 이번 주차에서 대상 요일이 아직 도래하지 않았는지 여부.
 ///
-/// - 첫 번째 {요일} 전: Week 1
-/// - 두 번째 {요일} 전: Week 2
+/// true → 아직 해당 요일이 오지 않음 (다른 유저의 포스트 blur 처리 대상).
+/// 현재 주차가 아닌 경우(과거 주차)는 항상 false (이미 공개됨).
+bool isCurrentWeekBeforeReveal(Group group, {int? viewingWeekIndex}) {
+  final currentWeek = groupWeekNumber(group);
+  if ((viewingWeekIndex ?? currentWeek) != currentWeek) return false;
+  return DateTime.now().weekday != group.weekday;
+}
+
+/// 그룹별 주차: 생성 후 해당 요일이 몇 번 도래했는지
+///
+/// - 첫 번째 {요일}이 끝나기 전: Week 1
+/// - 첫 번째 {요일}이 끝난 뒤 ~ 두 번째 {요일}이 끝나기 전: Week 2
+///
+/// "첫 번째 {요일}"은 생성일 당일 또는 이후 가장 가까운 해당 요일.
+/// 경계는 해당 요일의 다음 날 00:00 (예: 월요일 그룹 → 화요일 00:00).
 int groupWeekNumber(Group group) {
   final now = DateTime.now();
-  // DB는 UTC로 저장 → 로컬 시간으로 변환해 now와 비교
   final createdAt = group.createdAt.toLocal();
   final targetWeekday = group.weekday; // 1=Mon ~ 7=Sun
 
   final createDate = DateTime(createdAt.year, createdAt.month, createdAt.day);
   final daysToFirst = (targetWeekday - createdAt.weekday + 7) % 7;
   final firstOccurrence = createDate.add(Duration(days: daysToFirst));
+  final firstBoundary = firstOccurrence.add(const Duration(days: 1));
 
   final nowDate = DateTime(now.year, now.month, now.day);
-  if (nowDate.isBefore(firstOccurrence)) return 1;
+  if (nowDate.isBefore(firstBoundary)) return 1;
 
-  final daysSinceFirst = nowDate.difference(firstOccurrence).inDays;
-  return 2 + (daysSinceFirst ~/ 7);
+  final daysSinceBoundary = nowDate.difference(firstBoundary).inDays;
+  return 2 + (daysSinceBoundary ~/ 7);
 }

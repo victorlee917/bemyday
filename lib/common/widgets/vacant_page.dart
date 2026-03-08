@@ -14,7 +14,7 @@ class VacantPage extends StatelessWidget {
     super.key,
     required this.message,
     this.onInviteTap,
-    this.buttonLabel = 'Invite Friend',
+    this.buttonLabel = 'Invite Friends',
   });
 
   final String message;
@@ -52,6 +52,11 @@ class VacantPage extends StatelessWidget {
                       ? CustomColors.clickableAreaDark
                       : CustomColors.clickableAreaLight,
                   borderRadius: BorderRadius.circular(RValues.button),
+                  border: Border.all(
+                    color: isDarkMode(context)
+                        ? CustomColors.borderDark
+                        : CustomColors.borderLight,
+                  ),
                 ),
                 child: Text(
                   buttonLabel,

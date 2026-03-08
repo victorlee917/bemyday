@@ -1,14 +1,17 @@
+import 'dart:ui';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:flutter/material.dart';
 
 class Paddings {
   static const scaffoldH = Sizes.size16;
   static const scaffoldV = Sizes.size16;
-  static const profileV = Sizes.size32;
+  static const profileV = Sizes.size64;
   static const tileH = Sizes.size24;
   static const tileV = Sizes.size20;
   static const buttonH = Sizes.size16;
   static const buttonV = Sizes.size14;
+  static const bannerH = Sizes.size20;
+  static const bannerV = Sizes.size14;
   static const dropdownH = Sizes.size20;
   static const dropdownV = Sizes.size12;
 }
@@ -17,11 +20,11 @@ class RValues {
   static const button = Sizes.size32;
   static const island = Sizes.size24;
   static const thumbnail = Sizes.size24;
-  static const bottomsheet = Sizes.size14;
+  static const bottomsheet = Sizes.size36;
 }
 
 class ARatio {
-  static const common = 4 / 5;
+  static const common = 2 / 3;
 }
 
 class Widths {
@@ -33,22 +36,30 @@ class Heights {
 }
 
 class CustomColors {
-  static const primaryColorLight = Color.fromRGBO(0, 108, 255, 1.0);
-  static const primaryColorDark = Color.fromRGBO(0, 108, 255, 1.0);
-  static const backgroundColorLight = Color.fromRGBO(245, 245, 245, 1.0);
-  static const backgroundColorDark = Color.fromRGBO(10, 10, 10, 1.0);
-  static const sheetColorLight = Color.fromRGBO(240, 240, 240, 1.0);
-  static const sheetColorDark = Color.fromRGBO(15, 15, 15, 1.0);
-  static const clickableAreaLight = Color.fromRGBO(235, 235, 235, 1.0);
-  static const clickableAreaDark = Color.fromRGBO(20, 20, 20, 1.0);
-  static const nonClickableAreaLight = Color.fromRGBO(225, 225, 225, 1.0);
-  static const nonClickableAreaDark = Color.fromRGBO(30, 30, 30, 1.0);
+  static const primaryColorLight = Color.fromRGBO(235, 235, 235, 1.0);
+  static const primaryColorDark = Color.fromRGBO(20, 20, 20, 1.0);
+  static const backgroundColorLight = Color.fromRGBO(255, 255, 255, 1.0);
+  static const backgroundColorDark = Color.fromRGBO(0, 0, 0, 1.0);
+  static const sheetColorLight = Color.fromRGBO(250, 250, 250, 1.0);
+  static const sheetColorDark = Color.fromRGBO(5, 5, 5, 1.0);
+  static const clickableAreaLight = Color.fromRGBO(242, 242, 242, 1.0);
+  static const clickableAreaDark = Color.fromRGBO(13, 13, 13, 1.0);
+  static const nonClickableAreaLight = Color.fromRGBO(245, 245, 245, 1.0);
+  static const nonClickableAreaDark = Color.fromRGBO(10, 10, 10, 1.0);
   static const borderLight = Color.fromRGBO(13, 13, 13, 0.05);
   static const borderDark = Color.fromRGBO(242, 242, 242, 0.05);
   static const hintColorDark = Color.fromRGBO(255, 255, 255, 0.3);
   static const hintColorLight = Color.fromRGBO(0, 0, 0, 0.3);
   static const destructiveColorDark = Color.fromRGBO(255, 73, 64, 1.0);
   static const destructiveColorLight = Color.fromRGBO(255, 73, 64, 1.0);
+}
+
+class Blurs {
+  static const sigma = 10.0;
+  static final backdrop = ImageFilter.blur(sigmaX: sigma, sigmaY: sigma);
+  static const overlayColor = Color.fromRGBO(0, 0, 0, 0.2);
+  static const overlayColorLight = Color.fromRGBO(255, 255, 255, 0.3);
+  static const overlayColorDark = Color.fromRGBO(0, 0, 0, 0.3);
 }
 
 class CustomSizes {

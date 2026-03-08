@@ -1,4 +1,4 @@
-import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
+import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/close_app_bar_button.dart';
 import 'package:bemyday/common/widgets/stat/stats_collection.dart';
 import 'package:bemyday/constants/gaps.dart';
@@ -9,7 +9,8 @@ import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/party/party_detail_screen.dart';
-import 'package:bemyday/features/party/widgets/week_section.dart';
+import 'package:bemyday/features/party/widgets/week_grid_card.dart';
+import 'package:bemyday/features/post/providers/post_provider.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,14 +45,16 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
     final streaks = group?.streak ?? 0;
     final posts = group?.postCount ?? 0;
 
-    final memberNicknamesAsync =
-        group != null ? ref.watch(groupMemberNicknamesProvider(group.id)) : null;
-
+    final memberNicknamesAsync = group != null
+        ? ref.watch(groupMemberNicknamesProvider(group.id))
+        : null;
+    final displayNameAsync = group != null
+        ? ref.watch(groupDisplayNameProvider(group.id))
+        : null;
     final info = groupDisplayInfo(group, memberNicknamesAsync?.valueOrNull);
-    final displayText = info.subTitle ?? info.nickname;
-    final title = group != null
-        ? weekdays[group.weekday - 1].name
-        : 'Monday';
+    final displayText =
+        displayNameAsync?.valueOrNull ?? info.subTitle ?? info.nickname;
+    final title = group != null ? weekdays[group.weekday - 1].name : 'Monday';
 
     return Scaffold(
       appBar: AppBar(
@@ -66,9 +69,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
             ),
           ),
         ),
-        actions: [
-          CloseAppBarButton(onTap: _onCloseTap),
-        ],
+        actions: [CloseAppBarButton(onTap: _onCloseTap)],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(top: Paddings.profileV),
@@ -82,11 +83,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
                 children: [
                   GestureDetector(
                     onTap: _onDetailTap,
-                    child: AvatarDefault(
-                      nickname: displayText.isNotEmpty
-                          ? displayText.substring(0, 1)
-                          : "?",
-                    ),
+                    child: group != null
+                        ? AvatarGroupStack(groupId: group.id)
+                        : AvatarGroupStack(groupId: ''),
                   ),
                   CustomSizes.profileBSpacing,
                   GestureDetector(
@@ -110,9 +109,14 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
                     height: Sizes.size80,
                     decoration: BoxDecoration(
                       color: isDarkMode(context)
-                          ? CustomColors.clickableAreaDark
-                          : CustomColors.clickableAreaLight,
+                          ? CustomColors.nonClickableAreaDark
+                          : CustomColors.nonClickableAreaLight,
                       borderRadius: BorderRadius.circular(RValues.island),
+                      border: Border.all(
+                        color: isDarkMode(context)
+                            ? CustomColors.borderDark
+                            : CustomColors.borderLight,
+                      ),
                     ),
                     child: StatsCollection(
                       stats: [
@@ -126,18 +130,77 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
               ),
             ),
             Gaps.v24,
-            ListView.separated(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) =>
-                  WeekSection(week: weeks),
-              separatorBuilder: (context, index) =>
-                  SizedBox(height: CustomSizes.sectionGap),
-              itemCount: 5,
+            if (group != null) _buildWeekGrid(group, weeks),
+            SizedBox(
+              height: MediaQuery.of(context).padding.bottom + Sizes.size24,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildWeekGrid(Group group, int currentWeek) {
+    final summariesAsync = ref.watch(weekPostSummariesProvider(group));
+
+    return summariesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (summaries) {
+        final currentSummary = summaries
+            .where((s) => s.weekIndex == currentWeek)
+            .firstOrNull;
+        final pastWeeks = summaries
+            .where((s) => s.weekIndex != currentWeek)
+            .toList();
+
+        final items = <WeekGridItem>[
+          WeekGridItem(
+            weekIndex: currentWeek,
+            postCount: currentSummary?.postCount ?? 0,
+            authorIds: currentSummary?.authorIds ?? [],
+            latestPost: currentSummary?.latestPost,
+            isCurrentWeek: true,
+          ),
+          for (final w in pastWeeks)
+            WeekGridItem(
+              weekIndex: w.weekIndex,
+              postCount: w.postCount,
+              authorIds: w.authorIds,
+              latestPost: w.latestPost,
+              isCurrentWeek: false,
+            ),
+        ];
+
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const crossAxisSpacing = 12.0;
+              const mainAxisSpacing = 20.0;
+              const labelHeight = 36.0;
+              final cellWidth = (constraints.maxWidth - crossAxisSpacing) / 2;
+              final cardHeight = cellWidth / ARatio.common;
+              final cellHeight = cardHeight + labelHeight;
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: crossAxisSpacing,
+                  mainAxisSpacing: mainAxisSpacing,
+                  childAspectRatio: cellWidth / cellHeight,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  return WeekGridCard(item: items[index], group: group);
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

@@ -83,12 +83,26 @@ final groupMemberAvatarsProvider =
 });
 
 /// 그룹 표시명 (group.name ?? 첫 멤버 닉네임)
+///
+/// currentUserGroupsProvider를 watch하여 DB 업데이트 시 자동 갱신
 final groupDisplayNameProvider =
-    FutureProvider.family<String, Group>((ref, group) async {
-  if (group.name != null && group.name!.trim().isNotEmpty) {
+    FutureProvider.family<String, String>((ref, groupId) async {
+  final groups = await ref.watch(currentUserGroupsProvider.future);
+  final group = groups.where((g) => g.id == groupId).firstOrNull;
+  if (group != null && group.name != null && group.name!.trim().isNotEmpty) {
     return group.name!.trim();
   }
   final nicknames =
-      await ref.read(groupMemberNicknamesProvider(group.id).future);
+      await ref.read(groupMemberNicknamesProvider(groupId).future);
   return nicknames.isNotEmpty ? nicknames.first : 'My Day';
+});
+
+/// 그룹 첫 멤버 프로필 사진 URL
+///
+/// groupDisplayNameProvider와 독립적이므로 이름 변경 시 깜빡이지 않음
+final groupFirstAvatarProvider =
+    FutureProvider.family<String?, String>((ref, groupId) async {
+  final avatars =
+      await ref.read(groupMemberAvatarsProvider(groupId).future);
+  return avatars.isNotEmpty ? avatars.first.avatarUrl : null;
 });

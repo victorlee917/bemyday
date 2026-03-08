@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-
+import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_weekday_picker.dart';
 import 'package:bemyday/features/group/utils.dart';
@@ -10,6 +9,7 @@ import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/invite/invite_utils.dart';
 import 'package:bemyday/features/posting/viewmodels/posting_viewmodel.dart';
+import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,8 +57,10 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
   @override
   void initState() {
     super.initState();
-    _selectedWeekday = weekdays[
-        widget.selectedWeekdayIndex ?? (DateTime.now().weekday - 1) % 7].name;
+    _selectedWeekday =
+        weekdays[widget.selectedWeekdayIndex ??
+                (DateTime.now().weekday - 1) % 7]
+            .name;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -86,9 +88,7 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
       w = (w * scale).round();
       h = (h * scale).round();
     }
-    final data = await widget.asset.thumbnailDataWithSize(
-      ThumbnailSize(w, h),
-    );
+    final data = await widget.asset.thumbnailDataWithSize(ThumbnailSize(w, h));
     if (data != null && mounted) {
       setState(() => _highResImage = data);
     }
@@ -138,14 +138,12 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
     try {
       await ref.read(postingViewModelProvider).createPost(group, file);
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(group);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isPosting = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('포스트 저장 실패: $e')));
+        showAppSnackBar(context, '포스트 저장 실패: $e');
       }
     }
   }
@@ -158,8 +156,10 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
         _selectedWeekdayIndex == null &&
         !_hasSyncedWeekdayFromGroups) {
       _hasSyncedWeekdayFromGroups = true;
-      final idx =
-          effectivePostingWeekdayIndex(groups, widget.selectedWeekdayIndex);
+      final idx = effectivePostingWeekdayIndex(
+        groups,
+        widget.selectedWeekdayIndex,
+      );
       if (weekdays[idx].name != _selectedWeekday) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) setState(() => _selectedWeekday = weekdays[idx].name);
@@ -177,12 +177,11 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
     final weekdayIndex = _currentWeekdayIndex();
     final group = groupForWeekday(groups, weekdayIndex);
     final displayNameAsync = group != null
-        ? ref.watch(groupDisplayNameProvider(group))
+        ? ref.watch(groupDisplayNameProvider(group.id))
         : null;
     final memberNicknamesAsync = group != null
         ? ref.watch(groupMemberNicknamesProvider(group.id))
         : null;
-
     final info = groupDisplayInfo(group, memberNicknamesAsync?.valueOrNull);
     final nickname = displayNameAsync?.valueOrNull ?? info.nickname;
     final subTitle = info.subTitle;
@@ -205,10 +204,14 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
                   tag: 'photo_${widget.asset.id}',
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(RValues.island),
-                    child: Image.memory(
-                      _highResImage ?? widget.thumbnail!,
-                      fit: BoxFit.cover,
-                      gaplessPlayback: true,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (widget.thumbnail != null)
+                          Image.memory(widget.thumbnail!, fit: BoxFit.cover),
+                        if (_highResImage != null)
+                          Image.memory(_highResImage!, fit: BoxFit.cover),
+                      ],
                     ),
                   ),
                 ),
@@ -221,9 +224,11 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
                     opacity: _fadeAnimation,
                     child: GestureDetector(
                       onTap: _onCloseTap,
-                      child: FaIcon(
-                        FontAwesomeIcons.circleXmark,
-                        color: Colors.white,
+                      child: _IconWithShadow(
+                        child: FaIcon(
+                          FontAwesomeIcons.circleXmark,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -246,33 +251,48 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
                           Expanded(
                             child: GestureDetector(
                               onTap: _onWeekdayTap,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: Paddings.buttonH,
-                                  vertical: Paddings.buttonV,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  RValues.button,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: CustomColors.clickableAreaDark,
-                                  borderRadius: BorderRadius.circular(
-                                    RValues.button,
+                                child: BackdropFilter(
+                                  filter: Blurs.backdrop,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: Paddings.buttonH,
+                                      vertical: Paddings.buttonV,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Blurs.overlayColor,
+                                      borderRadius: BorderRadius.circular(
+                                        RValues.button,
+                                      ),
+                                      border: Border.all(
+                                        color: CustomColors.borderDark,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        AvatarPackage(
+                                          nickname: nickname,
+                                          avatarWidget: AvatarGroupStack(
+                                            groupId: group.id,
+                                            radius: CustomSizes.avatarComment,
+                                          ),
+                                          title: _selectedWeekday,
+                                          isDarkOnly: true,
+                                          subTitle: subTitle,
+                                          childTitle: childTitle,
+                                        ),
+                                        Gaps.h6,
+                                        FaIcon(
+                                          FontAwesomeIcons.chevronDown,
+                                          color: Colors.white,
+                                          size: Sizes.size12,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    AvatarPackage(
-                                      nickname: nickname,
-                                      title: _selectedWeekday,
-                                      isDarkOnly: true,
-                                      subTitle: subTitle,
-                                      childTitle: childTitle,
-                                    ),
-                                    Gaps.h6,
-                                    FaIcon(
-                                      FontAwesomeIcons.chevronDown,
-                                      color: Colors.white,
-                                      size: Sizes.size12,
-                                    ),
-                                  ],
                                 ),
                               ),
                             ),
@@ -280,30 +300,41 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
                           CustomSizes.commentTrailingGap,
                           GestureDetector(
                             onTap: _isPosting ? null : _onPostTap,
-                            child: Container(
-                              alignment: Alignment.center,
-                              width: Sizes.size48,
-                              height: Sizes.size48,
-                              decoration: BoxDecoration(
-                                color: CustomColors.clickableAreaDark,
-                                borderRadius: BorderRadius.circular(
-                                  Sizes.size36,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                Sizes.size36,
+                              ),
+                              child: BackdropFilter(
+                                filter: Blurs.backdrop,
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  width: Sizes.size48,
+                                  height: Sizes.size48,
+                                  decoration: BoxDecoration(
+                                    color: Blurs.overlayColor,
+                                    borderRadius: BorderRadius.circular(
+                                      Sizes.size36,
+                                    ),
+                                    border: Border.all(
+                                      color: CustomColors.borderDark,
+                                    ),
+                                  ),
+                                  child: _isPosting
+                                      ? SizedBox(
+                                          width: Sizes.size24,
+                                          height: Sizes.size24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : FaIcon(
+                                          FontAwesomeIcons.circleArrowRight,
+                                          color: Colors.white,
+                                          size: Sizes.size24,
+                                        ),
                                 ),
                               ),
-                              child: _isPosting
-                                  ? SizedBox(
-                                      width: Sizes.size24,
-                                      height: Sizes.size24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                    )
-                                  : FaIcon(
-                                      FontAwesomeIcons.circleArrowRight,
-                                      color: Theme.of(context).primaryColor,
-                                      size: Sizes.size28,
-                                    ),
                             ),
                           ),
                         ],
@@ -316,6 +347,29 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _IconWithShadow extends StatelessWidget {
+  const _IconWithShadow({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 6,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }

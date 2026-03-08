@@ -8,26 +8,36 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class PostBottomBar extends StatelessWidget {
   final String nickname;
+  final String? avatarUrl;
   final String date;
   final int likeCount;
   final int commentCount;
-  final List<String> likedUsers;
+  final bool isLiked;
+  final List<String> likedUserIds;
+  final int? postIndex;
+  final int? postCount;
   final VoidCallback? onLikeTap;
   final VoidCallback? onCommentTap;
+  final bool hideLikeComment;
 
   const PostBottomBar({
     super.key,
     required this.nickname,
+    this.avatarUrl,
     required this.date,
     required this.likeCount,
     required this.commentCount,
-    this.likedUsers = const [],
+    this.isLiked = false,
+    this.likedUserIds = const [],
+    this.postIndex,
+    this.postCount,
     this.onLikeTap,
     this.onCommentTap,
+    this.hideLikeComment = false,
   });
 
   void _onLikeLongPress(BuildContext context) {
-    if (likedUsers.isEmpty) return;
+    if (likedUserIds.isEmpty) return;
 
     showModalBottomSheet(
       context: context,
@@ -38,9 +48,8 @@ class PostBottomBar extends StatelessWidget {
         minChildSize: 0.2,
         maxChildSize: 0.8,
         expand: false,
-        builder: (context, scrollController) => LikesSheet(
-          likedUsers: likedUsers,
-        ),
+        builder: (context, scrollController) =>
+            LikesSheet(likedUserIds: likedUserIds),
       ),
     );
   }
@@ -53,45 +62,61 @@ class PostBottomBar extends StatelessWidget {
         children: [
           AvatarPackage(
             nickname: nickname,
-            title: "Bogus",
+            avatarUrl: avatarUrl,
+            title: nickname,
             isDarkOnly: true,
-            subTitle: "Post 3 of 5",
-            childTitle: "yesterday",
+            subTitle: postIndex != null && postCount != null
+                ? "Post $postIndex of $postCount"
+                : null,
+            childTitle: date,
           ),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: onLikeTap,
-                onLongPress: () => _onLikeLongPress(context),
-                child: Row(
-                  children: [
-                    FaIcon(
-                      FontAwesomeIcons.heart,
-                      size: Sizes.size24,
-                      color: Colors.white,
-                    ),
-                    Gaps.h10,
-                    Text("3", style: TextStyle(color: Colors.white)),
-                  ],
+          if (!hideLikeComment)
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: onLikeTap,
+                  onLongPress: () => _onLikeLongPress(context),
+                  child: Row(
+                    children: [
+                      FaIcon(
+                        isLiked
+                            ? FontAwesomeIcons.solidHeart
+                            : FontAwesomeIcons.heart,
+                        size: Sizes.size24,
+                        color: isLiked ? Colors.redAccent : Colors.white,
+                      ),
+                      Gaps.h10,
+                      if (likeCount > 0) ...[
+                        Text(
+                          "$likeCount",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              Gaps.h16,
-              GestureDetector(
-                onTap: onCommentTap,
-                child: Row(
-                  children: [
-                    FaIcon(
-                      FontAwesomeIcons.comment,
-                      size: Sizes.size24,
-                      color: Colors.white,
-                    ),
-                    Gaps.h10,
-                    Text("3", style: TextStyle(color: Colors.white)),
-                  ],
+                Gaps.h16,
+                GestureDetector(
+                  onTap: onCommentTap,
+                  child: Row(
+                    children: [
+                      FaIcon(
+                        FontAwesomeIcons.comment,
+                        size: Sizes.size24,
+                        color: Colors.white,
+                      ),
+                      if (commentCount > 0) ...[
+                        Gaps.h10,
+                        Text(
+                          "$commentCount",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );

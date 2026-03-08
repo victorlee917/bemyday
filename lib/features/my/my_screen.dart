@@ -104,6 +104,11 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                       ? CustomColors.clickableAreaDark
                       : CustomColors.clickableAreaLight,
                   borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDarkMode(context)
+                        ? CustomColors.borderDark
+                        : CustomColors.borderLight,
+                  ),
                 ),
                 child: Opacity(
                   opacity: 0.5,
@@ -142,7 +147,10 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                 TilesSection(
                   title: "BMD",
                   items: [
-                    TileBrowse(title: "Instagram", url: "https://naver.com"),
+                    TileBrowse(
+                      title: "Instagram",
+                      url: "https://www.instagram.com/bemyday.app",
+                    ),
                     TileBrowse(
                       title: "Privacy Policy",
                       url: "https://www.bemyday.app/privacy",

@@ -1,4 +1,4 @@
-import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
+import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/timeleft_chip.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
@@ -6,7 +6,6 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
-import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/home/widgets/more_button.dart';
 import 'package:bemyday/features/home/widgets/post_empty.dart';
 import 'package:bemyday/features/home/widgets/post_stack.dart';
@@ -33,7 +32,8 @@ class WeekdayOccupied extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final displayNameAsync = ref.watch(groupDisplayNameProvider(group));
+    final displayName =
+        ref.watch(groupDisplayNameProvider(group.id)).valueOrNull ?? '…';
 
     return Padding(
       padding: EdgeInsetsGeometry.only(top: Paddings.profileV),
@@ -44,69 +44,31 @@ class WeekdayOccupied extends ConsumerWidget {
             onTap: () => _onAvatarTap(context),
             child: Column(
               children: [
-                displayNameAsync.when(
-                  data: (displayName) => Column(
-                    children: [
-                      AvatarDefault(nickname: displayName),
-                      CustomSizes.profileBSpacing,
-                      Text(
-                        "$displayName is\nMy ${weekdays[weekdayIndex].name}",
-                        style: GoogleFonts.darumadropOne(
-                          textStyle: TextStyle(
-                            fontSize: Sizes.size28,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                AvatarGroupStack(groupId: group.id),
+                CustomSizes.profileBSpacing,
+                Text(
+                  "$displayName is\nMy ${weekdays[weekdayIndex].name}",
+                  style: GoogleFonts.darumadropOne(
+                    textStyle: TextStyle(
+                      fontSize: Sizes.size28,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  loading: () => Column(
-                    children: [
-                      AvatarDefault(nickname: '…'),
-                      CustomSizes.profileBSpacing,
-                      Text(
-                        "… is\nMy ${weekdays[weekdayIndex].name}",
-                        style: GoogleFonts.darumadropOne(
-                          textStyle: TextStyle(
-                            fontSize: Sizes.size28,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                  error: (_, __) => Column(
-                    children: [
-                      AvatarDefault(nickname: 'My Day'),
-                      CustomSizes.profileBSpacing,
-                      Text(
-                        "My Day is\nMy ${weekdays[weekdayIndex].name}",
-                        style: GoogleFonts.darumadropOne(
-                          textStyle: TextStyle(
-                            fontSize: Sizes.size28,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
-          Gaps.v16,
+          Gaps.v20,
           TimeleftChip(targetWeekday: group.weekday),
-          Gaps.v16,
+          Gaps.v24,
           Expanded(
             child: Center(
               child: ref
                   .watch(hasCurrentWeekPostsProvider(group))
                   .when(
                     data: (hasPosts) => hasPosts
-                        ? PostStack()
+                        ? PostStack(group: group)
                         : PostEmpty(weekdayIndex: weekdayIndex),
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),

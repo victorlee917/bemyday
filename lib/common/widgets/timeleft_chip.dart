@@ -54,8 +54,8 @@ class _TimeleftChipState extends State<TimeleftChip> {
     final interval = remaining.inSeconds < 60
         ? const Duration(seconds: 1)
         : remaining.inSeconds < 3600
-            ? const Duration(minutes: 1)
-            : const Duration(hours: 1);
+        ? const Duration(minutes: 1)
+        : const Duration(hours: 1);
     _timer = Timer.periodic(interval, (_) {
       if (mounted) _updateText();
     });
@@ -66,7 +66,7 @@ class _TimeleftChipState extends State<TimeleftChip> {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: Sizes.size12,
-        vertical: Sizes.size6,
+        vertical: Sizes.size4,
       ),
       decoration: BoxDecoration(
         color: isDarkMode(context)

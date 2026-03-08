@@ -64,6 +64,8 @@ class _PostingWeekdayPickerRow extends ConsumerWidget {
     final group = item.group!;
     final memberNicknamesAsync =
         ref.watch(groupMemberNicknamesProvider(group.id));
+    final avatarUrl =
+        ref.watch(groupFirstAvatarProvider(group.id)).valueOrNull;
     final info = groupDisplayInfo(group, memberNicknamesAsync.valueOrNull);
 
     return SheetWidget(
@@ -71,6 +73,7 @@ class _PostingWeekdayPickerRow extends ConsumerWidget {
         children: [
           AvatarPackage(
             nickname: info.nickname,
+            avatarUrl: avatarUrl,
             title: item.weekday.name,
             subTitle: info.subTitle,
             isDarkOnly: isDarkOnly,
@@ -84,6 +87,10 @@ class _PostingWeekdayPickerRow extends ConsumerWidget {
 }
 
 /// 한 요일 행: canInvite(멤버 0~1명) vs dimmed(멤버 2명+)
+///
+/// 참여 그룹 존재 && 멤버 2명 이상(currentUser 포함) → dimmed, 초대 불가
+///
+/// item.memberCount가 있으면 사용 (invite 시 build 시점에 주입), 없으면 provider watch
 class _WeekdayPickerRow extends ConsumerWidget {
   const _WeekdayPickerRow({
     required this.item,
@@ -97,28 +104,27 @@ class _WeekdayPickerRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final memberCountAsync = item.group != null
-        ? ref.watch(groupMemberCountProvider(item.group!.id))
-        : null;
+    final int? count;
+    if (item.memberCount != null) {
+      count = item.memberCount;
+    } else if (item.group != null) {
+      count = ref.watch(groupMemberCountProvider(item.group!.id)).valueOrNull;
+    } else {
+      count = null;
+    }
 
-    final isDimmed = memberCountAsync?.valueOrNull != null &&
-        memberCountAsync!.valueOrNull! >= 2;
+    final isDimmed = count != null && count >= 8;
 
-    final canInvite = item.group == null ||
-        (memberCountAsync?.valueOrNull ?? 0) < 2;
+    final canInvite = item.group == null || (count ?? 0) < 8;
 
-    final subTitle = canInvite
-        ? 'Can Invite'
-        : (item.subTitle != null
-            ? item.subTitle
-            : null);
+    final subTitle = canInvite ? 'Can Invite' : item.subTitle;
 
     return SheetWidget(
       left: Row(
         children: [
           item.group == null
               ? AvatarPackage(
-                  nickname: item.weekday.shortestName,
+                  nickname: item.weekday.name,
                   title: item.weekday.name,
                   subTitle: subTitle ?? 'Can Invite',
                   isDarkOnly: isDarkOnly,
@@ -154,7 +160,16 @@ class _GroupAvatarPackage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final group = item.group!;
+    final memberAvatarsAsync = ref.watch(groupMemberAvatarsProvider(group.id));
     final memberNicknamesAsync = ref.watch(groupMemberNicknamesProvider(group.id));
+
+    final avatars = memberAvatarsAsync.valueOrNull;
+    final firstAvatarUrl = avatars != null && avatars.isNotEmpty
+        ? avatars.first.avatarUrl
+        : null;
+    final firstNickname = avatars != null && avatars.isNotEmpty
+        ? avatars.first.nickname
+        : item.weekday.name;
 
     final raw = memberNicknamesAsync.valueOrNull;
     final others = raw != null ? memberNicknamesExcludingCurrent(raw) : null;
@@ -174,12 +189,9 @@ class _GroupAvatarPackage extends ConsumerWidget {
                 : 'Already Full')
             : groupOrNicknames);
 
-    final displayText = subTitle ?? item.weekday.name;
-
     return AvatarPackage(
-      nickname: displayText.isNotEmpty
-          ? displayText.substring(0, 1).toLowerCase()
-          : item.weekday.shortestName,
+      nickname: firstNickname,
+      avatarUrl: firstAvatarUrl,
       title: item.weekday.name,
       subTitle: subTitle,
       isDarkOnly: isDarkOnly,

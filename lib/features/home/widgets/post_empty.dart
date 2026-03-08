@@ -1,6 +1,8 @@
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/features/group/models/group.dart';
+import 'package:bemyday/features/post/post_screen.dart';
 import 'package:bemyday/features/posting/posting_album_screen.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
@@ -17,11 +19,20 @@ class PostEmpty extends StatelessWidget {
   final int weekdayIndex;
   final VoidCallback? onPostTap;
 
-  void _onPostTap(BuildContext context) {
+  void _onPostTap(BuildContext context) async {
     if (onPostTap != null) {
       onPostTap!();
     } else {
-      context.push(PostingAlbumScreen.routeUrl, extra: weekdayIndex);
+      final result = await context.push(
+        PostingAlbumScreen.routeUrl,
+        extra: weekdayIndex,
+      );
+      if (result is Group && context.mounted) {
+        context.push(
+          PostScreen.routeUrl,
+          extra: {'group': result, 'startFromLatest': true},
+        );
+      }
     }
   }
 
@@ -34,10 +45,8 @@ class PostEmpty extends StatelessWidget {
           FractionallySizedBox(
             heightFactor: 0.95,
             child: AspectRatio(
-              aspectRatio: 2 / 3,
+              aspectRatio: ARatio.common,
               child: Container(
-                width: 200,
-                height: 300,
                 decoration: BoxDecoration(
                   color: isDarkMode(context)
                       ? CustomColors.clickableAreaDark
@@ -46,7 +55,7 @@ class PostEmpty extends StatelessWidget {
                     color: isDarkMode(context)
                         ? CustomColors.borderDark
                         : CustomColors.borderLight,
-                    width: Sizes.size10,
+                    width: Sizes.size1,
                   ),
                   borderRadius: BorderRadius.circular(RValues.thumbnail),
                 ),

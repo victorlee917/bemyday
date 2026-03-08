@@ -7,14 +7,17 @@ import 'package:bemyday/common/widgets/sheet/sheet_select.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/constants/transitions.dart';
+import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/invite/invite_utils.dart';
+import 'package:bemyday/features/post/providers/post_provider.dart';
 import 'package:bemyday/features/posting/posting_decorate_screen.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class PostingAlbumScreen extends ConsumerStatefulWidget {
@@ -44,9 +47,16 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
   }
 
   Future<void> _requestPermissionAndLoadPhotos() async {
-    final permission = await PhotoManager.requestPermissionExtend();
+    final permission = await PhotoManager.requestPermissionExtend(
+      requestOption: const PermissionRequestOption(
+        androidPermission: AndroidPermission(
+          type: RequestType.image,
+          mediaLocation: false,
+        ),
+      ),
+    );
 
-    if (permission.isAuth) {
+    if (permission.hasAccess) {
       setState(() => _hasPermission = true);
       await _loadAlbums();
     } else {
@@ -84,7 +94,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
   Future<void> _loadPhotos() async {
     if (_selectedAlbum == null) return;
 
-    final assets = await _selectedAlbum!.getAssetListRange(start: 0, end: 100);
+    final assets = await _selectedAlbum!.getAssetListPaged(page: 0, size: 100);
 
     setState(() {
       _assets = assets;
@@ -101,7 +111,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
     _loadPhotos();
   }
 
-  void _onAssetTap(AssetEntity asset) {
+  void _onAssetTap(AssetEntity asset) async {
     final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
 
     if (groups.isEmpty) {
@@ -115,7 +125,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
     );
 
     final thumbnail = _thumbnailCache[asset.id];
-    Navigator.of(context).push(
+    final result = await Navigator.of(context).push(
       heroPageRoute(
         child: PostingDecorateScreen(
           asset: asset,
@@ -124,6 +134,14 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
         ),
       ),
     );
+
+    if (result is Group && mounted) {
+      ref.invalidate(hasCurrentWeekPostsProvider(result));
+      ref.invalidate(currentWeekPostsProvider(result));
+      ref.invalidate(weekPostSummariesProvider(result));
+      ref.invalidate(currentUserGroupsProvider);
+      context.pop(result);
+    }
   }
 
   void _onCloseTap() {
@@ -178,6 +196,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
       label: _selectedAlbum?.name ?? 'Album',
       onTap: _showAlbumPicker,
       isLoading: _isLoadingAlbumPicker,
+      useBlur: true,
     );
   }
 
@@ -239,6 +258,21 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
   }
 
   Widget _buildContent() {
+    if (_assets.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FaIcon(FontAwesomeIcons.images, size: Sizes.size48),
+            SizedBox(height: Sizes.size16),
+            Text(
+              'No photos found',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
+        ),
+      );
+    }
     return Column(
       children: [
         Expanded(

@@ -1,0 +1,23 @@
+-- 그룹 멤버 목록을 [다른 멤버..., 현재 유저] 순으로 반환
+-- 서버 auth.uid() 사용으로 currentUser 식별 보장
+create or replace function public.get_group_members_ordered(p_group_id uuid)
+returns table (
+  user_id uuid,
+  nickname text,
+  avatar_url text
+)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select p.id as user_id, p.nickname, p.avatar_url
+  from public.group_members gm
+  join public.profiles p on p.id = gm.user_id
+  where gm.group_id = p_group_id
+    and p.deleted_at is null
+    and trim(coalesce(p.nickname, '')) != ''
+    and (exists (select 1 from public.groups g where g.id = p_group_id and g.owner_id = auth.uid())
+         or exists (select 1 from public.group_members gm2 where gm2.group_id = p_group_id and gm2.user_id = auth.uid()))
+  order by (gm.user_id = auth.uid())  -- false(0) 먼저, true(1) 나중 = currentUser 마지막
+$$;

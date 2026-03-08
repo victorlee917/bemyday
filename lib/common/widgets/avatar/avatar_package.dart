@@ -9,6 +9,8 @@ class AvatarPackage extends StatelessWidget {
     super.key,
     required this.nickname,
     required this.title,
+    this.avatarUrl,
+    this.avatarWidget,
     this.childTitle,
     this.subTitle,
     this.isDarkOnly = false,
@@ -16,6 +18,8 @@ class AvatarPackage extends StatelessWidget {
 
   final String nickname;
   final String title;
+  final String? avatarUrl;
+  final Widget? avatarWidget;
   final String? childTitle;
   final String? subTitle;
   final bool isDarkOnly;
@@ -28,10 +32,12 @@ class AvatarPackage extends StatelessWidget {
           final maxTitleWidth = constraints.maxWidth * 0.6;
           return Row(
             children: [
-              AvatarDefault(
-                nickname: nickname,
-                radius: CustomSizes.avatarComment,
-              ),
+              avatarWidget ??
+                  AvatarDefault(
+                    nickname: nickname,
+                    avatarUrl: avatarUrl,
+                    radius: CustomSizes.avatarComment,
+                  ),
               CustomSizes.commentLeadingGap,
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

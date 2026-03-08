@@ -20,10 +20,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   PageController? _pageController;
-  late final AnimationController _animationController;
   int _weekdayIndex = 0;
 
   /// 최초 포커스 요일: 남은 시간 가장 적은 그룹 → 없으면 당일 요일
@@ -32,18 +30,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   static const int _pageCount = 21;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      lowerBound: 1.0,
-      upperBound: 3,
-      value: 3,
-      duration: Duration(milliseconds: 200),
-    );
-  }
 
   void _syncWeekdayFromPage() {
     final controller = _pageController;
@@ -68,16 +54,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     _pageController?.removeListener(_syncWeekdayFromPage);
     _pageController?.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
-  // Future<void> _onRefresh() {
-  //   return Future.delayed(const Duration(seconds: 3));
-  // }
-
   void _onInviteTap(int weekdayIndex) {
-    showInviteSheet(context, selectedWeekdayIndex: weekdayIndex);
+    showInviteSheet(context, ref, selectedWeekdayIndex: weekdayIndex);
   }
 
   @override
@@ -147,15 +128,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       animation: controller,
                       builder: (context, child) {
                         double value = 1.0;
-                        if (controller.position.haveDimensions) {
-                          value = controller.page! - index;
-                          value =
-                              (1 - (value.abs() * 0.3)).clamp(0.0, 1.0);
-                        }
                         double rotationValue = 0.0;
                         if (controller.position.haveDimensions) {
-                          rotationValue =
-                              (controller.page! - index) * 0.3;
+                          final page = controller.page! - index;
+                          value = (1 - (page.abs() * 0.3)).clamp(0.0, 1.0);
+                          rotationValue = page * 0.3;
                         }
 
                         return Transform(

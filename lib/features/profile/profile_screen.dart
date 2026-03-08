@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:go_router/go_router.dart';
+import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/profile/models/profile.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/profile/viewmodels/profile_image_viewmodel.dart';
@@ -43,6 +46,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _errorText;
   bool _initialDataLoaded = false;
 
+  String? _pendingImagePath;
+  bool _pendingDeleteImage = false;
+
   Future<void> _onSubmit() async {
     if (_formKey.currentState == null || !_isNicknameValid || _isSaving) return;
 
@@ -53,14 +59,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     setState(() => _isSaving = true);
     try {
       await ref.read(profileViewModelProvider).saveNickname(nickname);
+
+      if (_pendingImagePath != null) {
+        await ref.read(profileImageViewModelProvider.notifier).saveImage(_pendingImagePath!);
+      } else if (_pendingDeleteImage) {
+        await ref.read(profileImageViewModelProvider.notifier).deleteImage();
+      }
+
       if (!mounted) return;
       _onSaveSuccess();
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('저장에 실패했습니다. 다시 시도해 주세요.')));
+      showAppSnackBar(context, '저장에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -118,6 +129,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _onSaveSuccess() {
     ref.invalidate(currentProfileProvider);
+
+    if (_pendingImagePath != null || _pendingDeleteImage) {
+      final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
+      for (final group in groups) {
+        ref.invalidate(groupMemberAvatarsProvider(group.id));
+        ref.invalidate(groupFirstAvatarProvider(group.id));
+      }
+    }
+
     if (widget.fromOnboarding) {
       context.go('/home');
     } else {
@@ -127,7 +147,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _onAvatarTap() {
     final profile = ref.read(currentProfileProvider).valueOrNull;
-    final hasImage = profile?.avatarUrl != null;
+    final hasImage = _pendingImagePath != null ||
+        (!_pendingDeleteImage && profile?.avatarUrl != null);
 
     showModalBottomSheet(
       context: context,
@@ -143,40 +164,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _onEditPhoto() async {
     final viewModel = ref.read(profileImageViewModelProvider.notifier);
 
-    // 1. 갤러리에서 이미지 선택
     final pickedImage = await viewModel.pickImage();
     if (pickedImage == null) return;
 
-    // 2. 이미지 크롭 (정방형)
     if (!mounted) return;
     final croppedFile = await viewModel.cropImage(pickedImage.path, context);
     if (croppedFile == null) return;
 
-    // 3. Supabase Storage에 업로드
-    try {
-      await viewModel.saveImage(croppedFile.path);
-      if (!mounted) return;
-      context.pop(); // 시트 닫기
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('프로필 사진 업로드에 실패했습니다. 다시 시도해 주세요.')),
-      );
-    }
+    if (!mounted) return;
+    setState(() {
+      _pendingImagePath = croppedFile.path;
+      _pendingDeleteImage = false;
+    });
   }
 
   Future<void> _onDeletePhoto() async {
-    final viewModel = ref.read(profileImageViewModelProvider.notifier);
-    try {
-      await viewModel.deleteImage();
-      if (!mounted) return;
-      context.pop(); // 시트 닫기
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('프로필 사진 삭제에 실패했습니다. 다시 시도해 주세요.')),
-      );
-    }
+    if (!mounted) return;
+    setState(() {
+      _pendingDeleteImage = true;
+      _pendingImagePath = null;
+    });
   }
 
   @override
@@ -250,6 +257,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
+  Widget _buildAvatar(Profile? profile) {
+    final nickname = _nickname.isEmpty ? "?" : _nickname;
+    if (_pendingImagePath != null) {
+      final size = CustomSizes.avatarDefault * 2;
+      return ClipOval(
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Image(
+            image: FileImage(File(_pendingImagePath!)),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+    if (_pendingDeleteImage) {
+      return AvatarDefault(nickname: nickname);
+    }
+    return AvatarDefault(nickname: nickname, avatarUrl: profile?.avatarUrl);
+  }
+
   Widget _buildBody(Profile? profile) {
     return GestureDetector(
       onTap: _onScaffoldTap,
@@ -279,10 +307,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 onTap: _onAvatarTap,
                 child: Stack(
                   children: [
-                    AvatarDefault(
-                      nickname: _nickname.isEmpty ? "?" : _nickname,
-                      avatarUrl: profile?.avatarUrl,
-                    ),
+                    _buildAvatar(profile),
                     Positioned(
                       right: 0,
                       bottom: 0,

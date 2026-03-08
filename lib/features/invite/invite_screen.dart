@@ -60,11 +60,19 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     setState(() => _overriddenWeekdayIndex = index);
   }
 
-  void _showWeekdayPicker() {
-    final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
+  void _showWeekdayPicker() async {
+    final groups = await ref.read(currentUserGroupsProvider.future);
+    if (!context.mounted) return;
+    final groupIds = groups.map((g) => g.id).toList();
+    final counts = groupIds.isNotEmpty
+        ? await ref
+            .read(groupRepositoryProvider)
+            .getGroupMemberCounts(groupIds)
+        : <String, int>{};
+    if (!context.mounted) return;
     showWeekdayPicker(
       context: context,
-      items: buildWeekdayPickerItems(groups),
+      items: buildWeekdayPickerItems(groups, memberCounts: counts),
       onWeekdaySelected: _onWeekdayChanged,
     );
   }
@@ -86,9 +94,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
           );
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('초대 생성에 실패했습니다: $e')),
-        );
+        showAppSnackBar(context, '초대 생성에 실패했습니다: $e');
       }
       return;
     }
@@ -125,7 +131,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
 
     final isAlreadyFull =
         memberCountAsync?.valueOrNull != null &&
-        memberCountAsync!.valueOrNull! >= 2;
+        memberCountAsync!.valueOrNull! >= 8;
 
     return Container(
       clipBehavior: Clip.hardEdge,
@@ -154,7 +160,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: _onPageChanged,
-                itemCount: 2,
+                itemCount: 1,
                 itemBuilder: (context, index) {
                   final screenWidth = MediaQuery.of(context).size.width;
                   final width = screenWidth * 0.7;

@@ -3,9 +3,15 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:flutter/material.dart';
 
 class TileAvatar extends StatelessWidget {
-  const TileAvatar({super.key, required this.nickname, this.descripton});
+  const TileAvatar({
+    super.key,
+    required this.nickname,
+    this.avatarUrl,
+    this.descripton,
+  });
 
   final String nickname;
+  final String? avatarUrl;
   final String? descripton;
 
   @override
@@ -15,6 +21,7 @@ class TileAvatar extends StatelessWidget {
       minTileHeight: Heights.tileItem,
       leading: AvatarDefault(
         nickname: nickname,
+        avatarUrl: avatarUrl,
         radius: CustomSizes.avatarTile,
       ),
       title: Text(nickname, style: Theme.of(context).textTheme.labelMedium),

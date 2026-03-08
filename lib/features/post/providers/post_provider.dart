@@ -1,5 +1,8 @@
 import 'package:bemyday/features/group/models/group.dart';
+import 'package:bemyday/features/post/models/post.dart';
+import 'package:bemyday/features/post/models/post_with_details.dart';
 import 'package:bemyday/features/post/repositories/post_repository.dart';
+import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final postRepositoryProvider = Provider<PostRepository>((ref) {
@@ -10,4 +13,56 @@ final postRepositoryProvider = Provider<PostRepository>((ref) {
 final hasCurrentWeekPostsProvider =
     FutureProvider.family<bool, Group>((ref, group) async {
   return ref.read(postRepositoryProvider).hasCurrentWeekPosts(group);
+});
+
+/// 현재 week에 해당하는 포스트 목록
+final currentWeekPostsProvider =
+    FutureProvider.family<List<Post>, Group>((ref, group) async {
+  return ref.read(postRepositoryProvider).getCurrentWeekPosts(group);
+});
+
+/// 특정 week에 해당하는 포스트 목록
+final weekPostsProvider = FutureProvider.family<List<Post>,
+    ({Group group, int weekIndex})>((ref, params) async {
+  return ref
+      .read(postRepositoryProvider)
+      .getPostsByWeek(params.group, params.weekIndex);
+});
+
+/// 그룹의 주별 포스트 요약 (PartyScreen 그리드용)
+final weekPostSummariesProvider = FutureProvider.family<
+    List<({int weekIndex, int postCount, List<String> authorIds, Post? latestPost})>,
+    Group>((ref, group) async {
+  return ref.read(postRepositoryProvider).getWeekPostSummaries(group);
+});
+
+/// 포스트 상세 (작성자 닉네임, 좋아요/댓글 수, 좋아요한 유저 닉네임)
+final postWithDetailsProvider =
+    FutureProvider.family<PostWithDetails, Post>((ref, post) async {
+  final repo = ref.read(postRepositoryProvider);
+
+  final authorProfile =
+      await ref.watch(profileProvider(post.authorId).future);
+
+  final results = await Future.wait([
+    repo.getPostLikeCount(post.id),
+    repo.getPostCommentCount(post.id),
+    repo.getPostLikedUserIds(post.id),
+    repo.isPostLikedByCurrentUser(post.id),
+  ]);
+
+  final likeCount = results[0] as int;
+  final commentCount = results[1] as int;
+  final likedIds = results[2] as List<String>;
+  final isLiked = results[3] as bool;
+
+  return PostWithDetails(
+    post: post,
+    authorNickname: authorProfile?.nickname ?? '?',
+    authorAvatarUrl: authorProfile?.avatarUrl,
+    likeCount: likeCount,
+    commentCount: commentCount,
+    likedUserIds: likedIds,
+    isLiked: isLiked,
+  );
 });

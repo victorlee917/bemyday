@@ -6,7 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// InviteScreen을 모달 시트로 표시
-void showInviteSheet(BuildContext context, {int? selectedWeekdayIndex}) {
+/// 요일을 먼저 결정한 뒤 시트를 열어 UI 깜빡임 방지
+Future<void> showInviteSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  int? selectedWeekdayIndex,
+}) async {
+  final resolvedIndex = await ref.read(
+    effectiveInviteWeekdayIndexProvider(selectedWeekdayIndex).future,
+  );
+  if (!context.mounted) return;
+
   final screenHeight = MediaQuery.of(context).size.height;
   final safeAreaTop = MediaQuery.of(context).padding.top;
   final availableHeight = screenHeight - safeAreaTop;
@@ -22,7 +32,7 @@ void showInviteSheet(BuildContext context, {int? selectedWeekdayIndex}) {
     ),
     builder: (context) => SizedBox(
       height: availableHeight * 0.8,
-      child: InviteScreen(selectedWeekdayIndex: selectedWeekdayIndex),
+      child: InviteScreen(selectedWeekdayIndex: resolvedIndex),
     ),
   );
 }

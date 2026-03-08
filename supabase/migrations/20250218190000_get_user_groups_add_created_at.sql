@@ -1,5 +1,7 @@
--- get_user_groups RPC에 created_at 컬럼 추가 (그룹별 주차 계산용)
-create or replace function public.get_user_groups()
+-- get_user_groups RPC에 created_at 컬럼 추가 + post_count를 posts 테이블에서 실시간 집계
+drop function if exists public.get_user_groups();
+
+create function public.get_user_groups()
 returns table (
   id uuid,
   owner_id uuid,
@@ -18,7 +20,9 @@ stable
 set search_path = public
 as $$
   select g.id, g.owner_id, g.successor_id, g.weekday, g.name,
-         g.week_boundary_timezone, g.post_count, g.streak, g.streak_updated_at,
+         g.week_boundary_timezone,
+         (select count(*)::int from public.posts p where p.group_id = g.id and p.deleted_at is null) as post_count,
+         g.streak, g.streak_updated_at,
          g.created_at
   from public.groups g
   where g.deleted_at is null

@@ -1,21 +1,31 @@
 import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/features/profile/providers/profile_provider.dart';
+import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class LikesSheet extends StatelessWidget {
-  const LikesSheet({super.key, required this.likedUsers});
+class LikesSheet extends ConsumerWidget {
+  const LikesSheet({super.key, required this.likedUserIds});
 
-  final List<String> likedUsers;
+  final List<String> likedUserIds;
 
   void _onCloseTap(BuildContext context) {
     context.pop();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dark = isDarkMode(context);
+    final sheetColor =
+        dark ? CustomColors.sheetColorDark : CustomColors.sheetColorLight;
+    final borderColor =
+        dark ? CustomColors.borderDark : CustomColors.borderLight;
+    final fgColor = dark ? Colors.white : Colors.black;
+
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
@@ -25,14 +35,14 @@ class LikesSheet extends StatelessWidget {
         ),
       ),
       child: Scaffold(
-        backgroundColor: CustomColors.sheetColorDark,
+        backgroundColor: sheetColor,
         appBar: AppBar(
-          title: Text("Likes", style: TextStyle(color: Colors.white)),
+          title: Text("Likes", style: TextStyle(color: fgColor)),
           automaticallyImplyLeading: false,
-          backgroundColor: CustomColors.sheetColorDark,
+          backgroundColor: sheetColor,
           shape: Border(
             bottom: BorderSide(
-              color: CustomColors.borderDark,
+              color: borderColor,
               width: Widths.devider,
             ),
           ),
@@ -43,7 +53,7 @@ class LikesSheet extends StatelessWidget {
                 child: FaIcon(
                   FontAwesomeIcons.circleXmark,
                   size: Sizes.size20,
-                  color: Colors.white,
+                  color: fgColor,
                 ),
               ),
             ),
@@ -54,15 +64,38 @@ class LikesSheet extends StatelessWidget {
             horizontal: Paddings.scaffoldH,
             vertical: Paddings.scaffoldV,
           ),
-          itemCount: likedUsers.length,
+          itemCount: likedUserIds.length,
           separatorBuilder: (context, index) =>
               SizedBox(height: CustomSizes.tileSpacing),
           itemBuilder: (context, index) {
-            final user = likedUsers[index];
-            return Row(
-              children: [
-                AvatarPackage(nickname: user, title: user, isDarkOnly: true),
-              ],
+            final userId = likedUserIds[index];
+            final profileAsync = ref.watch(profileProvider(userId));
+            return profileAsync.when(
+              data: (profile) => Row(
+                children: [
+                  AvatarPackage(
+                    nickname: profile?.nickname ?? '?',
+                    avatarUrl: profile?.avatarUrl,
+                    title: profile?.nickname ?? '?',
+                  ),
+                ],
+              ),
+              loading: () => Row(
+                children: [
+                  AvatarPackage(
+                    nickname: '…',
+                    title: '…',
+                  ),
+                ],
+              ),
+              error: (_, __) => Row(
+                children: [
+                  AvatarPackage(
+                    nickname: '?',
+                    title: '?',
+                  ),
+                ],
+              ),
             );
           },
         ),

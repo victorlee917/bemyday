@@ -32,10 +32,12 @@ class TransitionCurves {
 CustomTransitionPage<T> slideUpTransitionPage<T>({
   required Widget child,
   LocalKey? key,
+  bool opaque = true,
 }) {
   return CustomTransitionPage<T>(
     key: key,
     child: child,
+    opaque: opaque,
     transitionDuration: TransitionDurations.slideUp,
     reverseTransitionDuration: TransitionDurations.slideUp,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {

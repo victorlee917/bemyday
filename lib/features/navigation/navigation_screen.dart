@@ -8,6 +8,8 @@ import 'package:bemyday/features/friends/friends_screen.dart';
 import 'package:bemyday/features/home/home_screen.dart';
 import 'package:bemyday/features/my/my_screen.dart';
 import 'package:bemyday/features/navigation/widgets/navigation_tab.dart';
+import 'package:bemyday/features/group/models/group.dart';
+import 'package:bemyday/features/post/post_screen.dart';
 import 'package:bemyday/features/posting/posting_album_screen.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
@@ -82,7 +84,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
     setState(() => _selectedIndex = index);
   }
 
-  void _onCenterButtonTap() {
+  void _onCenterButtonTap() async {
     if (_selectedIndex != 1) {
       _onNavTap(1);
       return;
@@ -92,6 +94,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
     if (groups.isEmpty) {
       showInviteSheet(
         context,
+        ref,
         selectedWeekdayIndex: ref.read(homeWeekdayIndexProvider),
       );
     } else {
@@ -103,10 +106,16 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
           ? selectedIndex
           : null;
 
-      context.push(
+      final result = await context.push(
         PostingAlbumScreen.routeUrl,
         extra: weekdayIndex,
       );
+      if (result is Group && mounted) {
+        context.push(
+          PostScreen.routeUrl,
+          extra: {'group': result, 'startFromLatest': true},
+        );
+      }
     }
   }
 

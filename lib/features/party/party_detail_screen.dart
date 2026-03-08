@@ -1,4 +1,4 @@
-import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
+import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/close_app_bar_button.dart';
 import 'package:bemyday/common/widgets/confirm_dialog.dart';
 import 'package:bemyday/common/widgets/tile/tile_act.dart';
@@ -88,6 +88,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
   void _onInviteTap() {
     showInviteSheet(
       context,
+      ref,
       selectedWeekdayIndex:
           widget.group != null ? widget.group!.weekday - 1 : 0,
     );
@@ -115,7 +116,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
       if (group != null) {
         await ref.read(groupRepositoryProvider).updateGroupName(group.id, "");
         ref.invalidate(currentUserGroupsProvider);
-        ref.invalidate(groupDisplayNameProvider(group));
+        ref.invalidate(groupDisplayNameProvider(group.id));
       }
       return;
     }
@@ -124,7 +125,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
     if (group != null) {
       await ref.read(groupRepositoryProvider).updateGroupName(group.id, text);
       ref.invalidate(currentUserGroupsProvider);
-      ref.invalidate(groupDisplayNameProvider(group));
+      ref.invalidate(groupDisplayNameProvider(group.id));
     }
   }
 
@@ -134,6 +135,8 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
     final memberNicknamesAsync = group != null
         ? ref.watch(groupMemberNicknamesProvider(group.id))
         : null;
+    final memberAvatarsAsync =
+        group != null ? ref.watch(groupMemberAvatarsProvider(group.id)) : null;
 
     final info = groupDisplayInfo(group, memberNicknamesAsync?.valueOrNull);
     final displayText = _userEditedName ?? info.subTitle ?? info.nickname;
@@ -166,11 +169,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
             ),
             child: Column(
               children: [
-                AvatarDefault(
-                  nickname: displayText.isNotEmpty
-                      ? displayText.substring(0, 1)
-                      : "?",
-                ),
+                group != null
+                    ? AvatarGroupStack(groupId: group.id)
+                    : AvatarGroupStack(groupId: ''),
                 Gaps.v16,
                 GestureDetector(
                   onTap: _isEditing ? null : () => _onEditTap(editInitialText),
@@ -225,10 +226,16 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                     TilesSection(
                       title: "Members",
                       items: [
-                        ...memberNicknamesAsync?.valueOrNull?.map(
-                              (n) => TileAvatar(nickname: n),
-                            ) ??
-                            [TileAvatar(nickname: "…")],
+                        ...(memberAvatarsAsync?.valueOrNull
+                                ?.map(
+                                  (m) => TileAvatar(
+                                    nickname: m.nickname,
+                                    avatarUrl: m.avatarUrl,
+                                  ),
+                                ) ??
+                            memberNicknamesAsync?.valueOrNull
+                                ?.map((n) => TileAvatar(nickname: n)) ??
+                            [TileAvatar(nickname: "…")]),
                         GestureDetector(
                           onTap: _onInviteTap,
                           child: Column(

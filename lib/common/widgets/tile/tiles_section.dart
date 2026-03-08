@@ -1,5 +1,6 @@
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 
 class TilesSection extends StatelessWidget {
@@ -10,6 +11,7 @@ class TilesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = isDarkMode(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -24,8 +26,13 @@ class TilesSection extends StatelessWidget {
         ],
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: dark
+                ? CustomColors.clickableAreaDark
+                : CustomColors.clickableAreaLight,
             borderRadius: BorderRadius.circular(RValues.island),
+            border: Border.all(
+              color: dark ? CustomColors.borderDark : CustomColors.borderLight,
+            ),
           ),
           padding: EdgeInsets.symmetric(
             horizontal: Paddings.tileH,

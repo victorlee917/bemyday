@@ -46,9 +46,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('참여에 실패했습니다: $e')),
-        );
+        showAppSnackBar(context, '참여에 실패했습니다: $e');
       }
     } finally {
       if (mounted) setState(() => _isAccepting = false);
@@ -67,6 +65,9 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
         final userGroups = ref.watch(currentUserGroupsProvider).valueOrNull ?? [];
         final isAlreadyMember = invitationGroupId != null &&
             userGroups.any((g) => g.id == invitationGroupId);
+        // inviter_nickname (snake_case) 또는 inviterNickname (camelCase) 지원
+        final inviterNickname = (data?['inviter_nickname'] ?? data?['inviterNickname']) as String?;
+        final displayName = (inviterNickname ?? '').trim().isNotEmpty ? inviterNickname!.trim() : '초대자';
 
         return Container(
           clipBehavior: Clip.hardEdge,
@@ -118,13 +119,13 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 AvatarDefault(
-                                  avatarUrl: data?['inviter_avatar_url'] as String?,
-                                  nickname: data?['inviter_nickname'] as String? ?? '?',
+                                  avatarUrl: (data?['inviter_avatar_url'] ?? data?['inviterAvatarUrl']) as String?,
+                                  nickname: displayName,
                                   radius: 32,
                                 ),
                                 Gaps.v16,
                                 Text(
-                                  '${data?['inviter_nickname'] ?? '?'}님이 초대했어요',
+                                  '$displayName님이 초대했어요',
                                   style: Theme.of(context).textTheme.titleMedium,
                                   textAlign: TextAlign.center,
                                 ),

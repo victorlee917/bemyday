@@ -219,7 +219,20 @@ GoRouter createRouter(
     GoRoute(
       path: PostScreen.routeUrl,
       name: PostScreen.routeName,
-      builder: (context, state) => PostScreen(),
+      pageBuilder: (context, state) {
+        final extra = state.extra;
+        final Widget child;
+        if (extra is Map) {
+          child = PostScreen(
+            group: extra['group'] as Group?,
+            weekIndex: extra['weekIndex'] as int?,
+            startFromLatest: extra['startFromLatest'] as bool? ?? false,
+          );
+        } else {
+          child = PostScreen(group: extra as Group?);
+        }
+        return slideUpTransitionPage(child: child, opaque: false);
+      },
     ),
     GoRoute(
       path: ThemeScreen.routeUrl,
