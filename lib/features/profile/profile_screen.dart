@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({
@@ -71,7 +72,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      showAppSnackBar(context, '저장에 실패했습니다. 다시 시도해 주세요.');
+      final message = e is PostgrestException && e.code == '23505'
+          ? '이미 사용 중인 닉네임입니다.'
+          : '저장에 실패했습니다. 다시 시도해 주세요.';
+      showAppSnackBar(context, message);
     }
   }
 
@@ -129,6 +133,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _onSaveSuccess() {
     ref.invalidate(currentProfileProvider);
+
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (currentUserId != null) {
+      ref.invalidate(profileProvider(currentUserId));
+    }
 
     if (_pendingImagePath != null || _pendingDeleteImage) {
       final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];

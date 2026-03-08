@@ -98,8 +98,8 @@ class WeekGridCard extends ConsumerWidget {
     if (ids.isEmpty) return const SizedBox.shrink();
 
     final settings = RestrictedPositions(
-      maxCoverage: 0.3,
-      minCoverage: 0.2,
+      maxCoverage: 0.5,
+      minCoverage: 0.4,
       align: StackAlign.right,
     );
 
@@ -191,9 +191,17 @@ class WeekGridCard extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () => _onPostTap(context),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(RValues.thumbnail),
-        child: Stack(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(RValues.thumbnail),
+          border: Border.all(
+            color: dark ? CustomColors.borderDark : CustomColors.borderLight,
+            width: Widths.devider,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(RValues.thumbnail),
+          child: Stack(
           fit: StackFit.expand,
           children: [
             ImageFiltered(
@@ -241,6 +249,7 @@ class WeekGridCard extends ConsumerWidget {
                 ),
               ),
           ],
+        ),
         ),
       ),
     );

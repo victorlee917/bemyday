@@ -1,6 +1,5 @@
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
-import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 
 /// Apple Sign in with Apple 가이드라인: 최소 44pt, 로그인 버튼은 48pt 권장

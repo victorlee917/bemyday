@@ -58,7 +58,7 @@ class FriendCard extends ConsumerWidget {
           color: isDarkMode(context)
               ? CustomColors.clickableAreaDark
               : CustomColors.clickableAreaLight,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(RValues.island),
           border: Border.all(
             color: isDarkMode(context)
                 ? CustomColors.borderDark

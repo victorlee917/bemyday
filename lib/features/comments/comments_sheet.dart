@@ -15,12 +15,16 @@ class CommentsSheet extends ConsumerStatefulWidget {
     this.scrollController,
     required this.autofocus,
     this.onCommentAdded,
+    this.scrollToCommentId,
   });
 
   final String postId;
   final bool autofocus;
   final ScrollController? scrollController;
   final VoidCallback? onCommentAdded;
+
+  /// 이 댓글이 최상단에 보이도록 스크롤
+  final String? scrollToCommentId;
 
   @override
   ConsumerState<CommentsSheet> createState() => _CommentsSheetState();
@@ -30,11 +34,33 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
   final TextEditingController _commentController = TextEditingController();
   String _comment = "";
   late final ScrollController _scrollController;
+  bool _hasScrolledToComment = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = widget.scrollController ?? ScrollController();
+  }
+
+  void _scrollToCommentIfNeeded(List<dynamic> comments) {
+    final targetId = widget.scrollToCommentId;
+    if (targetId == null || _hasScrolledToComment) return;
+
+    final index = comments.indexWhere((c) => c.id == targetId);
+    if (index < 0) return;
+
+    _hasScrolledToComment = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      const estimatedItemHeight = 70.0;
+      final offset = (index * estimatedItemHeight).toDouble();
+      final maxOffset = _scrollController.position.maxScrollExtent;
+      _scrollController.animateTo(
+        offset.clamp(0.0, maxOffset),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
@@ -82,6 +108,11 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(commentsProvider(widget.postId), (prev, next) {
+      next.whenData((comments) {
+        _scrollToCommentIfNeeded(comments);
+      });
+    });
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
@@ -135,8 +166,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                       bottom:
                           kToolbarHeight +
                           MediaQuery.of(context).padding.bottom +
-                          Paddings.scaffoldV * 2 +
-                          Sizes.size10,
+                          Paddings.scaffoldV,
                     ),
                     sliver: ref
                         .watch(commentsProvider(widget.postId))
@@ -183,8 +213,12 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
               right: 0,
               child: SafeArea(
                 top: false,
-                child: BottomAppBar(
-                  padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Paddings.scaffoldH,
+                    vertical: Paddings.scaffoldV,
+                  ),
+
                   child: Row(
                     children: [
                       Expanded(
@@ -214,10 +248,8 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                                 decoration: InputDecoration(
                                   prefixIcon: Padding(
                                     padding: EdgeInsets.only(
-                                      left: Paddings.buttonH,
+                                      left: Sizes.size10,
                                       right: Sizes.size8,
-                                      top: Paddings.buttonV,
-                                      bottom: Paddings.buttonV,
                                     ),
                                     child: CommentInputAvatar(),
                                   ),
@@ -232,8 +264,6 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                                             padding: EdgeInsets.only(
                                               right: Paddings.buttonH,
                                               left: Sizes.size8,
-                                              top: Paddings.buttonV,
-                                              bottom: Paddings.buttonV,
                                             ),
                                             child: FaIcon(
                                               FontAwesomeIcons.circleArrowUp,

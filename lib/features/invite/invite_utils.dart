@@ -27,7 +27,7 @@ Future<void> showInviteSheet(
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
-        top: Radius.circular(RValues.island),
+        top: Radius.circular(RValues.bottomsheet),
       ),
     ),
     builder: (context) => SizedBox(

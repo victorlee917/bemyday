@@ -116,8 +116,7 @@ class _WeekdayPickerRow extends ConsumerWidget {
     final isDimmed = count != null && count >= 8;
 
     final canInvite = item.group == null || (count ?? 0) < 8;
-
-    final subTitle = canInvite ? 'Can Invite' : item.subTitle;
+    final childTitle = canInvite ? 'Can Invite' : 'Already Full';
 
     return SheetWidget(
       left: Row(
@@ -126,13 +125,15 @@ class _WeekdayPickerRow extends ConsumerWidget {
               ? AvatarPackage(
                   nickname: item.weekday.name,
                   title: item.weekday.name,
-                  subTitle: subTitle ?? 'Can Invite',
+                  childTitle: childTitle,
+                  subTitle: 'Vacant',
                   isDarkOnly: isDarkOnly,
                 )
               : _GroupAvatarPackage(
                   item: item,
                   isDarkOnly: isDarkOnly,
-                  forceSubTitle: canInvite ? 'Can Invite' : null,
+                  childTitle: childTitle,
+                  memberCount: count ?? 0,
                   isDimmed: isDimmed,
                 ),
         ],
@@ -148,20 +149,23 @@ class _GroupAvatarPackage extends ConsumerWidget {
   const _GroupAvatarPackage({
     required this.item,
     required this.isDarkOnly,
-    this.forceSubTitle,
+    required this.childTitle,
+    required this.memberCount,
     this.isDimmed = false,
   });
 
   final WeekdayPickerItem item;
   final bool isDarkOnly;
-  final String? forceSubTitle;
+  final String childTitle;
+  final int memberCount;
   final bool isDimmed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final group = item.group!;
     final memberAvatarsAsync = ref.watch(groupMemberAvatarsProvider(group.id));
-    final memberNicknamesAsync = ref.watch(groupMemberNicknamesProvider(group.id));
+    final memberNicknamesAsync =
+        ref.watch(groupMemberNicknamesProvider(group.id));
 
     final avatars = memberAvatarsAsync.valueOrNull;
     final firstAvatarUrl = avatars != null && avatars.isNotEmpty
@@ -171,28 +175,26 @@ class _GroupAvatarPackage extends ConsumerWidget {
         ? avatars.first.nickname
         : item.weekday.name;
 
-    final raw = memberNicknamesAsync.valueOrNull;
-    final others = raw != null ? memberNicknamesExcludingCurrent(raw) : null;
-    final groupOrNicknames = group.name?.trim().isNotEmpty == true
-        ? group.name!.trim()
-        : others != null && others.isNotEmpty
-            ? others.join(", ")
-            : memberNicknamesAsync.isLoading
-                ? '…'
-                : null;
-
-    final subTitle = forceSubTitle ??
-        item.subTitle ??
-        (isDimmed
-            ? (groupOrNicknames != null
-                ? 'Already Full | $groupOrNicknames'
-                : 'Already Full')
-            : groupOrNicknames);
+    final String subTitle;
+    if (memberCount == 0) {
+      subTitle = 'Vacant';
+    } else {
+      final hasGroupName = group.name?.trim().isNotEmpty == true;
+      if (hasGroupName) {
+        subTitle = group.name!.trim();
+      } else {
+        final nicknames = memberNicknamesAsync.valueOrNull;
+        subTitle = nicknames != null && nicknames.isNotEmpty
+            ? nicknames.join(', ')
+            : '…';
+      }
+    }
 
     return AvatarPackage(
       nickname: firstNickname,
       avatarUrl: firstAvatarUrl,
       title: item.weekday.name,
+      childTitle: childTitle,
       subTitle: subTitle,
       isDarkOnly: isDarkOnly,
     );

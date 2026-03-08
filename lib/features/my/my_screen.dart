@@ -11,6 +11,7 @@ import 'package:bemyday/features/alarm/alarm_screen.dart';
 import 'package:bemyday/features/language/language_screen.dart';
 import 'package:bemyday/features/profile/profile_screen.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
+import 'package:bemyday/features/license/license_screen.dart';
 import 'package:bemyday/features/theme/theme_screen.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
@@ -159,7 +160,10 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                       title: "Terms of Service",
                       url: "https://www.bemyday.app/terms",
                     ),
-                    TileAct(title: "Open Source License", action: () {}),
+                    TileNavigate(
+                      title: "Open Source License",
+                      destination: LicenseScreen.routeUrl,
+                    ),
                   ],
                 ),
                 TilesSection(

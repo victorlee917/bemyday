@@ -4,8 +4,6 @@ import 'package:bemyday/common/widgets/sheet/sheet_select.dart';
 import 'package:bemyday/common/widgets/cached_post_image.dart';
 import 'package:bemyday/common/widgets/gradient_overlay.dart';
 import 'package:bemyday/constants/gaps.dart';
-import 'package:bemyday/constants/sizes.dart';
-import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/comments/comments_sheet.dart';
 import 'package:bemyday/features/group/models/group.dart';
@@ -18,7 +16,9 @@ import 'package:bemyday/features/profile/models/profile.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/post/widgets/post_bottom_bar.dart';
 import 'package:bemyday/features/post/widgets/post_header_bar.dart';
-import 'package:bemyday/features/post/widgets/post_comment_bubble.dart';
+import 'package:bemyday/features/comments/providers/comment_provider.dart';
+import 'package:bemyday/features/post/widgets/comment_nudge_banner.dart';
+import 'package:bemyday/features/post/widgets/post_nudge_banner.dart';
 import 'package:bemyday/features/post/widgets/reveal_countdown.dart';
 import 'package:bemyday/features/posting/posting_album_screen.dart';
 import 'package:bemyday/utils.dart';
@@ -56,6 +56,9 @@ class _PostScreenState extends ConsumerState<PostScreen>
   bool _userNavigated = false;
   bool? _likeOverride;
   int? _likeCountOverride;
+
+  /// 넛지 배너 탭 시 해당 댓글은 더 이상 표시하지 않음 (postId -> commentId)
+  final Map<String, String> _dismissedCommentIdByPost = {};
 
   double _dragOffset = 0;
   late final AnimationController _dragAnimController;
@@ -180,9 +183,14 @@ class _PostScreenState extends ConsumerState<PostScreen>
   }
 
   static const _sheetInitialSize = 0.8;
-  static const _sheetMinSize = 0.6; // threshold: below this = dismiss
+  static const _sheetMinSize = 0.5; // threshold: below this = dismiss
 
-  void _onCommentsTap(BuildContext context, Post post, bool autofocus) async {
+  void _onCommentsTap(
+    BuildContext context,
+    Post post, {
+    bool autofocus = true,
+    String? scrollToCommentId,
+  }) async {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -201,6 +209,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
           postId: post.id,
           autofocus: autofocus,
           scrollController: scrollController,
+          scrollToCommentId: scrollToCommentId,
           onCommentAdded: () => ref.invalidate(postWithDetailsProvider(post)),
         ),
       ),
@@ -360,7 +369,8 @@ class _PostScreenState extends ConsumerState<PostScreen>
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (cachedNickname.isNotEmpty) _buildNudgeBanner(cachedNickname),
+          if (cachedNickname.isNotEmpty)
+            PostNudgeBanner(nickname: cachedNickname, onTap: _onPostTap),
           PostBottomBar(
             nickname:
                 detailsAsync.valueOrNull?.authorNickname ?? cachedNickname,
@@ -379,14 +389,37 @@ class _PostScreenState extends ConsumerState<PostScreen>
     }
 
     final d = detailsAsync.valueOrNull;
+    final commentsAsync = d != null && d.commentCount > 0
+        ? ref.watch(commentsProvider(post.id))
+        : null;
+    final latestComment = commentsAsync?.valueOrNull?.isNotEmpty == true
+        ? commentsAsync!.value!.last
+        : null;
+    final isBannerDismissed =
+        latestComment != null &&
+        _dismissedCommentIdByPost[post.id] == latestComment.id;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final isOwnComment =
+        latestComment != null && latestComment.authorId == currentUserId;
+
     return Column(
       children: [
-        if (d != null && d.commentCount > 0)
-          PostCommentBubble(
-            content: "View all ${d.commentCount} comments",
-            onTap: () => _onCommentsTap(context, post, false),
+        if (latestComment != null && !isBannerDismissed && !isOwnComment)
+          CommentNudgeBanner(
+            comment: latestComment,
+            onTap: () {
+              setState(
+                () => _dismissedCommentIdByPost[post.id] = latestComment.id,
+              );
+              _onCommentsTap(
+                context,
+                post,
+                autofocus: false,
+                scrollToCommentId: latestComment.id,
+              );
+            },
           ),
-        if (d != null && d.commentCount > 0) Gaps.v16,
+
         PostBottomBar(
           nickname: d?.authorNickname ?? cachedNickname,
           avatarUrl: d?.authorAvatarUrl ?? cachedAvatarUrl,
@@ -402,61 +435,9 @@ class _PostScreenState extends ConsumerState<PostScreen>
             _likeOverride ?? d?.isLiked ?? false,
             _likeCountOverride ?? d?.likeCount ?? 0,
           ),
-          onCommentTap: () => _onCommentsTap(context, post, true),
+          onCommentTap: () => _onCommentsTap(context, post, autofocus: true),
         ),
       ],
-    );
-  }
-
-  Widget _buildNudgeBanner(String nickname) {
-    return GestureDetector(
-      onTap: _onPostTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: Paddings.scaffoldH,
-          vertical: Paddings.scaffoldV,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(RValues.island),
-          child: BackdropFilter(
-            filter: Blurs.backdrop,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: Paddings.bannerH,
-                vertical: Paddings.bannerV,
-              ),
-              decoration: BoxDecoration(
-                color: Blurs.overlayColor,
-                borderRadius: BorderRadius.circular(RValues.island),
-                border: Border.all(color: CustomColors.borderDark),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "Make $nickname's day!",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: Sizes.size14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Gaps.h10,
-                  Text(
-                    "Add post",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: Sizes.size12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -526,8 +507,13 @@ class _PostScreenState extends ConsumerState<PostScreen>
                 GradientOverlay(
                   height: MediaQuery.of(context).padding.top + 120,
                   alignment: Alignment.topCenter,
+                  opacity: 0.55,
                 ),
-                GradientOverlay(height: 200, alignment: Alignment.bottomCenter),
+                GradientOverlay(
+                  height: 200,
+                  alignment: Alignment.bottomCenter,
+                  opacity: 0.55,
+                ),
                 if (shouldBlur)
                   Center(child: RevealCountdown(targetWeekday: group.weekday)),
                 Positioned(

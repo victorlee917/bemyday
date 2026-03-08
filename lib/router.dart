@@ -9,6 +9,7 @@ import 'package:bemyday/features/start/start_screen.dart';
 import 'package:bemyday/features/invite/invitation_screen.dart';
 import 'package:bemyday/features/invite/invite_screen.dart';
 import 'package:bemyday/features/language/language_screen.dart';
+import 'package:bemyday/features/license/license_screen.dart';
 import 'package:bemyday/features/navigation/navigation_screen.dart';
 import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/party/party_screen.dart';
@@ -243,6 +244,11 @@ GoRouter createRouter(
       path: LanguageScreen.routeUrl,
       name: LanguageScreen.routeName,
       builder: (context, state) => LanguageScreen(),
+    ),
+    GoRoute(
+      path: LicenseScreen.routeUrl,
+      name: LicenseScreen.routeName,
+      builder: (context, state) => LicenseScreen(),
     ),
     GoRoute(
       path: PostingAlbumScreen.routeUrl,

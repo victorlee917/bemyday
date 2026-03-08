@@ -132,6 +132,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final group = widget.group;
+    final displayNameAsync = group != null
+        ? ref.watch(groupDisplayNameProvider(group.id))
+        : null;
     final memberNicknamesAsync = group != null
         ? ref.watch(groupMemberNicknamesProvider(group.id))
         : null;
@@ -139,9 +142,13 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
         group != null ? ref.watch(groupMemberAvatarsProvider(group.id)) : null;
 
     final info = groupDisplayInfo(group, memberNicknamesAsync?.valueOrNull);
-    final displayText = _userEditedName ?? info.subTitle ?? info.nickname;
+    final displayText = _userEditedName ??
+        displayNameAsync?.valueOrNull ??
+        info.subTitle ??
+        info.nickname;
 
-    final editInitialText = group?.name?.trim() ?? "";
+    final editInitialText =
+        displayNameAsync?.valueOrNull ?? group?.name?.trim() ?? "";
 
     return GestureDetector(
       onTap: () {

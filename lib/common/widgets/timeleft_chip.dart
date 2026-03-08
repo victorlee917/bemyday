@@ -63,24 +63,45 @@ class _TimeleftChipState extends State<TimeleftChip> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = isDarkMode(context);
+    final isToday = _text == 'Today';
+
+    Color bgColor;
+    Color textColor;
+    Color borderColor;
+
+    if (isToday) {
+      bgColor = dark ? Colors.white : Colors.black;
+      textColor = dark ? Colors.black : Colors.white;
+      borderColor = textColor;
+    } else {
+      bgColor = dark
+          ? CustomColors.nonClickableAreaDark
+          : CustomColors.nonClickableAreaLight;
+      textColor = Colors.transparent; // use theme default
+      borderColor = dark ? CustomColors.borderDark : CustomColors.borderLight;
+    }
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: Sizes.size12,
         vertical: Sizes.size4,
       ),
       decoration: BoxDecoration(
-        color: isDarkMode(context)
-            ? CustomColors.nonClickableAreaDark
-            : CustomColors.nonClickableAreaLight,
+        color: bgColor,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           width: Sizes.size1,
-          color: isDarkMode(context)
-              ? CustomColors.borderDark
-              : CustomColors.borderLight,
+          color: borderColor,
         ),
       ),
-      child: Text(_text, style: TextStyle(fontSize: Sizes.size10)),
+      child: Text(
+        _text,
+        style: TextStyle(
+          fontSize: Sizes.size10,
+          color: isToday ? textColor : null,
+        ),
+      ),
     );
   }
 }

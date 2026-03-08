@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl;
 
@@ -80,6 +81,9 @@ class _StartScreenState extends State<StartScreen> {
           );
         }
       }
+      if (context.mounted) {
+        context.go('/home');
+      }
     } on SignInWithAppleAuthorizationException catch (e) {
       // 유저 취소/닫기(canceled, notHandled)는 스낵바 표시 안 함
       const _noSnackBarCodes = {
@@ -128,6 +132,9 @@ class _StartScreenState extends State<StartScreen> {
         idToken: idToken,
         accessToken: accessToken,
       );
+      if (context.mounted) {
+        context.go('/home');
+      }
     } catch (e) {
       if (mounted) {
         showAppSnackBar(context, 'Google sign in failed: $e');
