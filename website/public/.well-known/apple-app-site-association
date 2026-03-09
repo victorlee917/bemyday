@@ -5,7 +5,7 @@
       {
         "appID": "38RXGUJVA3.com.bemyday",
         "paths": [
-          "/invite/*"
+          "/invitation/*"
         ]
       }
     ]

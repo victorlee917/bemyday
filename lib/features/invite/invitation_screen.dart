@@ -1,21 +1,25 @@
-import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
-import 'package:bemyday/common/widgets/close_app_bar_button.dart';
+import 'package:bemyday/common/widgets/timeleft_chip.dart';
 import 'package:bemyday/constants/gaps.dart';
+import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/invite/providers/invitation_provider.dart';
+import 'package:bemyday/features/invite/widgets/invite_card.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// 초대 받은 사람이 딥링크(https://bemyday.app/invite/:token)로 진입하는 화면
+/// 초대 받은 사람이 딥링크(https://bemyday.app/invitation/:token)로 진입하는 화면
 ///
 /// Accept / Decline
 class InvitationScreen extends ConsumerStatefulWidget {
   const InvitationScreen({super.key, required this.inviteToken});
   static const routeName = "invitation";
+  static const routeUrl = "/invitation";
 
   /// 딥링크 경로에서 전달된 토큰
   final String inviteToken;
@@ -27,12 +31,31 @@ class InvitationScreen extends ConsumerStatefulWidget {
 class _InvitationScreenState extends ConsumerState<InvitationScreen> {
   bool _isAccepting = false;
 
-  void _onCloseTap(BuildContext context) {
-    if (Navigator.of(context).canPop()) {
-      context.pop();
-    } else {
-      context.go('/home');
+  DateTime? _parseExpiresAt(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
+  List<Color>? _parseGradientColors(dynamic value) {
+    if (value == null) return null;
+    if (value is! List) return null;
+    final colors = <Color>[];
+    for (final item in value) {
+      if (item is! String) continue;
+      final hex = item.trim();
+      if (hex.isEmpty || !hex.startsWith('#')) continue;
+      final parsed = _hexToColor(hex);
+      if (parsed != null) colors.add(parsed);
     }
+    return colors.length >= 3 ? colors : null;
+  }
+
+  Color? _hexToColor(String hex) {
+    if (hex.length != 7 || !hex.startsWith('#')) return null;
+    final value = int.tryParse(hex.substring(1), radix: 16);
+    return value != null ? Color(0xFF000000 | value) : null;
   }
 
   Future<void> _onAcceptTap(BuildContext context) async {
@@ -55,21 +78,60 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: ref.read(invitationRepositoryProvider).getInvitationByToken(widget.inviteToken),
-      builder: (context, snapshot) {
-        final data = snapshot.data;
-        final isLoading = snapshot.connectionState == ConnectionState.waiting;
-        final isError = snapshot.hasError || (snapshot.hasData && data == null);
-        final invitationGroupId = data?['group_id'] as String?;
-        final userGroups = ref.watch(currentUserGroupsProvider).valueOrNull ?? [];
-        final isAlreadyMember = invitationGroupId != null &&
-            userGroups.any((g) => g.id == invitationGroupId);
-        // inviter_nickname (snake_case) 또는 inviterNickname (camelCase) 지원
-        final inviterNickname = (data?['inviter_nickname'] ?? data?['inviterNickname']) as String?;
-        final displayName = (inviterNickname ?? '').trim().isNotEmpty ? inviterNickname!.trim() : '초대자';
+    final invitationAsync = ref.watch(invitationByTokenProvider(widget.inviteToken));
+    final userGroups = ref.watch(currentUserGroupsProvider).valueOrNull ?? [];
 
-        return Container(
+    return invitationAsync.when(
+      loading: () => _buildScaffold(
+        context,
+        isLoading: true,
+        isError: false,
+        data: null,
+        userGroups: userGroups,
+      ),
+      error: (_, __) => _buildScaffold(
+        context,
+        isLoading: false,
+        isError: true,
+        data: null,
+        userGroups: userGroups,
+      ),
+      data: (data) => _buildScaffold(
+        context,
+        isLoading: false,
+        isError: data == null,
+        data: data,
+        userGroups: userGroups,
+      ),
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context, {
+    required bool isLoading,
+    required bool isError,
+    required Map<String, dynamic>? data,
+    required List<dynamic> userGroups,
+  }) {
+    final invitationGroupId = data?['group_id'] as String?;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final isInviter = currentUserId != null &&
+        (data?['inviter_id'] ?? data?['inviterId']) == currentUserId;
+    final isAlreadyMember = isInviter ||
+        (invitationGroupId != null &&
+            userGroups.any((g) => g.id == invitationGroupId));
+    // inviter_nickname (snake_case) 또는 inviterNickname (camelCase) 지원
+    final inviterNickname = (data?['inviter_nickname'] ?? data?['inviterNickname']) as String?;
+    final displayName = (inviterNickname ?? '').trim().isNotEmpty ? inviterNickname!.trim() : '초대자';
+    final rawAvatar = data?['inviter_avatar_url'] ?? data?['inviterAvatarUrl'];
+    final inviterAvatarUrl = (rawAvatar is String && rawAvatar.trim().isNotEmpty)
+        ? rawAvatar.trim()
+        : null;
+    final gradientColors = _parseGradientColors(data?['gradient_colors'] ?? data?['gradientColors']);
+    final expiresAt = _parseExpiresAt(data?['expires_at'] ?? data?['expiresAt']);
+    final isExpired = expiresAt != null && expiresAt.isBefore(DateTime.now());
+
+    return Container(
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.only(
@@ -81,14 +143,6 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
             backgroundColor: isDarkMode(context)
                 ? CustomColors.sheetColorDark
                 : CustomColors.sheetColorLight,
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              title: Text("Invitation"),
-              backgroundColor: isDarkMode(context)
-                  ? CustomColors.sheetColorDark
-                  : CustomColors.sheetColorLight,
-              actions: [CloseAppBarButton(onTap: () => _onCloseTap(context))],
-            ),
             body: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : isError
@@ -96,66 +150,167 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
                           child: Text(
-                            '유효하지 않거나 만료된 초대입니다',
+                            'Expired Invitation',
                             style: Theme.of(context).textTheme.bodyLarge,
                             textAlign: TextAlign.center,
                           ),
                         ),
                       )
-                    : isAlreadyMember
-                            ? Center(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
-                                  child: Text(
-                                    '이미 가입된 그룹입니다',
-                                    style: Theme.of(context).textTheme.titleMedium,
-                                    textAlign: TextAlign.center,
+                    : Center(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final screenWidth = MediaQuery.of(context).size.width;
+                            final width = (screenWidth - Paddings.scaffoldH * 2) * 0.9;
+                            final height = width * (3 / 2);
+                            final parsedExpiresAt = isAlreadyMember
+                                ? null
+                                : _parseExpiresAt(data?['expires_at'] ?? data?['expiresAt']);
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(RValues.island),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.1),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Tilt(
+                                    tiltConfig: TiltConfig(
+                                      enableGestureTouch: true,
+                                      enableGestureHover: true,
+                                      enableGestureSensors: true,
+                                      angle: 4,
+                                      sensorFactor: 8,
+                                      enableReverse: true,
+                                    ),
+                                    lightConfig: LightConfig(disable: true),
+                                    shadowConfig: ShadowConfig(disable: true),
+                                    borderRadius: BorderRadius.circular(RValues.island),
+                                    child: InviteCard(
+                                      weekdayName: weekdays[((data?['weekday'] as int?) ?? 1) - 1].name,
+                                      inviterNickname: displayName,
+                                      inviterAvatarUrl: inviterAvatarUrl,
+                                      gradientColors: gradientColors,
+                                      width: width,
+                                      height: height,
+                                    ),
                                   ),
                                 ),
-                              )
-                            : Padding(
-                            padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                AvatarDefault(
-                                  avatarUrl: (data?['inviter_avatar_url'] ?? data?['inviterAvatarUrl']) as String?,
-                                  nickname: displayName,
-                                  radius: 32,
-                                ),
-                                Gaps.v16,
-                                Text(
-                                  '$displayName님이 초대했어요',
-                                  style: Theme.of(context).textTheme.titleMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                                Gaps.v8,
-                                Text(
-                                  'Would You Be My ${weekdays[((data?['weekday'] as int?) ?? 1) - 1].name}?',
-                                  style: Theme.of(context).textTheme.bodyLarge,
-                                  textAlign: TextAlign.center,
-                                ),
+                                if (parsedExpiresAt != null) ...[
+                                  Gaps.v16,
+                                  InviteExpiryCountdown(expiresAt: parsedExpiresAt),
+                                ],
+                                if (isAlreadyMember) ...[
+                                  Gaps.v16,
+                                  ChipContainer(
+                                    child: Text(
+                                      'Already a member',
+                                      style: TextStyle(
+                                        color: isDarkMode(context)
+                                            ? Colors.white
+                                            : Colors.black87,
+                                        fontSize: Sizes.size10,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
+                            );
+                          },
+                        ),
+                      ),
+            bottomNavigationBar: isLoading
+                ? null
+                : isError
+                    ? SafeArea(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: Paddings.scaffoldH,
+                            right: Paddings.scaffoldH,
+                            bottom: Paddings.scaffoldV,
+                          ),
+                          child: GestureDetector(
+                            onTap: () => context.go('/home'),
+                            child: Container(
+                              width: double.infinity,
+                              height: Sizes.size48,
+                              decoration: BoxDecoration(
+                                color: isDarkMode(context)
+                                    ? Colors.white
+                                    : Colors.black,
+                                borderRadius: BorderRadius.circular(RValues.button),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Ok',
+                                  style: Theme.of(context).textTheme.labelLarge!
+                                      .copyWith(
+                                        color: isDarkMode(context)
+                                            ? Colors.black
+                                            : Colors.white,
+                                      ),
+                                ),
+                              ),
                             ),
                           ),
-            bottomNavigationBar: !isLoading && !isError && !isAlreadyMember
+                        ),
+                      )
+                    : (!isAlreadyMember ? !isExpired : true)
                 ? SafeArea(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: Paddings.scaffoldH,
-                        vertical: Paddings.scaffoldV,
+                      padding: EdgeInsets.only(
+                        left: Paddings.scaffoldH,
+                        right: Paddings.scaffoldH,
+                        bottom: Paddings.scaffoldV,
                       ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: _isAccepting ? null : () => _onAcceptTap(context),
-                          child: _isAccepting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Text("Accept"),
+                      child: GestureDetector(
+                        onTap: _isAccepting && !isAlreadyMember
+                            ? null
+                            : () => isAlreadyMember
+                                ? context.go('/home')
+                                : _onAcceptTap(context),
+                        child: Opacity(
+                          opacity: _isAccepting && !isAlreadyMember ? 0.7 : 1.0,
+                          child: Container(
+                            width: double.infinity,
+                            height: Sizes.size48,
+                            decoration: BoxDecoration(
+                              color: isDarkMode(context)
+                                  ? Colors.white
+                                  : Colors.black,
+                              borderRadius: BorderRadius.circular(RValues.button),
+                            ),
+                            child: Center(
+                              child: _isAccepting && !isAlreadyMember
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: isDarkMode(context)
+                                            ? Colors.black
+                                            : Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      isAlreadyMember ? "Ok" : "Accept",
+                                      style: Theme.of(context).textTheme.labelLarge!
+                                          .copyWith(
+                                            color: isDarkMode(context)
+                                                ? Colors.black
+                                                : Colors.white,
+                                          ),
+                                    ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -163,7 +318,5 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                 : null,
           ),
         );
-      },
-    );
   }
 }

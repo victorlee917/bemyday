@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 초대 URL 베이스 (딥링크)
-const String inviteUrlBase = 'https://bemyday.app/invite';
+const String inviteUrlBase = 'https://bemyday.app/invitation';
 
 /// [Repository] 초대 API - Supabase invitations 테이블 연동
 ///
@@ -23,11 +23,13 @@ class InvitationRepository {
   ///
   /// - [groupId]: 해당 요일 그룹이 있으면 전달, 없으면 null
   /// - [dbWeekday]: 1=월 ~ 7=일 (group_id 없을 때 필수)
+  /// - [gradientColors]: 초대장 카드 그라데이션 [dark, base, light] hex 배열. 웹 동일 UI용
   /// - 만료: 1시간
   /// - Returns: 생성된 token
   Future<String> createInvitation({
     String? groupId,
     required int dbWeekday,
+    List<String>? gradientColors,
     Map<String, dynamic>? metadata,
   }) async {
     final userId = _client.auth.currentUser?.id;
@@ -55,6 +57,10 @@ class InvitationRepository {
       row['group_id'] = groupId;
     } else {
       row['weekday'] = dbWeekday;
+    }
+
+    if (gradientColors != null && gradientColors.isNotEmpty) {
+      row['gradient_colors'] = gradientColors;
     }
 
     await _client.from('invitations').insert(row);

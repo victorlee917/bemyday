@@ -1,4 +1,5 @@
 import 'package:app_links/app_links.dart';
+import 'package:bemyday/common/widgets/avatar/avatar_preview_screen.dart';
 import 'package:bemyday/config/supabase_config.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/core/providers.dart';
@@ -17,15 +18,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// https://bemyday.app/invite/:token 또는 com.bemyday://invite/:token → /invite/:token
+/// https://bemyday.app/invitation/:token 또는 com.bemyday://invitation/:token → /invitation/:token
 String? _invitePathFromUri(Uri? uri) {
   if (uri == null) return null;
-  if (uri.path.startsWith('/invite/')) return uri.path;
-  // 카카오톡 인앱 브라우저용: com.bemyday://invite/TOKEN
+  if (uri.path.startsWith('/invitation/')) return uri.path;
+  // 카카오톡 인앱 브라우저용: com.bemyday://invitation/TOKEN
   if (uri.scheme == 'com.bemyday' &&
-      uri.host == 'invite' &&
+      uri.host == 'invitation' &&
       uri.pathSegments.isNotEmpty) {
-    return '/invite/${uri.pathSegments.first}';
+    return '/invitation/${uri.pathSegments.first}';
   }
   return null;
 }

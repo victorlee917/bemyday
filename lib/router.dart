@@ -42,19 +42,19 @@ GoRouter createRouter(
   return GoRouter(
     refreshListenable: authStateNotifier,
     initialLocation: initialLocation ?? StartScreen.routeUrl,
-    // 플랫폼이 com.bemyday://invite/xxx 전달 시 initialLocation(변환된 경로) 우선 사용
+    // 플랫폼이 com.bemyday://invitation/xxx 전달 시 initialLocation(변환된 경로) 우선 사용
     overridePlatformDefaultLocation: initialLocation != null,
     onException: (context, state, router) {
-      // GoException "no routes for location: com.bemyday://invite/TOKEN" → /invite/TOKEN 리다이렉트
+      // GoException "no routes for location: com.bemyday://invitation/TOKEN" → /invitation/TOKEN 리다이렉트
       final err = state.error;
       if (err is GoException) {
-        final match = RegExp(r'no routes for location: (com\.bemyday://invite/[^"\s]+)')
+        final match = RegExp(r'no routes for location: (com\.bemyday://invitation/[^"\s]+)')
             .firstMatch(err.message);
         if (match != null) {
           final uriStr = match.group(1)!;
-          final tokenMatch = RegExp(r'com\.bemyday://invite/([^/?#]+)').firstMatch(uriStr);
+          final tokenMatch = RegExp(r'com\.bemyday://invitation/([^/?#]+)').firstMatch(uriStr);
           if (tokenMatch != null) {
-            router.go('/invite/${tokenMatch.group(1)!}');
+            router.go('/invitation/${tokenMatch.group(1)!}');
             return;
           }
         }
@@ -65,21 +65,23 @@ GoRouter createRouter(
       // uri.toString()으로 location 확인 (go_router 17: location → uri.toString())
       final location = state.uri.toString();
 
-      // com.bemyday://invite/TOKEN → /invite/TOKEN (플랫폼이 전체 URI를 전달하는 경우)
-      final schemeMatch = RegExp(r'^com\.bemyday://invite/([^/?#]+)').firstMatch(location);
+      // com.bemyday://invitation/TOKEN → /invitation/TOKEN (플랫폼이 전체 URI를 전달하는 경우)
+      final schemeMatch = RegExp(r'^com\.bemyday://invitation/([^/?#]+)').firstMatch(location);
       if (schemeMatch != null) {
-        return '/invite/${schemeMatch.group(1)!}';
+        return '/invitation/${schemeMatch.group(1)!}';
       }
 
       final session = Supabase.instance.client.auth.currentSession;
 
       // 로그아웃 상태
       if (session == null) {
+        final inviteMatch = RegExp(r'^/invitation/([^/?#]+)').firstMatch(location);
         final isPublicRoute = location == StartScreen.routeUrl ||
             location == TutorialScreen.routeUrl;
+        // /invitation/:token → InvitationScreen 직접 진입 (만료 시 안내 문구 표시용)
+        if (inviteMatch != null) return null;
         if (!isPublicRoute) {
-          // /invite/:token → 로그인 먼저. 토큰 저장 후 /start로
-          final match = RegExp(r'/invite/([^/?#]+)').firstMatch(location);
+          final match = RegExp(r'/invitation/([^/?#]+)').firstMatch(location);
           if (match != null) {
             final token = match.group(1)!;
             final prefs = await SharedPreferences.getInstance();
@@ -96,11 +98,11 @@ GoRouter createRouter(
       final pendingToken = prefs.getString(_pendingInviteTokenKey);
       if (pendingToken != null) {
         await prefs.remove(_pendingInviteTokenKey);
-        return '/invite/$pendingToken';
+        return '/invitation/$pendingToken';
       }
       final inviteToken = state.uri.queryParameters['invite_token'];
       if (inviteToken != null && location.startsWith(StartScreen.routeUrl)) {
-        return '/invite/$inviteToken';
+        return '/invitation/$inviteToken';
       }
 
       // 로그인 상태: 프로필 닉네임 확인 (currentProfileProvider 캐시 활용)
@@ -170,7 +172,14 @@ GoRouter createRouter(
       name: NavigationScreen.routeName,
       builder: (context, state) {
         final tab = state.pathParameters["tab"]!;
-        return NavigationScreen(tab: tab);
+        final weekdayParam = state.uri.queryParameters['weekday'];
+        final initialWeekdayIndex = weekdayParam != null
+            ? int.tryParse(weekdayParam)
+            : null;
+        return NavigationScreen(
+          tab: tab,
+          initialWeekdayIndex: initialWeekdayIndex,
+        );
       },
     ),
     GoRoute(
@@ -183,9 +192,9 @@ GoRouter createRouter(
         );
       },
     ),
-    // 딥링크: https://bemyday.app/invite/:token → 초대 받은 사람용
+    // 딥링크: https://bemyday.app/invitation/:token → 초대 받은 사람용
     GoRoute(
-      path: '${InviteScreen.routeUrl}/:token',
+      path: '${InvitationScreen.routeUrl}/:token',
       name: InvitationScreen.routeName,
       pageBuilder: (context, state) {
         final token = state.pathParameters['token'] ?? '';

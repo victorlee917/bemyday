@@ -5,7 +5,7 @@ Remix 기반 웹사이트 (bemyday.app)
 ## 페이지
 
 - `/` - 앱 소개 (메인)
-- `/invite/:token` - 초대 페이지
+- `/invitation/:token` - 초대 페이지
 - `/privacy` - 개인정보처리방침
 - `/terms` - 서비스이용약관
 

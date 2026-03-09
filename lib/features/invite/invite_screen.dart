@@ -7,10 +7,14 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/group/utils.dart';
+import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/invite/providers/invitation_provider.dart';
+import 'package:bemyday/features/invite/widgets/invite_card.dart'
+    show extractGradientColorsAsHex, InviteCard;
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -79,6 +83,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
 
   Future<void> _onInviteTap() async {
     final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
+    final profile = ref.read(currentProfileProvider).valueOrNull;
     final preferredIndex =
         _overriddenWeekdayIndex ?? widget.selectedWeekdayIndex;
     final effectiveIndex = await ref
@@ -86,11 +91,17 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     final group = groupForWeekday(groups, effectiveIndex);
     final dbWeekday = effectiveIndex + 1;
 
+    List<String>? gradientColors;
+    if (profile?.avatarUrl != null) {
+      gradientColors = await extractGradientColorsAsHex(profile!.avatarUrl!);
+    }
+
     String token;
     try {
       token = await ref.read(invitationRepositoryProvider).createInvitation(
             groupId: group?.id,
             dbWeekday: dbWeekday,
+            gradientColors: gradientColors,
           );
     } catch (e) {
       if (context.mounted) {
@@ -100,7 +111,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     }
 
     if (!context.mounted) return;
-    final inviteUrl = 'https://bemyday.app/invite/$token';
+    final inviteUrl = 'https://bemyday.app/invitation/$token';
     final weekdayName = weekdays[effectiveIndex].name;
     final size = MediaQuery.sizeOf(context);
     final shareOrigin = Rect.fromCenter(
@@ -132,6 +143,10 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     final isAlreadyFull =
         memberCountAsync?.valueOrNull != null &&
         memberCountAsync!.valueOrNull! >= 8;
+
+    final profileAsync = ref.watch(currentProfileProvider);
+    final inviterNickname = profileAsync.valueOrNull?.nickname ?? '?';
+    final inviterAvatarUrl = profileAsync.valueOrNull?.avatarUrl;
 
     return Container(
       clipBehavior: Clip.hardEdge,
@@ -196,32 +211,35 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                     },
                     child: Center(
                       child: Container(
-                        height: height,
-                        width: width,
-                        decoration: BoxDecoration(
-                          color: isDarkMode(context)
-                              ? CustomColors.nonClickableAreaDark
-                              : CustomColors.nonClickableAreaLight,
-                          borderRadius: BorderRadius.circular(RValues.island),
-                          border: Border.all(
-                            color: isDarkMode(context)
-                                ? CustomColors.borderDark
-                                : CustomColors.borderLight,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(RValues.island),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              "Would You Be My ${weekdays[effectiveIndex].name}?",
-                              textAlign: TextAlign.center,
-                            ),
-                            Column(
-                              children: [
-                                Text("From."),
-                                Row(children: []),
-                              ],
-                            ),
-                          ],
+                        child: Tilt(
+                          tiltConfig: TiltConfig(
+                            enableGestureTouch: true,
+                            enableGestureHover: true,
+                            enableGestureSensors: true,
+                            angle: 4,
+                            sensorFactor: 8,
+                            enableReverse: true, // 누른 쪽이 뒤로, 반대편이 앞으로
+                          ),
+                          lightConfig: LightConfig(disable: true),
+                          shadowConfig: ShadowConfig(disable: true),
+                          borderRadius: BorderRadius.circular(RValues.island),
+                          child: InviteCard(
+                            weekdayName: weekdays[effectiveIndex].name,
+                            inviterNickname: inviterNickname,
+                            inviterAvatarUrl: inviterAvatarUrl,
+                            width: width,
+                            height: height,
+                          ),
                         ),
                       ),
                     ),
