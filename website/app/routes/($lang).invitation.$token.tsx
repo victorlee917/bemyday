@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 
 import { InviteCard, InviteExpiryCountdown } from "~/components/invite-card";
 import { Logo } from "~/components/logo";
-import { AppStoreButton, GooglePlayButton } from "~/components/store-buttons";
+import {
+  AppStoreButton,
+  GooglePlayButton,
+  StoreDownloadButton,
+} from "~/components/store-buttons";
 import { INVITE_TRANSLATIONS, getWeekday, type Lang } from "~/i18n/invite";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
@@ -281,15 +285,12 @@ export default function InviteToken() {
               label={t.openInApp}
             />
           )}
-          {hasSufficientHeight ? (
-            <>
-              <AppStoreButton />
-              <GooglePlayButton />
-            </>
-          ) : isIOS ? (
-            <AppStoreButton />
-          ) : isAndroid ? (
-            <GooglePlayButton />
+          {(isAndroid || isIOS) ? (
+            <StoreDownloadButton
+              label={t.downloadApp}
+              isIOS={isIOS}
+              isAndroid={isAndroid}
+            />
           ) : (
             <>
               <AppStoreButton />
