@@ -129,15 +129,17 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   const t = INVITE_TRANSLATIONS[lang];
 
   const title = inv
-    ? `${inv.inviter_nickname} invited you - Be My Day`
+    ? `Would you be my ${weekdayName}?`
     : "Invitation - Be My Day";
   const description = inv
-    ? `Would you be my ${weekdayName}? ${inv.inviter_nickname} invited you to Be My Day.`
+    ? `${inv.inviter_nickname} invited you to Be My Day.`
     : "Be My Day invitation";
 
   const canonicalLang = lang === "en" ? "" : `/${lang}`;
   const canonicalUrl = `${SITE_URL}${canonicalLang}/invitation/${token}`;
-  const ogImage = `${SITE_URL}/images/app_icon.png`;
+  const ogImage = inv
+    ? `${SITE_URL}/og/invitation/${token}`
+    : `${SITE_URL}/images/app_icon.png`;
 
   return [
     { title },
@@ -149,6 +151,8 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
     { property: "og:url", content: canonicalUrl },
     { property: "og:type", content: "website" },
     { property: "og:image", content: ogImage },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
     { property: "og:site_name", content: "Be My Day" },
     { property: "og:locale", content: lang === "ko" ? "ko_KR" : "en_US" },
     { name: "twitter:card", content: "summary_large_image" },
