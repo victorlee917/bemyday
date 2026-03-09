@@ -249,7 +249,7 @@ export default function InviteToken() {
           <div
             className="shrink-0 max-w-[min(280px,85vw)]"
             style={{
-              height: "min(45vh, 100%)",
+              height: "min(50vh, 100%)",
               minHeight: 240,
               aspectRatio: "2/3",
               width: "auto",
@@ -285,7 +285,7 @@ export default function InviteToken() {
               label={t.openInApp}
             />
           )}
-          {(isAndroid || isIOS) ? (
+          {isAndroid || isIOS ? (
             <StoreDownloadButton
               label={t.downloadApp}
               isIOS={isIOS}
