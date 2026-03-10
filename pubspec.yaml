@@ -58,6 +58,9 @@ dependencies:
   app_links: ^6.3.2
   google_sign_in: ^6.2.2
   avatar_stack: ^3.0.0
+  palette_generator_master: ^1.0.1
+  flutter_tilt: ^3.3.2
+  sensors_plus: ^7.0.0  # flutter_tilt 센서용, 직접 등록으로 MissingPluginException 방지
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +77,8 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
+  web:
+    generate: true
   image_path: "assets/icon/app_icon.png"
   remove_alpha_ios: true  # App Store는 투명도 불가
 

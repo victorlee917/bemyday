@@ -61,7 +61,7 @@ class WeekdayOccupied extends ConsumerWidget {
           ),
           Gaps.v20,
           TimeleftChip(targetWeekday: group.weekday),
-          Gaps.v24,
+          Gaps.v16,
           Expanded(
             child: Center(
               child: ref

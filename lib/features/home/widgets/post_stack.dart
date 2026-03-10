@@ -9,6 +9,7 @@ import 'package:bemyday/features/post/providers/post_provider.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -75,12 +76,40 @@ class PostStack extends ConsumerWidget {
                         child: Transform.rotate(
                           angle: angles[i],
                           alignment: Alignment.center,
-                          child: PostCard(
-                            post: visible[i],
-                            borderColor: borderColor,
-                            bgColor: bgColor,
-                            blur: beforeReveal &&
-                                visible[i].authorId != currentUserId,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(RValues.thumbnail),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Tilt(
+                              tiltConfig: TiltConfig(
+                                enableGestureTouch: false,
+                                enableGestureHover: false,
+                                enableGestureSensors: true,
+                                angle: 4,
+                                sensorFactor: 8,
+                              ),
+                              lightConfig: LightConfig(disable: true),
+                              shadowConfig: ShadowConfig(disable: true),
+                              borderRadius: BorderRadius.circular(RValues.thumbnail),
+                              child: SizedBox(
+                                width: cardWidth,
+                                height: cardHeight,
+                                child: PostCard(
+                                  post: visible[i],
+                                  borderColor: borderColor,
+                                  bgColor: bgColor,
+                                  blur: beforeReveal &&
+                                      visible[i].authorId != currentUserId,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),

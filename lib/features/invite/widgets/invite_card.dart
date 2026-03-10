@@ -9,6 +9,7 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:palette_generator_master/palette_generator_master.dart';
 
@@ -45,6 +46,77 @@ Future<List<String>?> extractGradientColorsAsHex(String imageUrl) async {
 /// [InviteCardTheme]에 따라 다른 스타일로 표시 가능.
 /// 현재는 [InviteCardTheme.defaultTheme]만 지원.
 enum InviteCardTheme { defaultTheme }
+
+/// InviteScreen·InvitationScreen 공통 카드 크기 (가로 60%, 2:3 비율)
+/// 바텀시트 내 잘림 방지를 위해 0.6 사용
+(double width, double height) inviteCardDimensions(BuildContext context) {
+  final w = MediaQuery.of(context).size.width * 0.6;
+  return (w, w * (3 / 2));
+}
+
+/// InviteScreen·InvitationScreen 공통 카드 섹션 (카드 + 선택적 하단 위젯)
+///
+/// [child]: 카드 아래 표시 (InvitationScreen: Expires, Already a member 등)
+class InviteSheetBody extends StatelessWidget {
+  const InviteSheetBody({
+    super.key,
+    required this.weekdayName,
+    required this.inviterNickname,
+    this.inviterAvatarUrl,
+    this.gradientColors,
+    this.child,
+  });
+
+  final String weekdayName;
+  final String inviterNickname;
+  final String? inviterAvatarUrl;
+  final List<Color>? gradientColors;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final (width, height) = inviteCardDimensions(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(RValues.island),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Tilt(
+            tiltConfig: TiltConfig(
+              enableGestureTouch: true,
+              enableGestureHover: true,
+              enableGestureSensors: true,
+              angle: 4,
+              sensorFactor: 8,
+              enableReverse: true,
+            ),
+            lightConfig: LightConfig(disable: true),
+            shadowConfig: ShadowConfig(disable: true),
+            borderRadius: BorderRadius.circular(RValues.island),
+            child: InviteCard(
+              weekdayName: weekdayName,
+              inviterNickname: inviterNickname,
+              inviterAvatarUrl: inviterAvatarUrl,
+              gradientColors: gradientColors,
+              width: width,
+              height: height,
+            ),
+          ),
+        ),
+        if (child != null) ...[Gaps.v16, child!],
+      ],
+    );
+  }
+}
 
 class InviteCard extends StatelessWidget {
   const InviteCard({

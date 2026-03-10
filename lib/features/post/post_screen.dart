@@ -3,7 +3,6 @@ import 'package:bemyday/common/widgets/sheet/sheet_item.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_select.dart';
 import 'package:bemyday/common/widgets/cached_post_image.dart';
 import 'package:bemyday/common/widgets/gradient_overlay.dart';
-import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/comments/comments_sheet.dart';
 import 'package:bemyday/features/group/models/group.dart';

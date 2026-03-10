@@ -12,9 +12,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key, required this.bottomPadding});
+  const HomeScreen({
+    super.key,
+    required this.bottomPadding,
+    this.initialWeekdayIndex,
+  });
 
   final double bottomPadding;
+
+  /// 초대 링크 등으로 특정 그룹으로 진입 시 사용 (0~6)
+  final int? initialWeekdayIndex;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -75,42 +82,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final groupByWeekday = {
                 for (final g in groups) g.weekday: g,
               };
-              final targetIndex = _computeInitialFocusWeekdayIndex(groups);
+              final targetIndex = widget.initialWeekdayIndex != null
+                  ? widget.initialWeekdayIndex!.clamp(0, 6)
+                  : _computeInitialFocusWeekdayIndex(groups);
               final targetPage = 7 + targetIndex;
 
               if (_pageController == null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_pageController != null || !mounted) return;
-                  final controller = PageController(
-                    initialPage: targetPage,
-                    viewportFraction: 0.9,
-                  );
-                  controller.addListener(_syncWeekdayFromPage);
-                  setState(() {
-                    _pageController = controller;
-                    _weekdayIndex = targetIndex;
-                  });
-                  ref.read(homeWeekdayIndexProvider.notifier).state =
-                      targetIndex;
-                });
-                // PageController 생성 전: 목표 페이지 내용을 바로 표시해 VacantPage 깜빡임 방지
-                final dbWeekday = targetIndex + 1;
-                final group = groupByWeekday[dbWeekday];
-                return Padding(
-                  padding: EdgeInsetsGeometry.only(
-                    bottom: widget.bottomPadding,
-                  ),
-                  child: group != null
-                      ? WeekdayOccupied(
-                          weekdayIndex: targetIndex,
-                          group: group,
-                        )
-                      : VacantPage(
-                          message:
-                              "Who's your ${weekdays[targetIndex].name}?",
-                          onInviteTap: () => _onInviteTap(targetIndex),
-                        ),
+                _pageController = PageController(
+                  initialPage: targetPage,
+                  viewportFraction: 0.9,
                 );
+                _pageController!.addListener(_syncWeekdayFromPage);
+                _weekdayIndex = targetIndex;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    final notifier = ref.read(homeWeekdayIndexProvider.notifier);
+                    if (notifier.state != targetIndex) {
+                      notifier.state = targetIndex;
+                    }
+                  }
+                });
               }
 
               return PageView.builder(

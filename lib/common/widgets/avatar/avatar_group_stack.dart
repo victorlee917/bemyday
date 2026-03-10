@@ -15,7 +15,7 @@ class AvatarGroupStack extends ConsumerWidget {
     super.key,
     required this.groupId,
     this.radius = CustomSizes.avatarDefault,
-    this.showBorder = false,
+    this.showBorder = true,
   });
 
   final String groupId;

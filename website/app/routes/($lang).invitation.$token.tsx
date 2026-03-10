@@ -193,7 +193,7 @@ export default function InviteToken() {
 
   if (!invitation) {
     return (
-      <div className="h-screen flex flex-col justify-between overflow-hidden">
+      <div className="h-screen flex flex-col justify-between items-center overflow-hidden">
         {showLogo && (
           <header className="fixed top-6 bg-transparent">
             <Logo size={48} />

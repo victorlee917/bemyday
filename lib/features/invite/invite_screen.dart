@@ -10,11 +10,10 @@ import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/invite/providers/invitation_provider.dart';
 import 'package:bemyday/features/invite/widgets/invite_card.dart'
-    show extractGradientColorsAsHex, InviteCard;
+    show extractGradientColorsAsHex, InviteSheetBody;
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -30,21 +29,7 @@ class InviteScreen extends ConsumerStatefulWidget {
 }
 
 class _InviteScreenState extends ConsumerState<InviteScreen> {
-  late final PageController _pageController;
   int? _overriddenWeekdayIndex;
-  int _selectedCardIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.6);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   void _onCloseTap() {
     if (Navigator.of(context).canPop()) {
@@ -52,12 +37,6 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     } else {
       context.go('/home');
     }
-  }
-
-  void _onPageChanged(int index) {
-    setState(() {
-      _selectedCardIndex = index;
-    });
   }
 
   void _onWeekdayChanged(int index) {
@@ -172,80 +151,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
           children: [
             Gaps.v24,
             Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                itemCount: 1,
-                itemBuilder: (context, index) {
-                  final screenWidth = MediaQuery.of(context).size.width;
-                  final width = screenWidth * 0.7;
-                  final height = width * (3 / 2); // 2:3 비율 (가로:세로)
-
-                  return RepaintBoundary(
-                    child: AnimatedBuilder(
-                      animation: _pageController,
-                      builder: (context, child) {
-                      // 초기 페이지 기준으로 차이 계산
-                      final initialPage = 0;
-                      final currentPage =
-                          _pageController.position.haveDimensions
-                          ? _pageController.page!
-                          : initialPage.toDouble();
-                      final diff = currentPage - index;
-
-                      final opacity = (1 - (diff.abs() * 0.3)).clamp(0.0, 1.0);
-                      final rotationValue = diff * 0.3; // Y축 회전
-                      final scale = (1 - diff.abs() * 0.2).clamp(
-                        0.8,
-                        1.0,
-                      ); // 선택된 카드가 더 큼
-
-                      return Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.identity()
-                          ..setEntry(3, 2, 0.001)
-                          ..rotateY(rotationValue)
-                          ..scaleByDouble(scale, scale, 1.0, 1.0),
-                        child: Opacity(opacity: opacity, child: child),
-                      );
-                    },
-                    child: Center(
-                      child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(RValues.island),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                        child: Tilt(
-                          tiltConfig: TiltConfig(
-                            enableGestureTouch: true,
-                            enableGestureHover: true,
-                            enableGestureSensors: true,
-                            angle: 4,
-                            sensorFactor: 8,
-                            enableReverse: true, // 누른 쪽이 뒤로, 반대편이 앞으로
-                          ),
-                          lightConfig: LightConfig(disable: true),
-                          shadowConfig: ShadowConfig(disable: true),
-                          borderRadius: BorderRadius.circular(RValues.island),
-                          child: InviteCard(
-                            weekdayName: weekdays[effectiveIndex].name,
-                            inviterNickname: inviterNickname,
-                            inviterAvatarUrl: inviterAvatarUrl,
-                            width: width,
-                            height: height,
-                          ),
-                        ),
-                      ),
-                    ),
+              child: Center(
+                child: SingleChildScrollView(
+                  child: InviteSheetBody(
+                    weekdayName: weekdays[effectiveIndex].name,
+                    inviterNickname: inviterNickname,
+                    inviterAvatarUrl: inviterAvatarUrl,
                   ),
-                );
-                },
+                ),
               ),
             ),
             Gaps.v24,

@@ -202,54 +202,56 @@ class WeekGridCard extends ConsumerWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(RValues.thumbnail),
           child: Stack(
-          fit: StackFit.expand,
-          children: [
-            ImageFiltered(
-              imageFilter: shouldBlur
-                  ? ImageFilter.blur(sigmaX: 20, sigmaY: 20)
-                  : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-              child: CachedPostImage(
-                imageUrl: post.photoUrl,
-                cacheKey: post.storagePath,
-                placeholderColor: bgColor,
-                errorWidget: Container(
-                  color: bgColor,
-                  child: const Center(child: FaIcon(FontAwesomeIcons.image)),
+            fit: StackFit.expand,
+            children: [
+              ImageFiltered(
+                imageFilter: shouldBlur
+                    ? ImageFilter.blur(sigmaX: 20, sigmaY: 20)
+                    : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                child: CachedPostImage(
+                  imageUrl: post.photoUrl,
+                  cacheKey: post.storagePath,
+                  placeholderColor: bgColor,
+                  errorWidget: Container(
+                    color: bgColor,
+                    child: const Center(child: FaIcon(FontAwesomeIcons.image)),
+                  ),
                 ),
               ),
-            ),
-            if (item.postCount > 1)
-              Positioned(
-                right: Sizes.size12,
-                bottom: Sizes.size12,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(RValues.thumbnail),
-                  child: BackdropFilter(
-                    filter: Blurs.backdrop,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: Sizes.size8,
-                        vertical: Sizes.size3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Blurs.overlayColor,
-                        borderRadius: BorderRadius.circular(RValues.thumbnail),
-                        border: Border.all(color: CustomColors.borderDark),
-                      ),
-                      child: Text(
-                        "${item.postCount} Posts",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: Sizes.size11,
-                          fontWeight: FontWeight.w600,
+              if (item.postCount > 1)
+                Positioned(
+                  right: Sizes.size12,
+                  bottom: Sizes.size12,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(RValues.thumbnail),
+                    child: BackdropFilter(
+                      filter: Blurs.backdrop,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: Sizes.size8,
+                          vertical: Sizes.size3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Blurs.overlayColor,
+                          borderRadius: BorderRadius.circular(
+                            RValues.thumbnail,
+                          ),
+                          border: Border.all(color: CustomColors.borderDark),
+                        ),
+                        child: Text(
+                          "${item.postCount} Posts",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: Sizes.size11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -266,7 +268,7 @@ class WeekGridCard extends ConsumerWidget {
               : CustomColors.clickableAreaLight,
           border: Border.all(
             color: dark ? CustomColors.borderDark : CustomColors.borderLight,
-            width: Sizes.size5,
+            width: Sizes.size1,
           ),
           borderRadius: BorderRadius.circular(RValues.thumbnail),
         ),
@@ -275,8 +277,19 @@ class WeekGridCard extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const FaIcon(FontAwesomeIcons.circlePlus),
-              Gaps.v8,
-              Text("Add post", style: Theme.of(context).textTheme.bodySmall),
+              Gaps.v12,
+              Text(
+                "No posts yet",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              Gaps.v6,
+              Opacity(
+                opacity: 0.5,
+                child: Text(
+                  "Add posts",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
             ],
           ),
         ),

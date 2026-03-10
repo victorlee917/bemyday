@@ -27,13 +27,6 @@ class PostCard extends StatelessWidget {
         border: BoxBorder.all(color: borderColor, width: borderWidth),
         borderRadius: BorderRadius.circular(RValues.thumbnail),
         color: bgColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(RValues.thumbnail - borderWidth),

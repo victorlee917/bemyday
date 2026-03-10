@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:bemyday/constants/sizes.dart';
+import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 
 class RevealCountdown extends StatefulWidget {
@@ -46,17 +48,6 @@ class _RevealCountdownState extends State<RevealCountdown> {
 
   @override
   Widget build(BuildContext context) {
-    final days = _remaining.inDays;
-    final hours = _remaining.inHours % 24;
-    final minutes = _remaining.inMinutes % 60;
-    final seconds = _remaining.inSeconds % 60;
-
-    final parts = <String>[];
-    if (days > 0) parts.add('${days}d');
-    parts.add('${hours}h');
-    parts.add('${minutes}m');
-    parts.add('${seconds}s');
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -73,7 +64,7 @@ class _RevealCountdownState extends State<RevealCountdown> {
         ),
         const SizedBox(height: 8),
         Text(
-          parts.join(' '),
+          formatCountdown(_remaining),
           style: TextStyle(
             color: Colors.white,
             fontSize: Sizes.size24,

@@ -1,9 +1,36 @@
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
+import 'package:bemyday/features/invite/invitation_screen.dart';
 import 'package:bemyday/features/invite/invite_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+/// InvitationScreen을 모달 시트로 표시 (InviteScreen과 동일한 높이)
+Future<void> showInvitationSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  required String inviteToken,
+}) async {
+  final screenHeight = MediaQuery.of(context).size.height;
+  final safeAreaTop = MediaQuery.of(context).padding.top;
+  final availableHeight = screenHeight - safeAreaTop;
+
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(RValues.bottomsheet),
+      ),
+    ),
+    builder: (context) => SizedBox(
+      height: availableHeight * 0.8,
+      child: InvitationScreen(inviteToken: inviteToken, asSheet: true),
+    ),
+  );
+}
 
 /// InviteScreen을 모달 시트로 표시
 /// 요일을 먼저 결정한 뒤 시트를 열어 UI 깜빡임 방지

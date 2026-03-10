@@ -78,7 +78,7 @@ class PostEmpty extends StatelessWidget {
                         Opacity(
                           opacity: 0.5,
                           child: Text(
-                            'Add post',
+                            'Add posts',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),

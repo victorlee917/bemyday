@@ -116,7 +116,7 @@ class _WeekdayPickerRow extends ConsumerWidget {
     final isDimmed = count != null && count >= 8;
 
     final canInvite = item.group == null || (count ?? 0) < 8;
-    final childTitle = canInvite ? 'Can Invite' : 'Already Full';
+    final childTitle = canInvite ? null : 'Already Full';
 
     return SheetWidget(
       left: Row(
@@ -156,7 +156,7 @@ class _GroupAvatarPackage extends ConsumerWidget {
 
   final WeekdayPickerItem item;
   final bool isDarkOnly;
-  final String childTitle;
+  final String? childTitle;
   final int memberCount;
   final bool isDimmed;
 

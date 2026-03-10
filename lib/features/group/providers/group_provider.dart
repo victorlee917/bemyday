@@ -16,7 +16,7 @@ final currentUserGroupsProvider = FutureProvider<List<Group>>((ref) async {
 });
 
 /// 초대 가능한 요일 중 오늘과 가장 가까운 weekdayIndex (0~6)
-/// 초대 가능 = 해당 요일에 그룹 없음 OR 그룹 있으나 멤버 1명 이하
+/// 초대 가능 = 해당 요일에 그룹 없음 OR 그룹 있으나 멤버 8명 미만
 final defaultInviteWeekdayIndexProvider = FutureProvider<int>((ref) async {
   return ref.watch(effectiveInviteWeekdayIndexProvider(null).future);
 });
@@ -53,7 +53,7 @@ final effectiveInviteWeekdayIndexProvider =
       invitableWeekdays.add(dbWeekday);
     } else {
       final count = counts[group.id] ?? 0;
-      if (count <= 1) invitableWeekdays.add(dbWeekday);
+      if (count < 8) invitableWeekdays.add(dbWeekday); // 8명 미만이면 초대 가능
     }
   }
 

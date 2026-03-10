@@ -5,6 +5,35 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 
+/// TimeleftChip과 동일한 스타일의 칩 컨테이너 (커스텀 내용용)
+class ChipContainer extends StatelessWidget {
+  const ChipContainer({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = isDarkMode(context);
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: Sizes.size12,
+        vertical: Sizes.size4,
+      ),
+      decoration: BoxDecoration(
+        color: dark
+            ? CustomColors.nonClickableAreaDark
+            : CustomColors.nonClickableAreaLight,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          width: Sizes.size1,
+          color: dark ? CustomColors.borderDark : CustomColors.borderLight,
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
 /// {targetWeekday} 마감까지 남은 시간
 ///
 /// - [targetWeekday]: 1=월 ~ 7=일
@@ -64,7 +93,7 @@ class _TimeleftChipState extends State<TimeleftChip> {
   @override
   Widget build(BuildContext context) {
     final dark = isDarkMode(context);
-    final isToday = _text == 'Today';
+    final isToday = _text == 'D-day';
 
     Color bgColor;
     Color textColor;
@@ -90,16 +119,14 @@ class _TimeleftChipState extends State<TimeleftChip> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          width: Sizes.size1,
-          color: borderColor,
-        ),
+        border: Border.all(width: Sizes.size1, color: borderColor),
       ),
       child: Text(
         _text,
         style: TextStyle(
           fontSize: Sizes.size10,
           color: isToday ? textColor : null,
+          fontWeight: isToday ? FontWeight.w700 : null,
         ),
       ),
     );
@@ -124,9 +151,9 @@ String _formatTimeLeft(int targetWeekday) {
   final next = _nextMidnight(boundary);
   final remaining = next.difference(DateTime.now());
 
-  if (remaining.isNegative) return 'Today';
+  if (remaining.isNegative) return 'D-day';
 
   final secs = remaining.inSeconds;
-  if (secs < 86400) return 'Today';
+  if (secs < 86400) return 'D-day';
   return 'D-${secs ~/ 86400}';
 }

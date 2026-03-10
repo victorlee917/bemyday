@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NavigationScreen extends ConsumerStatefulWidget {
   static const String routeName = "navigation";
@@ -23,7 +24,18 @@ class NavigationScreen extends ConsumerStatefulWidget {
 
   final String tab;
 
-  const NavigationScreen({super.key, required this.tab});
+  /// /home?weekday=N으로 진입 시 HomeScreen에 전달 (0~6)
+  final int? initialWeekdayIndex;
+
+  /// invitation_token이 있으면 바텀시트로 초대 화면 표시
+  final String? invitationToken;
+
+  const NavigationScreen({
+    super.key,
+    required this.tab,
+    this.initialWeekdayIndex,
+    this.invitationToken,
+  });
 
   @override
   ConsumerState<NavigationScreen> createState() => _NavigationScreenState();
@@ -52,11 +64,18 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
     if (_selectedIndex != 1) {
       _animationController.value = 0.125;
     }
+    if (widget.invitationToken != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showInvitationSheetIfNeeded());
+    }
   }
 
   @override
   void didUpdateWidget(NavigationScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.invitationToken != null &&
+        widget.invitationToken != oldWidget.invitationToken) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showInvitationSheetIfNeeded());
+    }
     // 딥링크 등으로 탭 변경 시 동기화
     if (widget.tab != oldWidget.tab) {
       _selectedIndex = _tabs.indexOf(widget.tab);
@@ -66,6 +85,15 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
         _animationController.value = 0;
       }
     }
+  }
+
+  Future<void> _showInvitationSheetIfNeeded() async {
+    final token = widget.invitationToken;
+    if (token == null || !mounted) return;
+    if (Supabase.instance.client.auth.currentSession == null) return;
+    context.go('/${widget.tab}');
+    if (!mounted) return;
+    await showInvitationSheet(context, ref, inviteToken: token);
   }
 
   @override
@@ -135,7 +163,10 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
           ),
           Offstage(
             offstage: _selectedIndex != 1,
-            child: HomeScreen(bottomPadding: totalBottomPadding),
+            child: HomeScreen(
+              bottomPadding: totalBottomPadding,
+              initialWeekdayIndex: widget.initialWeekdayIndex,
+            ),
           ),
           Offstage(
             offstage: _selectedIndex != 2,

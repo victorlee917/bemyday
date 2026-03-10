@@ -1,3 +1,4 @@
+import 'package:bemyday/common/widgets/close_app_bar_button.dart';
 import 'package:bemyday/common/widgets/timeleft_chip.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
@@ -5,11 +6,11 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/invite/providers/invitation_provider.dart';
-import 'package:bemyday/features/invite/widgets/invite_card.dart';
+import 'package:bemyday/features/invite/widgets/invite_card.dart'
+    show InviteExpiryCountdown, InviteSheetBody;
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -17,12 +18,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 ///
 /// Accept / Decline
 class InvitationScreen extends ConsumerStatefulWidget {
-  const InvitationScreen({super.key, required this.inviteToken});
+  const InvitationScreen({super.key, required this.inviteToken, this.asSheet = false});
   static const routeName = "invitation";
   static const routeUrl = "/invitation";
 
   /// 딥링크 경로에서 전달된 토큰
   final String inviteToken;
+
+  /// 바텀시트로 표시될 때 true (닫기 버튼 표시)
+  final bool asSheet;
 
   @override
   ConsumerState<InvitationScreen> createState() => _InvitationScreenState();
@@ -30,6 +34,14 @@ class InvitationScreen extends ConsumerStatefulWidget {
 
 class _InvitationScreenState extends ConsumerState<InvitationScreen> {
   bool _isAccepting = false;
+
+  void _onCloseTap() {
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+    } else {
+      context.go('/home');
+    }
+  }
 
   DateTime? _parseExpiresAt(dynamic value) {
     if (value == null) return null;
@@ -65,7 +77,11 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
       await ref.read(invitationRepositoryProvider).acceptInvitation(widget.inviteToken);
       ref.invalidate(currentUserGroupsProvider);
       if (context.mounted) {
-        context.go('/home');
+        if (widget.asSheet) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -106,6 +122,37 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
     );
   }
 
+  Widget? _buildCardChild(
+    BuildContext context, {
+    required bool isAlreadyMember,
+    required Map<String, dynamic>? data,
+  }) {
+    final parsedExpiresAt = isAlreadyMember
+        ? null
+        : _parseExpiresAt(data?['expires_at'] ?? data?['expiresAt']);
+    if (parsedExpiresAt == null && !isAlreadyMember) return null;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (parsedExpiresAt != null) InviteExpiryCountdown(expiresAt: parsedExpiresAt),
+        if (parsedExpiresAt != null && isAlreadyMember) Gaps.v16,
+        if (isAlreadyMember)
+          ChipContainer(
+            child: Text(
+              'Already a member',
+              style: TextStyle(
+                color: isDarkMode(context)
+                    ? Colors.white
+                    : Colors.black87,
+                fontSize: Sizes.size10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildScaffold(
     BuildContext context, {
     required bool isLoading,
@@ -143,6 +190,16 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
             backgroundColor: isDarkMode(context)
                 ? CustomColors.sheetColorDark
                 : CustomColors.sheetColorLight,
+            appBar: widget.asSheet
+                ? AppBar(
+                    title: const Text('Invitation'),
+                    automaticallyImplyLeading: false,
+                    backgroundColor: isDarkMode(context)
+                        ? CustomColors.sheetColorDark
+                        : CustomColors.sheetColorLight,
+                    actions: [CloseAppBarButton(onTap: _onCloseTap)],
+                  )
+                : null,
             body: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : isError
@@ -156,76 +213,28 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                           ),
                         ),
                       )
-                    : Center(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final screenWidth = MediaQuery.of(context).size.width;
-                            final width = (screenWidth - Paddings.scaffoldH * 2) * 0.9;
-                            final height = width * (3 / 2);
-                            final parsedExpiresAt = isAlreadyMember
-                                ? null
-                                : _parseExpiresAt(data?['expires_at'] ?? data?['expiresAt']);
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(RValues.island),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.1),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Tilt(
-                                    tiltConfig: TiltConfig(
-                                      enableGestureTouch: true,
-                                      enableGestureHover: true,
-                                      enableGestureSensors: true,
-                                      angle: 4,
-                                      sensorFactor: 8,
-                                      enableReverse: true,
-                                    ),
-                                    lightConfig: LightConfig(disable: true),
-                                    shadowConfig: ShadowConfig(disable: true),
-                                    borderRadius: BorderRadius.circular(RValues.island),
-                                    child: InviteCard(
-                                      weekdayName: weekdays[((data?['weekday'] as int?) ?? 1) - 1].name,
-                                      inviterNickname: displayName,
-                                      inviterAvatarUrl: inviterAvatarUrl,
-                                      gradientColors: gradientColors,
-                                      width: width,
-                                      height: height,
-                                    ),
+                    : Column(
+                        children: [
+                          Gaps.v24,
+                          Expanded(
+                            child: Center(
+                              child: SingleChildScrollView(
+                                child: InviteSheetBody(
+                                  weekdayName: weekdays[((data?['weekday'] as int?) ?? 1) - 1].name,
+                                  inviterNickname: displayName,
+                                  inviterAvatarUrl: inviterAvatarUrl,
+                                  gradientColors: gradientColors,
+                                  child: _buildCardChild(
+                                    context,
+                                    isAlreadyMember: isAlreadyMember,
+                                    data: data,
                                   ),
                                 ),
-                                if (parsedExpiresAt != null) ...[
-                                  Gaps.v16,
-                                  InviteExpiryCountdown(expiresAt: parsedExpiresAt),
-                                ],
-                                if (isAlreadyMember) ...[
-                                  Gaps.v16,
-                                  ChipContainer(
-                                    child: Text(
-                                      'Already a member',
-                                      style: TextStyle(
-                                        color: isDarkMode(context)
-                                            ? Colors.white
-                                            : Colors.black87,
-                                        fontSize: Sizes.size10,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            );
-                          },
-                        ),
+                              ),
+                            ),
+                          ),
+                          Gaps.v24,
+                        ],
                       ),
             bottomNavigationBar: isLoading
                 ? null
@@ -238,7 +247,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                             bottom: Paddings.scaffoldV,
                           ),
                           child: GestureDetector(
-                            onTap: () => context.go('/home'),
+                            onTap: () => widget.asSheet ? context.pop() : context.go('/home'),
                             child: Container(
                               width: double.infinity,
                               height: Sizes.size48,
@@ -275,7 +284,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                         onTap: _isAccepting && !isAlreadyMember
                             ? null
                             : () => isAlreadyMember
-                                ? context.go('/home')
+                                ? (widget.asSheet ? context.pop() : context.go('/home'))
                                 : _onAcceptTap(context),
                         child: Opacity(
                           opacity: _isAccepting && !isAlreadyMember ? 0.7 : 1.0,

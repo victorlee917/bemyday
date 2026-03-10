@@ -8,6 +8,7 @@ import 'package:bemyday/features/profile/repositories/profile_repository.dart';
 import 'package:bemyday/features/start/start_screen.dart';
 import 'package:bemyday/features/invite/invitation_screen.dart';
 import 'package:bemyday/features/invite/invite_screen.dart';
+import 'package:bemyday/features/invite/repositories/invitation_repository.dart';
 import 'package:bemyday/features/language/language_screen.dart';
 import 'package:bemyday/features/license/license_screen.dart';
 import 'package:bemyday/features/navigation/navigation_screen.dart';
@@ -24,7 +25,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _pendingInviteTokenKey = 'pending_invite_token';
+/// SharedPreferences 키. main.dart에서 cold start 시 stale token 제거용으로도 사용.
+const pendingInviteTokenKey = 'pending_invite_token';
 
 /// GoRouter의 [refreshListenable]에 사용. 인증 상태 변경 시 redirect 재평가.
 class AuthStateNotifier extends ChangeNotifier {
@@ -64,28 +66,39 @@ GoRouter createRouter(
     redirect: (context, state) async {
       // uri.toString()으로 location 확인 (go_router 17: location → uri.toString())
       final location = state.uri.toString();
+      final session = Supabase.instance.client.auth.currentSession;
 
-      // com.bemyday://invitation/TOKEN → /invitation/TOKEN (플랫폼이 전체 URI를 전달하는 경우)
+      // com.bemyday://invitation/TOKEN → 로그인 시 바텀시트, 로그아웃 시 /start
+      // getInitialLink stale 값 방지: 유효한 초대만 리다이렉트
       final schemeMatch = RegExp(r'^com\.bemyday://invitation/([^/?#]+)').firstMatch(location);
       if (schemeMatch != null) {
-        return '/invitation/${schemeMatch.group(1)!}';
+        final token = schemeMatch.group(1)!;
+        final data = await InvitationRepository().getInvitationByToken(token);
+        if (data != null) {
+          return session != null
+              ? '/home?invitation_token=$token'
+              : '${StartScreen.routeUrl}?invite_token=$token';
+        }
+        return session != null ? '/home' : StartScreen.routeUrl;
       }
-
-      final session = Supabase.instance.client.auth.currentSession;
 
       // 로그아웃 상태
       if (session == null) {
         final inviteMatch = RegExp(r'^/invitation/([^/?#]+)').firstMatch(location);
-        final isPublicRoute = location == StartScreen.routeUrl ||
-            location == TutorialScreen.routeUrl;
-        // /invitation/:token → InvitationScreen 직접 진입 (만료 시 안내 문구 표시용)
-        if (inviteMatch != null) return null;
+        final path = state.uri.path;
+        final isPublicRoute = path == StartScreen.routeUrl ||
+            path == TutorialScreen.routeUrl;
+        // /invitation/:token → 로그인 필요하므로 /start?invite_token=TOKEN으로
+        if (inviteMatch != null) {
+          final token = inviteMatch.group(1)!;
+          return '${StartScreen.routeUrl}?invite_token=$token';
+        }
         if (!isPublicRoute) {
           final match = RegExp(r'/invitation/([^/?#]+)').firstMatch(location);
           if (match != null) {
             final token = match.group(1)!;
             final prefs = await SharedPreferences.getInstance();
-            await prefs.setString(_pendingInviteTokenKey, token);
+            await prefs.setString(pendingInviteTokenKey, token);
             return '${StartScreen.routeUrl}?invite_token=$token';
           }
           return StartScreen.routeUrl;
@@ -93,16 +106,27 @@ GoRouter createRouter(
         return null;
       }
 
-      // 로그인 상태: 대기 중인 초대 토큰이 있으면 InvitationScreen으로
+      // 로그인 상태: 대기 중인 초대 토큰 → /home?invitation_token=TOKEN (바텀시트로 표시)
       final prefs = await SharedPreferences.getInstance();
-      final pendingToken = prefs.getString(_pendingInviteTokenKey);
+      final pendingToken = prefs.getString(pendingInviteTokenKey);
       if (pendingToken != null) {
-        await prefs.remove(_pendingInviteTokenKey);
-        return '/invitation/$pendingToken';
+        await prefs.remove(pendingInviteTokenKey);
+        final data = await InvitationRepository().getInvitationByToken(pendingToken);
+        if (data != null) return '/home?invitation_token=$pendingToken';
       }
       final inviteToken = state.uri.queryParameters['invite_token'];
       if (inviteToken != null && location.startsWith(StartScreen.routeUrl)) {
-        return '/invitation/$inviteToken';
+        final data = await InvitationRepository().getInvitationByToken(inviteToken);
+        if (data != null) return '/home?invitation_token=$inviteToken';
+      }
+
+      // /invitation/TOKEN 경로로 진입 시 (로그인) → /home?invitation_token=TOKEN (바텀시트)
+      final pathInviteMatch = RegExp(r'^/invitation/([^/?#]+)').firstMatch(state.uri.path);
+      if (pathInviteMatch != null) {
+        final token = pathInviteMatch.group(1)!;
+        final data = await InvitationRepository().getInvitationByToken(token);
+        if (data != null) return '/home?invitation_token=$token';
+        return '/home';
       }
 
       // 로그인 상태: 프로필 닉네임 확인 (currentProfileProvider 캐시 활용)
@@ -149,8 +173,12 @@ GoRouter createRouter(
       name: StartScreen.routeName,
       pageBuilder: (context, state) {
         final authError = state.uri.queryParameters['auth_error'];
+        final inviteToken = state.uri.queryParameters['invite_token'];
         return fadeOutTransitionPage(
-          child: StartScreen(authErrorRetry: authError == 'retry'),
+          child: StartScreen(
+            authErrorRetry: authError == 'retry',
+            inviteToken: inviteToken,
+          ),
         );
       },
     ),
@@ -176,9 +204,11 @@ GoRouter createRouter(
         final initialWeekdayIndex = weekdayParam != null
             ? int.tryParse(weekdayParam)
             : null;
+        final invitationToken = state.uri.queryParameters['invitation_token'];
         return NavigationScreen(
           tab: tab,
           initialWeekdayIndex: initialWeekdayIndex,
+          invitationToken: invitationToken,
         );
       },
     ),

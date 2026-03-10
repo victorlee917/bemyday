@@ -1,6 +1,7 @@
 import 'package:app_links/app_links.dart';
-import 'package:bemyday/common/widgets/avatar/avatar_preview_screen.dart';
 import 'package:bemyday/config/supabase_config.dart';
+import 'package:bemyday/features/invite/repositories/invitation_repository.dart';
+import 'package:bemyday/features/start/start_screen.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/core/providers.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
@@ -41,11 +42,28 @@ void main() async {
 
   final authStateNotifier = AuthStateNotifier();
 
+  // SharedPreferences 미리 초기화
+  final prefs = await SharedPreferences.getInstance();
+  // 이전 세션의 pending invite token 항상 제거 (getInitialLink stale 값으로 인한 잘못된 리다이렉트 방지)
+  await prefs.remove(pendingInviteTokenKey);
+
   // 딥링크: 앱이 링크로 실행된 경우 초기 경로 설정 (초대 링크 전용)
+  // getInitialLink()는 앱 재시작 후에도 이전 링크를 반환할 수 있으므로, 유효한 초대만 사용
+  // 로그인: /home?invitation_token=TOKEN (바텀시트), 로그아웃: /start?invite_token=TOKEN (로그인 후 시트)
   String? initialLocation;
   try {
     final initialUri = await AppLinks().getInitialLink();
-    initialLocation = _invitePathFromUri(initialUri);
+    final invitePath = _invitePathFromUri(initialUri);
+    if (invitePath != null) {
+      final token = invitePath.split('/').last;
+      final data = await InvitationRepository().getInvitationByToken(token);
+      if (data != null) {
+        final session = Supabase.instance.client.auth.currentSession;
+        initialLocation = session != null
+            ? '/home?invitation_token=$token'
+            : '${StartScreen.routeUrl}?invite_token=$token';
+      }
+    }
   } catch (_) {}
 
   final router = createRouter(
@@ -54,13 +72,25 @@ void main() async {
   );
 
   // 딥링크: 앱이 백그라운드에서 링크로 열린 경우 (초대 링크 전용)
-  AppLinks().uriLinkStream.listen((uri) {
-    final path = _invitePathFromUri(uri);
-    if (path != null) router.go(path);
+  AppLinks().uriLinkStream.listen((uri) async {
+    final invitePath = _invitePathFromUri(uri);
+    if (invitePath == null) return;
+    final token = invitePath.split('/').last;
+    final data = await InvitationRepository().getInvitationByToken(token);
+    if (data == null) return;
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      String currentPath = '/home';
+      try {
+        final config = router.routerDelegate.currentConfiguration;
+        currentPath = config.uri.path;
+      } catch (_) {}
+      final isNavTab = currentPath == '/home' || currentPath == '/friends' || currentPath == '/my';
+      router.go(isNavTab ? '$currentPath?invitation_token=$token' : '/home?invitation_token=$token');
+    } else {
+      router.go('${StartScreen.routeUrl}?invite_token=$token');
+    }
   });
-
-  // SharedPreferences 미리 초기화
-  final prefs = await SharedPreferences.getInstance();
 
   runApp(
     ProviderScope(
