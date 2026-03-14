@@ -11,6 +11,7 @@ import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/profile/viewmodels/profile_image_viewmodel.dart';
 import 'package:bemyday/features/profile/viewmodels/profile_viewmodel.dart';
 import 'package:bemyday/features/profile/widgets/profile_image_sheet.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -62,7 +63,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await ref.read(profileViewModelProvider).saveNickname(nickname);
 
       if (_pendingImagePath != null) {
-        await ref.read(profileImageViewModelProvider.notifier).saveImage(_pendingImagePath!);
+        await ref
+            .read(profileImageViewModelProvider.notifier)
+            .saveImage(_pendingImagePath!);
       } else if (_pendingDeleteImage) {
         await ref.read(profileImageViewModelProvider.notifier).deleteImage();
       }
@@ -72,9 +75,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
+      final l10n = AppLocalizations.of(context)!;
       final message = e is PostgrestException && e.code == '23505'
-          ? '이미 사용 중인 닉네임입니다.'
-          : '저장에 실패했습니다. 다시 시도해 주세요.';
+          ? l10n.profileNicknameInUse
+          : l10n.profileSaveFailed;
       showAppSnackBar(context, message);
     }
   }
@@ -100,8 +104,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   static const int _nicknameMaxLength = 17;
-  static const String _forbiddenCharError =
-      '닉네임은 영문, 숫자, 마침표(.), 언더스코어(_)만 사용 가능합니다.';
 
   void _onChange(value) {
     final filtered = value.replaceAll(RegExp(r'[^a-zA-Z0-9._]'), '');
@@ -113,16 +115,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
       value = filtered;
     }
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _nickname = value;
       if (hasForbiddenChar) {
-        _errorText = _forbiddenCharError;
+        _errorText = l10n.profileNicknameForbiddenChars;
         _isNicknameValid = false;
       } else if (value.isEmpty) {
-        _errorText = 'Please write your nickname';
+        _errorText = l10n.profileNicknameRequired;
         _isNicknameValid = false;
       } else if (value.length > _nicknameMaxLength) {
-        _errorText = '최대 $_nicknameMaxLength자까지 입력 가능합니다';
+        _errorText = l10n.profileNicknameMaxLengthError(_nicknameMaxLength);
         _isNicknameValid = false;
       } else {
         _errorText = null;
@@ -156,7 +159,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _onAvatarTap() {
     final profile = ref.read(currentProfileProvider).valueOrNull;
-    final hasImage = _pendingImagePath != null ||
+    final hasImage =
+        _pendingImagePath != null ||
         (!_pendingDeleteImage && profile?.avatarUrl != null);
 
     showModalBottomSheet(
@@ -220,28 +224,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final profileAsync = ref.watch(currentProfileProvider);
     ref.listen(currentProfileProvider, (prev, next) {
       next.whenData((profile) {
-        if (profile != null && !_initialDataLoaded && _nicknameController.text.isEmpty) {
+        if (profile != null &&
+            !_initialDataLoaded &&
+            _nicknameController.text.isEmpty) {
           _initFormIfNeeded(profile);
         }
       });
     });
 
+    final l10n = AppLocalizations.of(context)!;
     return profileAsync.when(
       loading: () => Scaffold(
-        appBar: AppBar(title: Text('Profile')),
+        appBar: AppBar(title: Text(l10n.profileTitle)),
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (err, stack) => Scaffold(
-        appBar: AppBar(title: Text('Profile')),
+        appBar: AppBar(title: Text(l10n.profileTitle)),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('프로필을 불러오지 못했습니다'),
+              Text(l10n.profileLoadError),
               SizedBox(height: Sizes.size16),
               TextButton(
                 onPressed: () => ref.invalidate(currentProfileProvider),
-                child: Text('다시 시도'),
+                child: Text(l10n.retry),
               ),
             ],
           ),
@@ -256,11 +263,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (_nicknameController.text.isNotEmpty) return;
 
     _nicknameController.text = profile.nickname;
-    _nicknameController.selection =
-        TextSelection.collapsed(offset: profile.nickname.length);
+    _nicknameController.selection = TextSelection.collapsed(
+      offset: profile.nickname.length,
+    );
     setState(() {
       _nickname = profile.nickname;
-      _isNicknameValid = profile.nickname.isNotEmpty &&
+      _isNicknameValid =
+          profile.nickname.isNotEmpty &&
           profile.nickname.length <= _nicknameMaxLength;
       _initialDataLoaded = true;
     });
@@ -288,11 +297,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildBody(Profile? profile) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: _onScaffoldTap,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Profile'),
+          title: Text(l10n.profileTitle),
           actions: [
             GestureDetector(
               onTap: _isSaving ? null : _onSubmit,
@@ -381,7 +391,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                     ),
-                    hintText: "What's your Nickname?",
+                    hintText: l10n.profileNicknameHint,
                     counterText: '', // maxLength 기본 카운터 숨김
                     hintStyle: TextStyle(
                       color: isDarkMode(context)
@@ -408,6 +418,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       ? CustomColors.destructiveColorDark
                                       : CustomColors.destructiveColorLight,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
                             ),
                           )

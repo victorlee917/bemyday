@@ -43,8 +43,8 @@ class AvatarGroupStack extends ConsumerWidget {
           borderColor: borderColor,
         );
       },
-      loading: () =>
-          AvatarDefault(nickname: '…', radius: radius, borderColor: borderColor),
+      loading: () => AvatarDefault(
+          nickname: '…', radius: radius, borderColor: borderColor, loading: true),
       error: (_, __) =>
           AvatarDefault(nickname: '?', radius: radius, borderColor: borderColor),
     );

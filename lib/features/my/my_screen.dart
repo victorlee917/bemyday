@@ -9,10 +9,12 @@ import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/alarm/alarm_screen.dart';
 import 'package:bemyday/features/language/language_screen.dart';
+import 'package:bemyday/features/auth/providers/account_repository_provider.dart';
 import 'package:bemyday/features/profile/profile_screen.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/license/license_screen.dart';
 import 'package:bemyday/features/theme/theme_screen.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -33,16 +35,24 @@ class MyScreen extends ConsumerStatefulWidget {
 
 class _MyScreenState extends ConsumerState<MyScreen> {
   void _onDeleteAccountTap() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showConfirmDialog(
       context,
-      title: '계정 삭제',
-      message: '정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
-      cancelLabel: '취소',
-      confirmLabel: '삭제',
+      title: l10n.deleteAccountTitle,
+      message: l10n.deleteAccountMessage,
+      cancelLabel: l10n.cancel,
+      confirmLabel: l10n.delete,
       isDestructive: true,
     );
-    if (confirmed == true) {
-      // TODO: 계정 삭제 로직 구현
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(accountRepositoryProvider).deleteAccount();
+      if (!mounted) return;
+      context.go('/start');
+    } catch (e) {
+      if (!mounted) return;
+      showAppSnackBar(context, l10n.deleteAccountFailed);
     }
   }
 
@@ -52,12 +62,13 @@ class _MyScreenState extends ConsumerState<MyScreen> {
   }
 
   void _onLogoutTap() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showConfirmDialog(
       context,
-      title: '로그아웃',
-      message: '로그아웃 하시겠습니까?',
-      cancelLabel: '취소',
-      confirmLabel: '로그아웃',
+      title: l10n.logoutTitle,
+      message: l10n.logoutMessage,
+      cancelLabel: l10n.cancel,
+      confirmLabel: l10n.myLogout,
       isDestructive: true,
     );
     if (confirmed == true) {
@@ -67,13 +78,14 @@ class _MyScreenState extends ConsumerState<MyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final profileAsync = ref.watch(currentProfileProvider);
     final profile = profileAsync.valueOrNull;
-    final nickname = profile?.nickname ?? "profile";
+    final nickname = profile?.nickname ?? l10n.profileFallback;
     final avatar = profile?.avatarUrl;
 
     return Scaffold(
-      appBar: AppBar(title: Text("MY")),
+      appBar: AppBar(title: Text(l10n.myTabTitle)),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: Paddings.scaffoldH,
@@ -118,7 +130,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                     children: [
                       FaIcon(FontAwesomeIcons.pencil, size: Sizes.size10),
                       Gaps.h6,
-                      Text("Edit", style: TextStyle(fontSize: Sizes.size10)),
+                      Text(l10n.edit, style: TextStyle(fontSize: Sizes.size10)),
                     ],
                   ),
                 ),
@@ -129,49 +141,49 @@ class _MyScreenState extends ConsumerState<MyScreen> {
               spacing: CustomSizes.sectionGap,
               children: [
                 TilesSection(
-                  title: "App",
+                  title: l10n.mySectionApp,
                   items: [
                     TileNavigate(
-                      title: "Alarm",
+                      title: l10n.myAlarm,
                       destination: AlarmScreen.routeUrl,
                     ),
                     TileNavigate(
-                      title: "Theme",
+                      title: l10n.myTheme,
                       destination: ThemeScreen.routeUrl,
                     ),
-                    TileNavigate(
-                      title: "Language",
-                      destination: LanguageScreen.routeUrl,
-                    ),
+                    // TileNavigate(
+                    //   title: l10n.myLanguage,
+                    //   destination: LanguageScreen.routeUrl,
+                    // ),
                   ],
                 ),
                 TilesSection(
-                  title: "BMD",
+                  title: l10n.mySectionBmd,
                   items: [
                     TileBrowse(
-                      title: "Instagram",
+                      title: l10n.myInstagram,
                       url: "https://www.instagram.com/bemyday.app",
                     ),
                     TileBrowse(
-                      title: "Privacy Policy",
+                      title: l10n.myPrivacyPolicy,
                       url: "https://www.bemyday.app/privacy",
                     ),
                     TileBrowse(
-                      title: "Terms of Service",
+                      title: l10n.myTermsOfService,
                       url: "https://www.bemyday.app/terms",
                     ),
                     TileNavigate(
-                      title: "Open Source License",
+                      title: l10n.myOpenSourceLicense,
                       destination: LicenseScreen.routeUrl,
                     ),
                   ],
                 ),
                 TilesSection(
-                  title: "Danger Zone",
+                  title: l10n.mySectionDangerZone,
                   items: [
-                    TileAct(title: "Logout", action: _onLogoutTap),
+                    TileAct(title: l10n.myLogout, action: _onLogoutTap),
                     TileAct(
-                      title: "Delete Account",
+                      title: l10n.myDeleteAccount,
                       action: _onDeleteAccountTap,
                       isDestructive: true,
                     ),

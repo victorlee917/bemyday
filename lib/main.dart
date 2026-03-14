@@ -1,18 +1,23 @@
 import 'package:app_links/app_links.dart';
 import 'package:bemyday/config/supabase_config.dart';
 import 'package:bemyday/features/invite/repositories/invitation_repository.dart';
+import 'package:bemyday/features/push/push_notification_service.dart' deferred as push;
 import 'package:bemyday/features/start/start_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/core/providers.dart';
+import 'package:bemyday/features/alarm/providers/alarm_provider.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/constants/styles.dart';
-import 'package:bemyday/generated/l10n.dart';
+import 'package:bemyday/features/tutorial/tutorial_screen.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/features/theme/viewmodels/theme_viewmodel.dart';
 import 'package:bemyday/router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -34,11 +39,17 @@ String? _invitePathFromUri(Uri? uri) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await GoogleFonts.pendingFonts([GoogleFonts.darumadropOne()]);
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+
+  await push.loadLibrary();
+  await push.PushNotificationService.initialize();
 
   final authStateNotifier = AuthStateNotifier();
 
@@ -68,7 +79,7 @@ void main() async {
 
   final router = createRouter(
     authStateNotifier,
-    initialLocation: initialLocation,
+    initialLocation: initialLocation ?? TutorialScreen.routeUrl,
   );
 
   // 딥링크: 앱이 백그라운드에서 링크로 열린 경우 (초대 링크 전용)
@@ -85,8 +96,15 @@ void main() async {
         final config = router.routerDelegate.currentConfiguration;
         currentPath = config.uri.path;
       } catch (_) {}
-      final isNavTab = currentPath == '/home' || currentPath == '/friends' || currentPath == '/my';
-      router.go(isNavTab ? '$currentPath?invitation_token=$token' : '/home?invitation_token=$token');
+      final isNavTab =
+          currentPath == '/home' ||
+          currentPath == '/friends' ||
+          currentPath == '/my';
+      router.go(
+        isNavTab
+            ? '$currentPath?invitation_token=$token'
+            : '/home?invitation_token=$token',
+      );
     } else {
       router.go('${StartScreen.routeUrl}?invite_token=$token');
     }
@@ -123,13 +141,19 @@ class BeMyDay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 로그아웃/계정 전환 시 유저별 캐시 무효화
+    // 로그아웃/계정 전환 시 유저별 캐시 무효화 + FCM 토큰 등록/해제
     ref.listen(authStateProvider, (prev, next) {
       final prevUserId = prev?.valueOrNull?.session?.user.id;
       final nextUserId = next.valueOrNull?.session?.user.id;
       if (prevUserId != nextUserId) {
         ref.invalidate(currentProfileProvider);
         ref.invalidate(currentUserGroupsProvider);
+        ref.invalidate(alarmPreferencesProvider);
+        if (nextUserId != null) {
+          push.PushNotificationService.registerTokenIfNeeded();
+        } else {
+          push.PushNotificationService.unregisterToken();
+        }
       }
     });
 
@@ -147,13 +171,8 @@ class BeMyDay extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       title: 'Be My Day',
       themeAnimationDuration: Duration.zero,
-      localizationsDelegates: [
-        S.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-      ],
-      supportedLocales: [Locale('en'), Locale('ko')],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       themeMode: themeMode,
       // 라이트 모드 테마
       theme: ThemeData(

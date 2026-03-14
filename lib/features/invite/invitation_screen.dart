@@ -8,6 +8,7 @@ import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/invite/providers/invitation_provider.dart';
 import 'package:bemyday/features/invite/widgets/invite_card.dart'
     show InviteExpiryCountdown, InviteSheetBody;
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,6 +73,66 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
 
   Future<void> _onAcceptTap(BuildContext context) async {
     if (_isAccepting) return;
+
+    final data = ref.read(invitationByTokenProvider(widget.inviteToken)).valueOrNull;
+    if (data == null) {
+      if (context.mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        showAppSnackBar(context, l10n.invitationLoadError);
+      }
+      return;
+    }
+
+    final invitationGroupId = data['group_id'] as String?;
+    final invitationWeekday = (data['weekday'] as int?) ?? 1;
+    final userGroups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final isInviter = currentUserId != null &&
+        (data['inviter_id'] ?? data['inviterId']) == currentUserId;
+    final isAlreadyMember = isInviter ||
+        (invitationGroupId != null &&
+            userGroups.any((g) => g.id == invitationGroupId));
+
+    if (isAlreadyMember) {
+      if (context.mounted) {
+        if (widget.asSheet) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
+      }
+      return;
+    }
+
+    if (userGroups.any((g) => g.weekday == invitationWeekday)) {
+      if (context.mounted) {
+        showAppSnackBar(context, '같은 요일에 이미 참여 중인 그룹이 있어요.');
+      }
+      return;
+    }
+
+    final inviterInOtherGroup = data['inviter_in_other_group_on_weekday'] == true;
+    if (inviterInOtherGroup) {
+      if (context.mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        showAppSnackBar(context, l10n.invitationInviterInOtherGroup);
+      }
+      return;
+    }
+
+    if (invitationGroupId != null) {
+      final count = await ref.read(
+        groupMemberCountProvider(invitationGroupId).future,
+      );
+      if (count >= 8) {
+        if (context.mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          showAppSnackBar(context, l10n.invitationGroupFull);
+        }
+        return;
+      }
+    }
+
     setState(() => _isAccepting = true);
     try {
       await ref.read(invitationRepositoryProvider).acceptInvitation(widget.inviteToken);
@@ -85,7 +146,8 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        showAppSnackBar(context, '참여에 실패했습니다: $e');
+        final l10n = AppLocalizations.of(context)!;
+        showAppSnackBar(context, l10n.invitationAcceptFailed(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isAccepting = false);
@@ -127,6 +189,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
     required bool isAlreadyMember,
     required Map<String, dynamic>? data,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final parsedExpiresAt = isAlreadyMember
         ? null
         : _parseExpiresAt(data?['expires_at'] ?? data?['expiresAt']);
@@ -139,7 +202,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
         if (isAlreadyMember)
           ChipContainer(
             child: Text(
-              'Already a member',
+              l10n.invitationAlreadyMember,
               style: TextStyle(
                 color: isDarkMode(context)
                     ? Colors.white
@@ -160,6 +223,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
     required Map<String, dynamic>? data,
     required List<dynamic> userGroups,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final invitationGroupId = data?['group_id'] as String?;
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final isInviter = currentUserId != null &&
@@ -169,7 +233,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
             userGroups.any((g) => g.id == invitationGroupId));
     // inviter_nickname (snake_case) 또는 inviterNickname (camelCase) 지원
     final inviterNickname = (data?['inviter_nickname'] ?? data?['inviterNickname']) as String?;
-    final displayName = (inviterNickname ?? '').trim().isNotEmpty ? inviterNickname!.trim() : '초대자';
+    final displayName = (inviterNickname ?? '').trim().isNotEmpty ? inviterNickname!.trim() : l10n.invitationInviterFallback;
     final rawAvatar = data?['inviter_avatar_url'] ?? data?['inviterAvatarUrl'];
     final inviterAvatarUrl = (rawAvatar is String && rawAvatar.trim().isNotEmpty)
         ? rawAvatar.trim()
@@ -192,7 +256,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                 : CustomColors.sheetColorLight,
             appBar: widget.asSheet
                 ? AppBar(
-                    title: const Text('Invitation'),
+                    title: Text(l10n.invitationTitle),
                     automaticallyImplyLeading: false,
                     backgroundColor: isDarkMode(context)
                         ? CustomColors.sheetColorDark
@@ -207,7 +271,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
                           child: Text(
-                            'Expired Invitation',
+                            l10n.invitationExpired,
                             style: Theme.of(context).textTheme.bodyLarge,
                             textAlign: TextAlign.center,
                           ),
@@ -259,7 +323,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  'Ok',
+                                  l10n.ok,
                                   style: Theme.of(context).textTheme.labelLarge!
                                       .copyWith(
                                         color: isDarkMode(context)
@@ -310,7 +374,7 @@ class _InvitationScreenState extends ConsumerState<InvitationScreen> {
                                       ),
                                     )
                                   : Text(
-                                      isAlreadyMember ? "Ok" : "Accept",
+                                      isAlreadyMember ? l10n.ok : l10n.accept,
                                       style: Theme.of(context).textTheme.labelLarge!
                                           .copyWith(
                                             color: isDarkMode(context)

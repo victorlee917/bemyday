@@ -60,7 +60,10 @@ dependencies:
   avatar_stack: ^3.0.0
   palette_generator_master: ^1.0.1
   flutter_tilt: ^3.3.2
-  sensors_plus: ^7.0.0  # flutter_tilt 센서용, 직접 등록으로 MissingPluginException 방지
+  sensors_plus: ^7.0.0 # flutter_tilt 센서용, 직접 등록으로 MissingPluginException 방지
+  firebase_core: ^3.8.1
+  firebase_messaging: ^15.1.5
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_test:
@@ -80,7 +83,7 @@ flutter_launcher_icons:
   web:
     generate: true
   image_path: "assets/icon/app_icon.png"
-  remove_alpha_ios: true  # App Store는 투명도 불가
+  remove_alpha_ios: true # App Store는 투명도 불가
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -94,6 +97,9 @@ flutter:
   assets:
     - assets/icon/
     - assets/icons/
+    - assets/mockups/
+    - assets/mockups/invitation/
+    - assets/mockups/posts/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
   # For details regarding adding assets from package dependencies, see
@@ -117,5 +123,3 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-flutter_intl:
-  enabled: true

@@ -3,6 +3,7 @@ import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/post/widgets/likes_sheet.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -56,6 +57,7 @@ class PostBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
       child: Row(
@@ -66,7 +68,7 @@ class PostBottomBar extends StatelessWidget {
             title: nickname,
             isDarkOnly: true,
             subTitle: postIndex != null && postCount != null
-                ? "Post $postIndex of $postCount"
+                ? l10n.postIndexOfCount(postIndex!, postCount!)
                 : null,
             childTitle: date,
           ),

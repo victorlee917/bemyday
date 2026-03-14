@@ -168,7 +168,7 @@ class _CommentTileState extends ConsumerState<CommentTile> {
                         Opacity(
                           opacity: 0.3,
                           child: Text(
-                            formatTimeAgo(widget.createdAt),
+                            formatTimeAgo(widget.createdAt, context),
                             style: TextStyle(fontSize: Sizes.size10),
                           ),
                         ),

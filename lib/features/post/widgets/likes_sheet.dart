@@ -2,6 +2,7 @@ import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -19,6 +20,7 @@ class LikesSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final dark = isDarkMode(context);
     final sheetColor =
         dark ? CustomColors.sheetColorDark : CustomColors.sheetColorLight;
@@ -37,7 +39,7 @@ class LikesSheet extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: sheetColor,
         appBar: AppBar(
-          title: Text("Likes", style: TextStyle(color: fgColor)),
+          title: Text(l10n.likesTitle, style: TextStyle(color: fgColor)),
           automaticallyImplyLeading: false,
           backgroundColor: sheetColor,
           shape: Border(

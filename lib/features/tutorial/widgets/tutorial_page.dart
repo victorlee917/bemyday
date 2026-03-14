@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TutorialPage extends StatelessWidget {
-  const TutorialPage({super.key});
+  const TutorialPage({super.key, required this.title});
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -13,16 +15,9 @@ class TutorialPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Text(
-            "Title",
-            style: GoogleFonts.darumadropOne(fontSize: Sizes.size36),
-          ),
-          Gaps.v2,
-          Opacity(
-            opacity: 0.5,
-            child: Text(
-              "subTitle",
-              style: GoogleFonts.darumadropOne(fontSize: Sizes.size16),
-            ),
+            title,
+            style: GoogleFonts.darumadropOne(fontSize: Sizes.size28),
+            textAlign: TextAlign.center,
           ),
           Gaps.v24,
         ],

@@ -1,9 +1,11 @@
 import 'package:bemyday/features/group/models/group.dart';
+import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/post/models/post.dart';
 import 'package:bemyday/features/post/models/post_with_details.dart';
 import 'package:bemyday/features/post/repositories/post_repository.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final postRepositoryProvider = Provider<PostRepository>((ref) {
   return PostRepository();
@@ -19,6 +21,28 @@ final hasCurrentWeekPostsProvider =
 final currentWeekPostsProvider =
     FutureProvider.family<List<Post>, Group>((ref, group) async {
   return ref.read(postRepositoryProvider).getCurrentWeekPosts(group);
+});
+
+/// 그룹의 최신 포스트 최대 4개 (Friends 화면용)
+final groupLatestPostsProvider =
+    FutureProvider.family<List<Post>, Group>((ref, group) async {
+  return ref.read(postRepositoryProvider).getLatestPosts(group, limit: 4);
+});
+
+/// 그룹의 최신 공개된 포스트 최대 4개 (Friends 화면용)
+/// blur 해제된 사진만 표시. 공개된 포스트가 없으면 빈 목록.
+final groupLatestRevealedPostsProvider =
+    FutureProvider.family<List<Post>, Group>((ref, group) async {
+  final posts = await ref.read(postRepositoryProvider).getLatestPosts(
+        group,
+        limit: 20,
+      );
+  final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+  final revealed = posts
+      .where((p) => isPostRevealed(p, group, currentUserId))
+      .take(4)
+      .toList();
+  return revealed;
 });
 
 /// 특정 week에 해당하는 포스트 목록

@@ -1,4 +1,5 @@
 import 'package:bemyday/common/widgets/confirm_dialog.dart';
+import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_item.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_select.dart';
 import 'package:bemyday/common/widgets/cached_post_image.dart';
@@ -20,6 +21,7 @@ import 'package:bemyday/features/post/widgets/comment_nudge_banner.dart';
 import 'package:bemyday/features/post/widgets/post_nudge_banner.dart';
 import 'package:bemyday/features/post/widgets/reveal_countdown.dart';
 import 'package:bemyday/features/posting/posting_album_screen.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui';
@@ -239,6 +241,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
   }
 
   void _onMoreTap(Post post) async {
+    final l10n = AppLocalizations.of(context)!;
     bool deleteRequested = false;
     await showModalBottomSheet(
       context: context,
@@ -246,7 +249,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
       builder: (context) => SheetSelect(
         items: [
           SheetItem(
-            title: "Delete Post",
+            title: l10n.postDeleteTitle,
             onTap: () => deleteRequested = true,
             isDestructive: true,
           ),
@@ -259,11 +262,12 @@ class _PostScreenState extends ConsumerState<PostScreen>
   }
 
   void _confirmDelete(Post post) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Delete Post',
-      message: 'Are you sure you want to delete this post?',
-      confirmLabel: 'Delete',
+      title: l10n.postDeleteTitle,
+      message: l10n.postDeleteConfirmMessage,
+      confirmLabel: l10n.delete,
       isDestructive: true,
     );
     if (confirmed == true && mounted) {
@@ -302,11 +306,12 @@ class _PostScreenState extends ConsumerState<PostScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final group = widget.group;
     if (group == null) {
       return Scaffold(
         body: Center(
-          child: Text("No group", style: TextStyle(color: Colors.white)),
+          child: Text(l10n.postNoGroup, style: TextStyle(color: Colors.white)),
         ),
       );
     }
@@ -336,16 +341,16 @@ class _PostScreenState extends ConsumerState<PostScreen>
             final targetIndex = widget.startFromLatest && !_userNavigated
                 ? posts.length - 1
                 : _currentIndex ?? 0;
-            _currentIndex = targetIndex;
             final idx = targetIndex.clamp(0, posts.length - 1);
+            _currentIndex = idx;
             final post = posts[idx];
             _precacheAdjacentImages(posts, idx);
-            return _buildPostContent(context, group, post, posts);
+            return _buildPostContent(context, group, post, posts, idx);
           },
           loading: () =>
               Center(child: CircularProgressIndicator(color: Colors.white)),
           error: (e, _) => Center(
-            child: Text("Error: $e", style: TextStyle(color: Colors.white)),
+            child: Text(l10n.postError(e.toString()), style: TextStyle(color: Colors.white)),
           ),
         ),
       ),
@@ -375,7 +380,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
                 detailsAsync.valueOrNull?.authorNickname ?? cachedNickname,
             avatarUrl:
                 detailsAsync.valueOrNull?.authorAvatarUrl ?? cachedAvatarUrl,
-            date: formatTimeAgo(post.createdAt),
+            date: formatTimeAgo(post.createdAt, context),
             postIndex: authorPostIndex,
             postCount: authorPostCount,
             likeCount: 0,
@@ -422,7 +427,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
         PostBottomBar(
           nickname: d?.authorNickname ?? cachedNickname,
           avatarUrl: d?.authorAvatarUrl ?? cachedAvatarUrl,
-          date: formatTimeAgo(post.createdAt),
+          date: formatTimeAgo(post.createdAt, context),
           likeCount: _likeCountOverride ?? d?.likeCount ?? 0,
           commentCount: d?.commentCount ?? 0,
           isLiked: _likeOverride ?? d?.isLiked ?? false,
@@ -445,6 +450,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
     Group group,
     Post post,
     List<Post> allPosts,
+    int currentIndex,
   ) {
     final authorProfileAsync = ref.watch(profileProvider(post.authorId));
     final detailsAsync = ref.watch(postWithDetailsProvider(post));
@@ -486,19 +492,24 @@ class _PostScreenState extends ConsumerState<PostScreen>
                 Positioned.fill(
                   child: ImageFiltered(
                     imageFilter: shouldBlur
-                        ? ImageFilter.blur(sigmaX: 30, sigmaY: 30)
+                        ? Blurs.fullScreen
                         : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                     child: CachedPostImage(
                       imageUrl: post.photoUrl,
                       cacheKey: post.storagePath,
-                      errorWidget: Container(
-                        color: Colors.black,
-                        child: Center(
-                          child: Text(
-                            "Failed to load",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
+                      errorWidget: Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context)!;
+                          return Container(
+                            color: Colors.black,
+                            child: Center(
+                              child: Text(
+                                l10n.postFailedToLoad,
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -522,7 +533,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
                   child: PostHeaderBar(
                     weekdayName: weekdays[weekdayIndex].name,
                     weekNumber: groupWeekNumber(group),
-                    currentIndex: _currentIndex!,
+                    currentIndex: currentIndex,
                     itemCount: itemCount,
                     onCloseTap: _onCloseTap,
                     onMoreTap: isOwnPost ? () => _onMoreTap(post) : null,

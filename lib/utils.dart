@@ -2,24 +2,26 @@ import 'dart:ui';
 
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/constants/sizes.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 bool isDarkMode(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark;
 }
 
-/// 상대 시간 표시 (예: "1시간 전", "어제")
-String formatTimeAgo(DateTime dateTime) {
+/// 상대 시간 표시 (예: "2d ago", "yesterday")
+String formatTimeAgo(DateTime dateTime, BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
   final now = DateTime.now();
   final diff = now.difference(dateTime);
 
-  if (diff.inMinutes < 1) return 'now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  if (diff.inDays == 1) return 'yesterday';
-  if (diff.inDays < 7) return '${diff.inDays}d ago';
-  if (diff.inDays < 30) return '${diff.inDays ~/ 7}w ago';
-  return '${diff.inDays ~/ 30}mo ago';
+  if (diff.inMinutes < 1) return l10n.timeAgoNow;
+  if (diff.inMinutes < 60) return l10n.timeAgoMinutes(diff.inMinutes);
+  if (diff.inHours < 24) return l10n.timeAgoHours(diff.inHours);
+  if (diff.inDays == 1) return l10n.timeAgoYesterday;
+  if (diff.inDays < 7) return l10n.timeAgoDays(diff.inDays);
+  if (diff.inDays < 30) return l10n.timeAgoWeeks(diff.inDays ~/ 7);
+  return l10n.timeAgoMonths(diff.inDays ~/ 30);
 }
 
 /// 카운트다운 포맷: "Xd Xh Xm Xs". 선행 0 단위는 생략.

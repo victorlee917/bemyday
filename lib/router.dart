@@ -47,18 +47,26 @@ GoRouter createRouter(
     // 플랫폼이 com.bemyday://invitation/xxx 전달 시 initialLocation(변환된 경로) 우선 사용
     overridePlatformDefaultLocation: initialLocation != null,
     onException: (context, state, router) {
-      // GoException "no routes for location: com.bemyday://invitation/TOKEN" → /invitation/TOKEN 리다이렉트
+      // GoException "no routes for location: ..." → 유효한 경로로 리다이렉트
       final err = state.error;
       if (err is GoException) {
-        final match = RegExp(r'no routes for location: (com\.bemyday://invitation/[^"\s]+)')
-            .firstMatch(err.message);
-        if (match != null) {
-          final uriStr = match.group(1)!;
+        final msg = err.message;
+        // com.bemyday://invitation/TOKEN → /invitation/TOKEN
+        final inviteMatch = RegExp(r'no routes for location: (com\.bemyday://invitation/[^"\s]+)')
+            .firstMatch(msg);
+        if (inviteMatch != null) {
+          final uriStr = inviteMatch.group(1)!;
           final tokenMatch = RegExp(r'com\.bemyday://invitation/([^/?#]+)').firstMatch(uriStr);
           if (tokenMatch != null) {
             router.go('/invitation/${tokenMatch.group(1)!}');
             return;
           }
+        }
+        // com.bemyday://login-callback, com.bemyday:// 등 OAuth 콜백 → /start (redirect에서 /home 등으로 처리)
+        final schemeMatch = RegExp(r'no routes for location: (com\.bemyday://[^"]*)').firstMatch(msg);
+        if (schemeMatch != null) {
+          router.go(StartScreen.routeUrl);
+          return;
         }
       }
       // 그 외: 기본 에러 화면 (재throw 없음)
@@ -79,7 +87,7 @@ GoRouter createRouter(
               ? '/home?invitation_token=$token'
               : '${StartScreen.routeUrl}?invite_token=$token';
         }
-        return session != null ? '/home' : StartScreen.routeUrl;
+        return session != null ? '/home' : TutorialScreen.routeUrl;
       }
 
       // 로그아웃 상태
@@ -99,10 +107,10 @@ GoRouter createRouter(
             final token = match.group(1)!;
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString(pendingInviteTokenKey, token);
-            return '${StartScreen.routeUrl}?invite_token=$token';
-          }
-          return StartScreen.routeUrl;
+          return '${StartScreen.routeUrl}?invite_token=$token';
         }
+        return TutorialScreen.routeUrl;
+      }
         return null;
       }
 

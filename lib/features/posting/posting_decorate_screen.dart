@@ -111,7 +111,7 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
     showWeekdayPicker(
       context: context,
       items: items,
-      isDarkOnly: true,
+      isDarkOnly: false,
       displayMode: WeekdayPickerDisplayMode.posting,
       onWeekdaySelected: (index) {
         setState(() {

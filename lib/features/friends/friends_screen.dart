@@ -2,11 +2,11 @@ import 'package:bemyday/common/widgets/async_value_builder.dart';
 import 'package:bemyday/common/widgets/vacant_page.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
-import 'package:bemyday/data/weekdays.dart';
-import 'package:bemyday/features/friends/widgets/weekday_section.dart';
+import 'package:bemyday/features/friends/widgets/group_post_stack_with_blur.dart';
 import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/invite/invite_utils.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -28,12 +28,13 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final groupsAsync = ref.watch(currentUserGroupsProvider);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text("Weekdays"),
+        title: Text(l10n.friendsTabTitle),
         automaticallyImplyLeading: false,
         leading: Padding(
           padding: EdgeInsets.only(left: Paddings.scaffoldH),
@@ -55,7 +56,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                 top: Paddings.profileV,
               ),
               child: VacantPage(
-                message: "Invite friends to get started",
+                message: l10n.inviteFriendsToGetStarted,
                 onInviteTap: _onInviteTap,
               ),
             );
@@ -64,20 +65,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             padding: EdgeInsets.only(
               bottom: widget.bottomPadding,
               top: Paddings.scaffoldV,
-              left: Paddings.scaffoldH,
-              right: Paddings.scaffoldH,
+              left: 0,
+              right: 0,
             ),
             itemBuilder: (context, index) {
               final group = groups[index];
-              final weekday = weekdays[group.weekday - 1];
-              return WeekdaySection(
-                weekday: weekday,
-                weekdayIndex: group.weekday - 1,
+              return GroupPostStackWithBlur(
                 group: group,
+                weekdayIndex: group.weekday - 1,
               );
             },
             separatorBuilder: (context, index) =>
-                SizedBox(height: CustomSizes.sectionGap),
+                SizedBox(height: Sizes.size32),
             itemCount: groups.length,
           );
         },

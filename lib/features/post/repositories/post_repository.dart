@@ -81,6 +81,30 @@ class PostRepository {
     return getPostsByWeek(group, groupWeekNumber(group));
   }
 
+  /// 그룹의 최신 포스트 최대 [limit]개 (created_at 내림차순)
+  Future<List<Post>> getLatestPosts(Group group, {int limit = 4}) async {
+    final rows = await _client
+        .from('posts')
+        .select('id, group_id, author_id, week_index, photo_url, caption, created_at')
+        .eq('group_id', group.id)
+        .isFilter('deleted_at', null)
+        .order('created_at', ascending: false)
+        .limit(limit);
+
+    final posts = (rows as List).map((r) => Post.fromJson(r)).toList();
+    if (posts.isEmpty) return posts;
+
+    final paths = posts.map((p) => p.photoUrl).toList();
+    final signed = await _client.storage
+        .from(_postsBucket)
+        .createSignedUrls(paths, _signedUrlExpiry);
+
+    return [
+      for (var i = 0; i < posts.length; i++)
+        posts[i].copyWith(photoUrl: signed[i].signedUrl),
+    ];
+  }
+
   /// 특정 week에 해당하는 포스트 목록 (created_at 오름차순)
   ///
   /// photo_url에 저장된 스토리지 경로를 signed URL로 변환하여 반환한다.

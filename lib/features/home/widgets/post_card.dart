@@ -31,9 +31,7 @@ class PostCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(RValues.thumbnail - borderWidth),
         child: ImageFiltered(
-          imageFilter: blur
-              ? ImageFilter.blur(sigmaX: 20, sigmaY: 20)
-              : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+          imageFilter: blur ? Blurs.content : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
           child: CachedPostImage(
             imageUrl: post.photoUrl,
             cacheKey: post.storagePath,

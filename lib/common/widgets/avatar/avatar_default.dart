@@ -14,6 +14,7 @@ class AvatarDefault extends StatelessWidget {
     this.borderColor,
     this.borderWidth,
     this.shape = AvatarShape.circle,
+    this.loading = false,
   });
 
   final double radius;
@@ -22,6 +23,9 @@ class AvatarDefault extends StatelessWidget {
 
   /// 프로필 사진 URL (Supabase Storage 등). 있으면 이미지로 표시, 없으면 닉네임 이니셜
   final String? avatarUrl;
+
+  /// true이면 avatarUrl 없을 때 이니셜 대신 원형 로딩 표시 (provider 로딩 등)
+  final bool loading;
 
   /// 테두리 색상. null이면 테두리 없음.
   final Color? borderColor;
@@ -61,6 +65,46 @@ class AvatarDefault extends StatelessWidget {
         ),
       ),
       child: child,
+    );
+  }
+
+  Widget _buildLoadingPlaceholder(BuildContext context) {
+    final size = radius * 2;
+    final loaderColor = (Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black)
+        .withOpacity(0.18);
+    final bgColor = Theme.of(context).brightness == Brightness.dark
+        ? CustomColors.primaryColorDark
+        : CustomColors.primaryColorLight;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (shape == AvatarShape.squircle)
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(radius * 0.4),
+              ),
+            )
+          else
+            CircleAvatar(radius: radius, backgroundColor: bgColor),
+          SizedBox(
+            width: size * 0.38,
+            height: size * 0.38,
+            child: CircularProgressIndicator(
+              strokeWidth: 5,
+              strokeCap: StrokeCap.round,
+              valueColor: AlwaysStoppedAnimation<Color>(loaderColor),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -113,12 +157,45 @@ class AvatarDefault extends StatelessWidget {
     return CircleAvatar(radius: radius, backgroundImage: imageProvider);
   }
 
+  static bool _isAssetPath(String url) => url.startsWith('assets/');
+
   @override
   Widget build(BuildContext context) {
     final hasAvatar = avatarUrl != null && avatarUrl!.isNotEmpty;
 
     if (!hasAvatar) {
-      return _wrapBorder(_buildInitialChild(context), context);
+      return _wrapBorder(
+        loading ? _buildLoadingPlaceholder(context) : _buildInitialChild(context),
+        context,
+      );
+    }
+
+    if (_isAssetPath(avatarUrl!)) {
+      final size = radius * 2;
+      final clip = shape == AvatarShape.squircle
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(radius * 0.4),
+              child: Image.asset(
+                avatarUrl!,
+                fit: BoxFit.cover,
+                width: size,
+                height: size,
+                errorBuilder: (_, __, ___) => _buildInitialChild(context),
+              ),
+            )
+          : ClipOval(
+              child: Image.asset(
+                avatarUrl!,
+                fit: BoxFit.cover,
+                width: size,
+                height: size,
+                errorBuilder: (_, __, ___) => _buildInitialChild(context),
+              ),
+            );
+      return _wrapBorder(
+        SizedBox(width: size, height: size, child: clip),
+        context,
+      );
     }
 
     return CachedNetworkImage(
@@ -132,7 +209,7 @@ class AvatarDefault extends StatelessWidget {
         );
       },
       placeholder: (context, url) => _wrapBorder(
-        _buildInitialChild(context),
+        _buildLoadingPlaceholder(context),
         context,
       ),
       errorWidget: (context, url, error) => _wrapBorder(

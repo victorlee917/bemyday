@@ -52,11 +52,30 @@ class CustomColors {
   static const hintColorLight = Color.fromRGBO(0, 0, 0, 0.3);
   static const destructiveColorDark = Color.fromRGBO(255, 73, 64, 1.0);
   static const destructiveColorLight = Color.fromRGBO(255, 73, 64, 1.0);
+  static const positiveColorDark = Color.fromRGBO(52, 199, 89, 1.0);
+  static const positiveColorLight = Color.fromRGBO(52, 199, 89, 1.0);
 }
 
 class Blurs {
+  /// BackdropFilter용 (드롭다운, 배지, 시트 등 UI 오버레이)
   static const sigma = 10.0;
   static final backdrop = ImageFilter.blur(sigmaX: sigma, sigmaY: sigma);
+
+  /// PostStack blur container 등 가벼운 오버레이
+  static const sigmaStackOverlay = 8.0;
+  static final stackOverlay =
+      ImageFilter.blur(sigmaX: sigmaStackOverlay, sigmaY: sigmaStackOverlay);
+
+  /// 포스트 카드/그리드 등 콘텐츠 가리기용
+  static const sigmaContent = 20.0;
+  static final content =
+      ImageFilter.blur(sigmaX: sigmaContent, sigmaY: sigmaContent);
+
+  /// 포스트 상세 화면 전체 blur
+  static const sigmaFullScreen = 30.0;
+  static final fullScreen =
+      ImageFilter.blur(sigmaX: sigmaFullScreen, sigmaY: sigmaFullScreen);
+
   static const overlayColor = Color.fromRGBO(0, 0, 0, 0.2);
   static const overlayColorLight = Color.fromRGBO(255, 255, 255, 0.3);
   static const overlayColorDark = Color.fromRGBO(0, 0, 0, 0.3);

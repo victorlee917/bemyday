@@ -1,6 +1,7 @@
 import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/close_app_bar_button.dart';
 import 'package:bemyday/common/widgets/stat/stats_collection.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
@@ -40,6 +41,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final group = widget.group;
     final weeks = group != null ? groupWeekNumber(group) : 0;
     final streaks = group?.streak ?? 0;
@@ -54,7 +56,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
     final info = groupDisplayInfo(group, memberNicknamesAsync?.valueOrNull);
     final displayText =
         displayNameAsync?.valueOrNull ?? info.subTitle ?? info.nickname;
-    final title = group != null ? weekdays[group.weekday - 1].name : 'Monday';
+    final title = group != null ? weekdays[group.weekday - 1].name : l10n.weekdayMonday;
 
     return Scaffold(
       appBar: AppBar(
@@ -120,9 +122,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
                     ),
                     child: StatsCollection(
                       stats: [
-                        StatItem(title: "Weeks", value: weeks),
-                        StatItem(title: "Streaks", value: streaks),
-                        StatItem(title: "Posts", value: posts),
+                        StatItem(title: l10n.statWeeks, value: weeks),
+                        StatItem(title: l10n.statStreaks, value: streaks),
+                        StatItem(title: l10n.statPosts, value: posts),
                       ],
                     ),
                   ),

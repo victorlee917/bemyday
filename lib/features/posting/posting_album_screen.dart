@@ -13,6 +13,7 @@ import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/invite/invite_utils.dart';
 import 'package:bemyday/features/post/providers/post_provider.dart';
 import 'package:bemyday/features/posting/posting_decorate_screen.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -140,7 +141,9 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
       ref.invalidate(currentWeekPostsProvider(result));
       ref.invalidate(weekPostSummariesProvider(result));
       ref.invalidate(currentUserGroupsProvider);
-      context.pop(result);
+      // 최신 포스트 목록이 갱신된 뒤 PostScreen으로 이동하도록 대기
+      await ref.read(currentWeekPostsProvider(result).future);
+      if (mounted) context.pop(result);
     }
   }
 
@@ -150,6 +153,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final groups = ref.watch(currentUserGroupsProvider).valueOrNull ?? [];
 
     if (groups.isEmpty) {
@@ -162,7 +166,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: true,
-        title: Text('Select Photo'),
+        title: Text(l10n.postingSelectPhoto),
         actions: [CloseAppBarButton(onTap: _onCloseTap)],
       ),
       body: Stack(
@@ -170,8 +174,8 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : !_hasPermission
-              ? _buildPermissionDenied()
-              : _buildContent(),
+              ? _buildPermissionDenied(context)
+              : _buildContent(context),
           if (_albums.isNotEmpty)
             Positioned(
               left: 0,
@@ -181,7 +185,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
                 child: Center(
                   child: Padding(
                     padding: EdgeInsets.only(bottom: Sizes.size16),
-                    child: _buildAlbumSelector(),
+                    child: _buildAlbumSelector(context),
                   ),
                 ),
               ),
@@ -191,9 +195,10 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
     );
   }
 
-  Widget _buildAlbumSelector() {
+  Widget _buildAlbumSelector(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return common.DropdownButton(
-      label: _selectedAlbum?.name ?? 'Album',
+      label: _selectedAlbum?.name ?? l10n.postingAlbumFallback,
       onTap: _showAlbumPicker,
       isLoading: _isLoadingAlbumPicker,
       useBlur: true,
@@ -239,26 +244,28 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
     }
   }
 
-  Widget _buildPermissionDenied() {
+  Widget _buildPermissionDenied(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FaIcon(FontAwesomeIcons.images, size: Sizes.size48),
           SizedBox(height: Sizes.size16),
-          Text('Photo access denied'),
+          Text(l10n.postingPhotoAccessDenied),
           SizedBox(height: Sizes.size8),
           TextButton(
             onPressed: () => PhotoManager.openSetting(),
-            child: Text('Open Settings'),
+            child: Text(l10n.postingOpenSettings),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     if (_assets.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -266,7 +273,7 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
             FaIcon(FontAwesomeIcons.images, size: Sizes.size48),
             SizedBox(height: Sizes.size16),
             Text(
-              'No photos found',
+              l10n.postingNoPhotosFound,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ],

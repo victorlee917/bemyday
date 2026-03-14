@@ -21,8 +21,18 @@ class CachedPostImage extends StatelessWidget {
   final Color placeholderColor;
   final Widget? errorWidget;
 
+  static bool _isAssetPath(String url) => url.startsWith('assets/');
+
   @override
   Widget build(BuildContext context) {
+    if (_isAssetPath(imageUrl)) {
+      return Image.asset(
+        imageUrl,
+        fit: fit,
+        errorBuilder: (_, __, ___) =>
+            errorWidget ?? ColoredBox(color: placeholderColor),
+      );
+    }
     return CachedNetworkImage(
       imageUrl: imageUrl,
       cacheKey: cacheKey,

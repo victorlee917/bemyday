@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 푸시 알림 (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 사진/갤러리 접근 (photo_manager, image_picker) -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"

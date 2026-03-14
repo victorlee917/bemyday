@@ -1,6 +1,7 @@
 import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
 import 'package:bemyday/common/widgets/stat/stats_collection.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
@@ -25,6 +26,7 @@ class FriendCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final weeks = group != null ? groupWeekNumber(group!) : 0;
     final streaks = group?.streak ?? 0;
     final posts = group?.postCount ?? 0;
@@ -95,9 +97,9 @@ class FriendCard extends ConsumerWidget {
                 Expanded(
                   child: StatsCollection(
                     stats: [
-                      StatItem(title: "Weeks", value: weeks),
-                      StatItem(title: "Streaks", value: streaks),
-                      StatItem(title: "Posts", value: posts),
+                      StatItem(title: l10n.statWeeks, value: weeks),
+                      StatItem(title: l10n.statStreaks, value: streaks),
+                      StatItem(title: l10n.statPosts, value: posts),
                     ],
                   ),
                 ),

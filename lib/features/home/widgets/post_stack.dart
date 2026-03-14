@@ -14,19 +14,39 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PostStack extends ConsumerWidget {
-  const PostStack({super.key, required this.group});
+  const PostStack({
+    super.key,
+    required this.group,
+    this.useLatestPosts = false,
+    this.useRevealedPostsOnly = false,
+    this.onTap,
+  });
 
   final Group group;
+  /// true면 그룹의 최신 포스트 최대 4개, false면 현재 주 포스트
+  final bool useLatestPosts;
+  /// true면 공개된(blur 해제된) 포스트만. useLatestPosts와 함께 사용.
+  final bool useRevealedPostsOnly;
+  /// null이면 기본 동작(PostScreen으로 이동). 지정 시 해당 콜백 사용.
+  final VoidCallback? onTap;
 
   static const int _maxVisible = 4;
 
   void _onPostTap(BuildContext context) {
-    context.push(PostScreen.routeUrl, extra: group);
+    if (onTap != null) {
+      onTap!();
+    } else {
+      context.push(PostScreen.routeUrl, extra: group);
+    }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final postsAsync = ref.watch(currentWeekPostsProvider(group));
+    final postsAsync = useRevealedPostsOnly
+        ? ref.watch(groupLatestRevealedPostsProvider(group))
+        : (useLatestPosts
+            ? ref.watch(groupLatestPostsProvider(group))
+            : ref.watch(currentWeekPostsProvider(group)));
     final dark = isDarkMode(context);
     final borderColor = dark
         ? CustomColors.clickableAreaDark
@@ -34,7 +54,8 @@ class PostStack extends ConsumerWidget {
     final bgColor = dark
         ? CustomColors.clickableAreaDark
         : CustomColors.clickableAreaLight;
-    final beforeReveal = isCurrentWeekBeforeReveal(group);
+    final beforeReveal =
+        !useLatestPosts && isCurrentWeekBeforeReveal(group);
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
     return postsAsync.when(
@@ -42,8 +63,9 @@ class PostStack extends ConsumerWidget {
         if (posts.isEmpty) return const SizedBox.shrink();
 
         final totalCount = posts.length;
-        final reversed = posts.reversed.toList();
-        final visible = reversed.take(_maxVisible).toList();
+        final visible = useLatestPosts
+            ? posts.take(_maxVisible).toList()
+            : posts.reversed.take(_maxVisible).toList();
         final cardCount = visible.length;
 
         return GestureDetector(

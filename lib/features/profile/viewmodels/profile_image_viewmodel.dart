@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/profile/providers/profile_repository_provider.dart';
 import 'package:bemyday/features/profile/repositories/profile_repository.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -39,12 +40,13 @@ class ProfileImageViewModel extends Notifier<String?> {
 
   /// 이미지 크롭 (정방형)
   Future<CroppedFile?> cropImage(String sourcePath, BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: sourcePath,
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
       uiSettings: [
         AndroidUiSettings(
-          toolbarTitle: 'Edit Photo',
+          toolbarTitle: l10n.profileEditPhoto,
           toolbarColor: Theme.of(context).scaffoldBackgroundColor,
           toolbarWidgetColor: Theme.of(context).iconTheme.color,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -54,12 +56,12 @@ class ProfileImageViewModel extends Notifier<String?> {
           hideBottomControls: false,
         ),
         IOSUiSettings(
-          title: 'Edit Photo',
+          title: l10n.profileEditPhoto,
           aspectRatioLockEnabled: true,
           resetAspectRatioEnabled: false,
           aspectRatioPickerButtonHidden: true,
-          cancelButtonTitle: 'Cancel',
-          doneButtonTitle: 'Done',
+          cancelButtonTitle: l10n.cancel,
+          doneButtonTitle: l10n.done,
           // 크롭 영역 외부 배경색
           // hidesNavigationBar: false,
           // rotateButtonsHidden: true,

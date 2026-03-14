@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bemyday/constants/sizes.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -48,13 +49,14 @@ class _RevealCountdownState extends State<RevealCountdown> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Opacity(
           opacity: 0.7,
           child: Text(
-            "Reveals in",
+            l10n.revealsIn,
             style: TextStyle(
               color: Colors.white,
               fontSize: Sizes.size14,

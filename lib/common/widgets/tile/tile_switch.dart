@@ -1,4 +1,5 @@
 import 'package:bemyday/constants/gaps.dart';
+import 'package:bemyday/constants/styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -18,6 +19,11 @@ class TileSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final positiveColor = dark
+        ? CustomColors.positiveColorDark
+        : CustomColors.positiveColorLight;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -40,7 +46,7 @@ class TileSwitch extends StatelessWidget {
         CupertinoSwitch(
           value: value,
           onChanged: action,
-          activeTrackColor: Theme.of(context).primaryColor,
+          activeTrackColor: positiveColor,
         ),
       ],
     );

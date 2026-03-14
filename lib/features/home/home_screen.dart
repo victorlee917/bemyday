@@ -30,13 +30,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   PageController? _pageController;
   int _weekdayIndex = 0;
+  bool _userHasNavigated = false;
 
   /// 최초 포커스 요일: 남은 시간 가장 적은 그룹 → 없으면 당일 요일
   int _computeInitialFocusWeekdayIndex(List<Group> groups) {
     return computeSoonestWeekdayIndex(groups);
   }
 
-  static const int _pageCount = 21;
+  static const int _pageMultiplier = 1000;
 
   void _syncWeekdayFromPage() {
     final controller = _pageController;
@@ -46,9 +47,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (ref.read(homeWeekdayIndexProvider) != index) {
       ref.read(homeWeekdayIndexProvider.notifier).state = index;
     }
+    if (_weekdayIndex != index) {
+      setState(() => _weekdayIndex = index);
+    }
   }
 
   void _onPageChanged(int page) {
+    _userHasNavigated = true;
     final newWeekdayIndex = page % 7;
     if (_weekdayIndex != newWeekdayIndex) {
       setState(() {
@@ -85,7 +90,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final targetIndex = widget.initialWeekdayIndex != null
                   ? widget.initialWeekdayIndex!.clamp(0, 6)
                   : _computeInitialFocusWeekdayIndex(groups);
-              final targetPage = 7 + targetIndex;
+              final targetPage = _pageMultiplier * 7 + targetIndex;
 
               if (_pageController == null) {
                 _pageController = PageController(
@@ -93,20 +98,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   viewportFraction: 0.9,
                 );
                 _pageController!.addListener(_syncWeekdayFromPage);
-                _weekdayIndex = targetIndex;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    final notifier = ref.read(homeWeekdayIndexProvider.notifier);
-                    if (notifier.state != targetIndex) {
-                      notifier.state = targetIndex;
-                    }
-                  }
-                });
               }
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted || _pageController == null) return;
+                final controller = _pageController!;
+                if (controller.hasClients) {
+                  final currentPage =
+                      controller.page?.round() ?? controller.initialPage;
+                  final weekdayFromPage = currentPage % 7;
+                  if (!_userHasNavigated && currentPage != targetPage) {
+                    controller.jumpToPage(targetPage);
+                    setState(() => _weekdayIndex = targetIndex);
+                  } else if (_weekdayIndex != weekdayFromPage) {
+                    setState(() => _weekdayIndex = weekdayFromPage);
+                  }
+                }
+                final notifier = ref.read(homeWeekdayIndexProvider.notifier);
+                final syncIndex = controller.hasClients
+                    ? ((controller.page?.round() ?? controller.initialPage) % 7)
+                    : targetIndex;
+                if (notifier.state != syncIndex) {
+                  notifier.state = syncIndex;
+                }
+              });
 
               return PageView.builder(
                 controller: _pageController!,
-                itemCount: _pageCount,
+                itemCount: null,
                 onPageChanged: _onPageChanged,
                 itemBuilder: (context, index) {
                   final weekdayIndex = index % 7;

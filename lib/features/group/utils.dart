@@ -1,5 +1,6 @@
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/group/models/group.dart';
+import 'package:bemyday/features/post/models/post.dart';
 
 /// 요일 피커용 아이템 (weekdayIndex, group)
 class WeekdayPickerItem {
@@ -162,6 +163,24 @@ bool isCurrentWeekBeforeReveal(Group group, {int? viewingWeekIndex}) {
   final currentWeek = groupWeekNumber(group);
   if ((viewingWeekIndex ?? currentWeek) != currentWeek) return false;
   return DateTime.now().weekday != group.weekday;
+}
+
+/// 포스트가 공개(blur 해제)되었는지 여부.
+///
+/// - 과거 주차: 공개
+/// - 현재 주차 + 요일 도래 후: 공개
+/// - 현재 주차 + 요일 도래 전: 본인 포스트만 공개
+bool isPostRevealed(
+  Post post,
+  Group group,
+  String? currentUserId,
+) {
+  final currentWeek = groupWeekNumber(group);
+  if (post.weekIndex < currentWeek) return true;
+  if (post.weekIndex > currentWeek) return false;
+  // 현재 주차: isCurrentWeekBeforeReveal의 역
+  final beforeReveal = isCurrentWeekBeforeReveal(group);
+  return !beforeReveal || post.authorId == currentUserId;
 }
 
 /// 그룹별 주차: 생성 후 해당 요일이 몇 번 도래했는지

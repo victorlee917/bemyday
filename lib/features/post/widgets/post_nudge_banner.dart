@@ -1,6 +1,7 @@
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// 포스트 추가 넛지 배너 - "Make {nickname}'s day!"
@@ -16,6 +17,7 @@ class PostNudgeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -41,7 +43,7 @@ class PostNudgeBanner extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      "Make $nickname's day!",
+                      l10n.postNudgeMakeDay(nickname),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: Sizes.size14,
@@ -51,7 +53,7 @@ class PostNudgeBanner extends StatelessWidget {
                   ),
                   Gaps.h10,
                   Text(
-                    "Add post",
+                    l10n.postNudgeAddPost,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: Sizes.size12,

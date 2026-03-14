@@ -1,0 +1,535 @@
+{
+  "@@locale": "en",
+  "appTitle": "Be My Day",
+  "@appTitle": {
+    "description": "App title"
+  },
+  "signUpTitle": "Sign up for {appName}",
+  "@signUpTitle": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  },
+  "tutorialTitle0": "Make your week\nfull of besties.",
+  "@tutorialTitle0": {
+    "description": "Tutorial page 1 title"
+  },
+  "tutorialTitle1": "Share something.\nMake your besties' day!",
+  "@tutorialTitle1": {
+    "description": "Tutorial page 2 title"
+  },
+  "tutorialTitle2": "Your besties' updates\nare revealed each day",
+  "@tutorialTitle2": {
+    "description": "Tutorial page 3 title"
+  },
+  "tutorialTitle3": "Memories with besties,\nday by day!",
+  "@tutorialTitle3": {
+    "description": "Tutorial page 4 title"
+  },
+  "tutorialButtonNext": "Next",
+  "@tutorialButtonNext": {
+    "description": "Tutorial next button"
+  },
+  "tutorialButtonStart": "Start",
+  "@tutorialButtonStart": {
+    "description": "Tutorial start button"
+  },
+  "revealsIn": "Reveals in",
+  "@revealsIn": {
+    "description": "Reveal countdown label"
+  },
+  "statWeeks": "Weeks",
+  "@statWeeks": {
+    "description": "Stats label for weeks count"
+  },
+  "statStreaks": "Streaks",
+  "@statStreaks": {
+    "description": "Stats label for streaks count"
+  },
+  "statPosts": "Posts",
+  "@statPosts": {
+    "description": "Stats label for posts count"
+  },
+  "inviteFriends": "Invite Friends",
+  "@inviteFriends": {
+    "description": "Invite friends button label"
+  },
+  "noPostYet": "No post yet",
+  "@noPostYet": {
+    "description": "Empty post state message"
+  },
+  "addPosts": "Add posts",
+  "@addPosts": {
+    "description": "Add posts prompt"
+  },
+  "myTabTitle": "MY",
+  "@myTabTitle": {
+    "description": "My tab title"
+  },
+  "profileFallback": "profile",
+  "@profileFallback": {
+    "description": "Profile fallback when nickname is empty"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button"
+  },
+  "mySectionApp": "App",
+  "@mySectionApp": {
+    "description": "My screen App section title"
+  },
+  "myAlarm": "Alarm",
+  "@myAlarm": {
+    "description": "Alarm menu item"
+  },
+  "alarmTileDailyReminder": "Daily Reminder",
+  "@alarmTileDailyReminder": {
+    "description": "Alarm tile for daily reminder at 10 PM"
+  },
+  "alarmTileDailyReminderSubtitle": "Daily at 10 PM",
+  "@alarmTileDailyReminderSubtitle": {
+    "description": "Alarm tile subtitle for daily reminder"
+  },
+  "alarmTileNewPost": "New Post",
+  "@alarmTileNewPost": {
+    "description": "Alarm tile for new posts"
+  },
+  "alarmTileNewPostSubtitle": "When someone posts in your group",
+  "@alarmTileNewPostSubtitle": {
+    "description": "Alarm tile subtitle for new posts"
+  },
+  "alarmTileNewComment": "New Comment",
+  "@alarmTileNewComment": {
+    "description": "Alarm tile for new comments"
+  },
+  "alarmTileNewCommentSubtitle": "When someone comments on your post",
+  "@alarmTileNewCommentSubtitle": {
+    "description": "Alarm tile subtitle for new comments"
+  },
+  "alarmTileNewLike": "New Like",
+  "@alarmTileNewLike": {
+    "description": "Alarm tile for new likes"
+  },
+  "alarmTileNewLikeSubtitle": "When someone likes your post",
+  "@alarmTileNewLikeSubtitle": {
+    "description": "Alarm tile subtitle for new likes"
+  },
+  "pushDailyReminder": "Time to share your day with your besties!",
+  "@pushDailyReminder": {
+    "description": "Push notification message for daily reminder"
+  },
+  "pushNewPost": "{nickname} posted in your group",
+  "@pushNewPost": {
+    "placeholders": {
+      "nickname": { "type": "String" }
+    }
+  },
+  "pushNewComment": "{nickname} commented on your post",
+  "@pushNewComment": {
+    "placeholders": {
+      "nickname": { "type": "String" }
+    }
+  },
+  "pushNewLike": "{nickname} liked your post",
+  "@pushNewLike": {
+    "placeholders": {
+      "nickname": { "type": "String" }
+    }
+  },
+  "myTheme": "Theme",
+  "@myTheme": {
+    "description": "Theme menu item"
+  },
+  "myLanguage": "Language",
+  "@myLanguage": {
+    "description": "Language menu item"
+  },
+  "mySectionBmd": "BMD",
+  "@mySectionBmd": {
+    "description": "My screen BMD section title"
+  },
+  "myInstagram": "Instagram",
+  "@myInstagram": {
+    "description": "Instagram link"
+  },
+  "myPrivacyPolicy": "Privacy Policy",
+  "@myPrivacyPolicy": {
+    "description": "Privacy Policy link"
+  },
+  "myTermsOfService": "Terms of Service",
+  "@myTermsOfService": {
+    "description": "Terms of Service link"
+  },
+  "myOpenSourceLicense": "Open Source License",
+  "@myOpenSourceLicense": {
+    "description": "Open Source License menu item"
+  },
+  "mySectionDangerZone": "Danger Zone",
+  "@mySectionDangerZone": {
+    "description": "My screen Danger Zone section title"
+  },
+  "myLogout": "Logout",
+  "@myLogout": {
+    "description": "Logout menu item"
+  },
+  "myDeleteAccount": "Delete Account",
+  "@myDeleteAccount": {
+    "description": "Delete Account menu item"
+  },
+  "deleteAccountTitle": "Delete Account",
+  "@deleteAccountTitle": {
+    "description": "Delete account dialog title"
+  },
+  "deleteAccountMessage": "Are you sure you want to delete your account? This action cannot be undone.",
+  "@deleteAccountMessage": {
+    "description": "Delete account confirmation message"
+  },
+  "deleteAccountFailed": "Failed to delete account. Please try again.",
+  "@deleteAccountFailed": {
+    "description": "Delete account error message"
+  },
+  "logoutTitle": "Logout",
+  "@logoutTitle": {
+    "description": "Logout dialog title"
+  },
+  "logoutMessage": "Are you sure you want to log out?",
+  "@logoutMessage": {
+    "description": "Logout dialog message"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "done": "Done",
+  "@done": {
+    "description": "Done button"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button"
+  },
+  "profileTitle": "Profile",
+  "@profileTitle": {
+    "description": "Profile screen title"
+  },
+  "profileLoadError": "Failed to load profile",
+  "@profileLoadError": {
+    "description": "Profile load error message"
+  },
+  "retry": "Try again",
+  "@retry": {
+    "description": "Retry button"
+  },
+  "profileNicknameHint": "What's your Nickname?",
+  "@profileNicknameHint": {
+    "description": "Nickname input hint"
+  },
+  "profileNicknameRequired": "Please write your nickname",
+  "@profileNicknameRequired": {
+    "description": "Nickname required error"
+  },
+  "profileNicknameForbiddenChars": "Nickname can only contain letters, numbers, period (.), and underscore (_).",
+  "@profileNicknameForbiddenChars": {
+    "description": "Nickname invalid characters error"
+  },
+  "profileNicknameMaxLengthError": "You can enter up to {max} characters.",
+  "@profileNicknameMaxLengthError": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "profileNicknameInUse": "This nickname is already in use.",
+  "@profileNicknameInUse": {
+    "description": "Nickname duplicate error"
+  },
+  "profileSaveFailed": "Failed to save. Please try again.",
+  "@profileSaveFailed": {
+    "description": "Profile save error"
+  },
+  "profileEditPhoto": "Edit Photo",
+  "@profileEditPhoto": {
+    "description": "Edit photo option"
+  },
+  "profileDeletePhoto": "Delete Photo",
+  "@profileDeletePhoto": {
+    "description": "Delete photo option"
+  },
+  "friendsTabTitle": "Weekdays",
+  "@friendsTabTitle": {
+    "description": "Friends tab title"
+  },
+  "inviteFriendsToGetStarted": "Invite friends to get started",
+  "@inviteFriendsToGetStarted": {
+    "description": "Friends empty state message"
+  },
+  "inviteScreenTitle": "Invite Friends",
+  "@inviteScreenTitle": {
+    "description": "Invite screen title"
+  },
+  "inviteCreateFailed": "Failed to create invitation: {error}",
+  "@inviteCreateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteShareMessage": "Invitation from {nickname}, {url}",
+  "@inviteShareMessage": {
+    "placeholders": {
+      "nickname": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteShareSubject": "Be My Day - Invitation",
+  "@inviteShareSubject": {
+    "description": "Invite share subject"
+  },
+  "inviteAlreadyFull": "Already Full",
+  "@inviteAlreadyFull": {
+    "description": "Invite button when group is full"
+  },
+  "inviteShareInvitation": "Share Invitation",
+  "@inviteShareInvitation": {
+    "description": "Invite share button"
+  },
+  "vacant": "Vacant",
+  "@vacant": {
+    "description": "Weekday picker label when no one has joined"
+  },
+  "invitationTitle": "Invitation",
+  "@invitationTitle": {
+    "description": "Invitation screen title"
+  },
+  "invitationExpired": "Expired Invitation",
+  "@invitationExpired": {
+    "description": "Expired invitation error message"
+  },
+  "invitationLoadError": "Failed to load invitation",
+  "@invitationLoadError": {
+    "description": "Invitation load error"
+  },
+  "invitationAlreadyOnWeekday": "You already have a group on this weekday.",
+  "@invitationAlreadyOnWeekday": {
+    "description": "Error when user already has group on same weekday"
+  },
+  "invitationInviterInOtherGroup": "The inviter has already joined another group.",
+  "@invitationInviterInOtherGroup": {
+    "description": "Error when inviter joined another group"
+  },
+  "invitationGroupFull": "A group can have up to 8 members.",
+  "@invitationGroupFull": {
+    "description": "Error when group is full"
+  },
+  "invitationAcceptFailed": "Failed to join: {error}",
+  "@invitationAcceptFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invitationAlreadyMember": "Already a member",
+  "@invitationAlreadyMember": {
+    "description": "Chip when user is already in the group"
+  },
+  "invitationInviterFallback": "Inviter",
+  "@invitationInviterFallback": {
+    "description": "Fallback when inviter nickname is empty"
+  },
+  "ok": "Ok",
+  "@ok": {
+    "description": "Ok button"
+  },
+  "accept": "Accept",
+  "@accept": {
+    "description": "Accept button"
+  },
+  "weekdayMonday": "Monday",
+  "@weekdayMonday": {
+    "description": "Monday weekday name (fallback when group is null)"
+  },
+  "statPostsCount": "{count} Posts",
+  "@statPostsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noPostsYet": "No posts yet",
+  "@noPostsYet": {
+    "description": "Week grid empty state message"
+  },
+  "partyAboutTitle": "About My {weekdayName}",
+  "@partyAboutTitle": {
+    "placeholders": {
+      "weekdayName": {
+        "type": "String"
+      }
+    }
+  },
+  "partyLeaveTitle": "Leave My {weekdayName}",
+  "@partyLeaveTitle": {
+    "placeholders": {
+      "weekdayName": {
+        "type": "String"
+      }
+    }
+  },
+  "partyLeaveConfirmMessage": "Are you sure you want to leave?",
+  "@partyLeaveConfirmMessage": {
+    "description": "Leave group confirmation message"
+  },
+  "partyLeave": "Leave",
+  "@partyLeave": {
+    "description": "Leave group button"
+  },
+  "partyMembers": "Members",
+  "@partyMembers": {
+    "description": "Party detail members section title"
+  },
+  "postingSelectPhoto": "Select Photo",
+  "@postingSelectPhoto": {
+    "description": "Posting album screen title"
+  },
+  "postingAlbumFallback": "Album",
+  "@postingAlbumFallback": {
+    "description": "Album dropdown fallback when no album name"
+  },
+  "postingPhotoAccessDenied": "Photo access denied",
+  "@postingPhotoAccessDenied": {
+    "description": "Photo permission denied message"
+  },
+  "postingOpenSettings": "Open Settings",
+  "@postingOpenSettings": {
+    "description": "Open app settings button"
+  },
+  "postingNoPhotosFound": "No photos found",
+  "@postingNoPhotosFound": {
+    "description": "Empty album state message"
+  },
+  "postNoGroup": "No group",
+  "@postNoGroup": {
+    "description": "Post screen when group is null"
+  },
+  "postError": "Error: {error}",
+  "@postError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "postDeleteTitle": "Delete Post",
+  "@postDeleteTitle": {
+    "description": "Delete post sheet/dialog title"
+  },
+  "postDeleteConfirmMessage": "Are you sure you want to delete this post?",
+  "@postDeleteConfirmMessage": {
+    "description": "Delete post confirmation message"
+  },
+  "postFailedToLoad": "Failed to load",
+  "@postFailedToLoad": {
+    "description": "Post image load error"
+  },
+  "postIndexOfCount": "Post {index} of {count}",
+  "@postIndexOfCount": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoNow": "now",
+  "@timeAgoNow": {
+    "description": "Time ago when less than 1 minute"
+  },
+  "timeAgoMinutes": "{count}m ago",
+  "@timeAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoHours": "{count}h ago",
+  "@timeAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoYesterday": "yesterday",
+  "@timeAgoYesterday": {
+    "description": "Time ago for 1 day"
+  },
+  "timeAgoDays": "{count}d ago",
+  "@timeAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoWeeks": "{count}w ago",
+  "@timeAgoWeeks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoMonths": "{count}mo ago",
+  "@timeAgoMonths": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "postNudgeMakeDay": "Make {nickname}'s day!",
+  "@postNudgeMakeDay": {
+    "placeholders": {
+      "nickname": {
+        "type": "String"
+      }
+    }
+  },
+  "postNudgeAddPost": "Add post",
+  "@postNudgeAddPost": {
+    "description": "Post nudge banner add button"
+  },
+  "likesTitle": "Likes",
+  "@likesTitle": {
+    "description": "Likes sheet title"
+  },
+  "commentsTitle": "Comments",
+  "@commentsTitle": {
+    "description": "Comments sheet title"
+  },
+  "commentsError": "Error: {error}",
+  "@commentsError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "commentsHint": "Leave a comment...",
+  "@commentsHint": {
+    "description": "Comment input hint"
+  }
+}

@@ -12,6 +12,7 @@ import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/invite/invite_utils.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,13 +70,14 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
     final group = widget.group;
     if (group == null) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final weekdayName = weekdays[group.weekday - 1].name;
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Leave My $weekdayName',
-      message: '정말로 떠날 건가요?',
-      cancelLabel: '취소',
-      confirmLabel: '떠나기',
+      title: l10n.partyLeaveTitle(weekdayName),
+      message: l10n.partyLeaveConfirmMessage,
+      cancelLabel: l10n.cancel,
+      confirmLabel: l10n.partyLeave,
       isDestructive: true,
     );
     if (confirmed == true) {
@@ -131,6 +133,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final group = widget.group;
     final displayNameAsync = group != null
         ? ref.watch(groupDisplayNameProvider(group.id))
@@ -161,8 +164,8 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
           automaticallyImplyLeading: false,
           title: Text(
             group != null
-                ? "About My ${weekdays[group.weekday - 1].name}"
-                : "About My Monday",
+                ? l10n.partyAboutTitle(weekdays[group.weekday - 1].name)
+                : l10n.partyAboutTitle(l10n.weekdayMonday),
           ),
           actions: [
             CloseAppBarButton(onTap: _onCloseTap),
@@ -231,7 +234,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                   spacing: CustomSizes.sectionGap,
                   children: [
                     TilesSection(
-                      title: "Members",
+                      title: l10n.partyMembers,
                       items: [
                         ...(memberAvatarsAsync?.valueOrNull
                                 ?.map(
@@ -258,7 +261,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                               ),
                               SizedBox(height: CustomSizes.tileSpacing),
                               Text(
-                                "Invite Friends",
+                                l10n.inviteFriends,
                                 style: Theme.of(context).textTheme.labelMedium,
                               ),
                             ],
@@ -267,13 +270,13 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                       ],
                     ),
                     TilesSection(
-                      title: "Danger Zone",
+                      title: l10n.mySectionDangerZone,
                       items: [
                         TileAct(
                           action: _onLeaveTap,
                           title: group != null
-                              ? "Leave My ${weekdays[group.weekday - 1].name}"
-                              : "Leave My Monday",
+                              ? l10n.partyLeaveTitle(weekdays[group.weekday - 1].name)
+                              : l10n.partyLeaveTitle(l10n.weekdayMonday),
                           isDestructive: true,
                         ),
                       ],

@@ -3,6 +3,7 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/comments/providers/comment_provider.dart';
 import 'package:bemyday/features/comments/widgets/comment_input_avatar.dart';
 import 'package:bemyday/features/comments/widgets/comment_tile.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -108,6 +109,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     ref.listen(commentsProvider(widget.postId), (prev, next) {
       next.whenData((comments) {
         _scrollToCommentIfNeeded(comments);
@@ -150,7 +152,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                         width: Widths.devider,
                       ),
                     ),
-                    title: Text("Comments"),
+                    title: Text(l10n.commentsTitle),
                     actions: [
                       GestureDetector(
                         onTap: _onClosePressed,
@@ -199,7 +201,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                           error: (e, _) => SliverToBoxAdapter(
                             child: Padding(
                               padding: EdgeInsets.all(Paddings.scaffoldV),
-                              child: Text("Error: $e"),
+                              child: Text(l10n.commentsError(e.toString())),
                             ),
                           ),
                         ),
@@ -276,7 +278,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                                     minWidth: 0,
                                     minHeight: 0,
                                   ),
-                                  hintText: "Leave a comment...",
+                                  hintText: l10n.commentsHint,
                                   hintStyle: TextStyle(
                                     color: isDarkMode(context)
                                         ? CustomColors.hintColorDark

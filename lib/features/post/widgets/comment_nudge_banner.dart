@@ -84,7 +84,7 @@ class CommentNudgeBanner extends ConsumerWidget {
                         ),
 
                         Text(
-                          formatTimeAgo(comment.createdAt),
+                          formatTimeAgo(comment.createdAt, context),
                           style: Theme.of(context).textTheme.bodySmall!
                               .copyWith(
                                 color: CustomColors.hintColorDark,

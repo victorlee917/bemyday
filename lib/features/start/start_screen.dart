@@ -19,12 +19,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl;
 
 class StartScreen extends StatefulWidget {
-  const StartScreen({super.key, this.authErrorRetry = false, this.inviteToken});
+  const StartScreen({
+    super.key,
+    this.authErrorRetry = false,
+    this.inviteToken,
+    this.router,
+  });
   static const routeName = "start";
   static const routeUrl = "/start";
 
   final bool authErrorRetry;
   final String? inviteToken;
+  /// 바텀시트 등 GoRouter가 context 상위에 없을 때 전달. 있으면 router.go() 사용.
+  final GoRouter? router;
 
   @override
   State<StartScreen> createState() => _StartScreenState();
@@ -34,11 +41,19 @@ class _StartScreenState extends State<StartScreen> {
   bool _isSigningIn = false;
 
   void _navigateAfterLogin(BuildContext context) {
-    final token = widget.inviteToken ?? GoRouterState.of(context).uri.queryParameters['invite_token'];
-    if (token != null && token.isNotEmpty) {
-      context.go('/home?invitation_token=$token');
+    final token = widget.inviteToken ??
+        (widget.router == null
+            ? GoRouterState.of(context).uri.queryParameters['invite_token']
+            : null);
+    final path =
+        token != null && token.isNotEmpty
+            ? '/home?invitation_token=$token'
+            : '/home';
+
+    if (widget.router != null) {
+      widget.router!.go(path);
     } else {
-      context.go('/home');
+      context.go(path);
     }
   }
 
@@ -160,7 +175,8 @@ class _StartScreenState extends State<StartScreen> {
       final msg = e.toString().toLowerCase();
       final isUserDismissed =
           (e is PlatformException &&
-              (e.code == 'sign_in_canceled' || e.code == 'sign_in_cancelled')) ||
+              (e.code == 'sign_in_canceled' ||
+                  e.code == 'sign_in_cancelled')) ||
           msg.contains('cancel') ||
           msg.contains('cancelled');
       if (!isUserDismissed && mounted) {
@@ -174,183 +190,172 @@ class _StartScreenState extends State<StartScreen> {
   @override
   Widget build(BuildContext context) {
     final dark = isDarkMode(context);
-    return Scaffold(
-      backgroundColor: dark
-          ? CustomColors.backgroundColorDark
-          : CustomColors.backgroundColorLight,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
-              child: Column(
+    final stackChildren = <Widget>[
+      SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
                 children: [
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 20,
-                          child: Column(
-                            children: [
-                              Text(
-                                "Be My Day",
+                  Positioned.fill(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: Paddings.scaffoldH,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Be My Day",
+                              style: GoogleFonts.darumadropOne(
+                                textStyle: TextStyle(fontSize: Sizes.size48),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            Gaps.v2,
+                            Opacity(
+                              opacity: 0.5,
+                              child: Text(
+                                "Besties who make my day",
                                 style: GoogleFonts.darumadropOne(
-                                  textStyle: TextStyle(fontSize: Sizes.size48),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              Gaps.v2,
-                              Opacity(
-                                opacity: 0.5,
-                                child: Text(
-                                  "Besties who make my day",
-                                  style: GoogleFonts.darumadropOne(
-                                    textStyle: TextStyle(
-                                      fontSize: Sizes.size16,
-                                    ),
-                                  ),
+                                  textStyle: TextStyle(fontSize: Sizes.size16),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: Sizes.size16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (defaultTargetPlatform == TargetPlatform.iOS) ...[
-                          GestureDetector(
-                            onTap: () => _signInWithApple(context),
-                            child: StartButton(
-                              bgColor: isDarkMode(context)
-                                  ? Colors.white
-                                  : Colors.black,
-                              textColor: isDarkMode(context)
-                                  ? Colors.black
-                                  : Colors.white,
-                              icon: Image.asset(
-                                isDarkMode(context)
-                                    ? 'assets/icons/apple_logo_dark.png'
-                                    : 'assets/icons/apple_logo_light.png',
-                                fit: BoxFit.contain,
-                              ),
-                              label: "Continue with Apple",
                             ),
-                          ),
-                          Gaps.v16,
-                        ],
-                        GestureDetector(
-                          onTap: () => _signInWithGoogle(),
-                          child: StartButton(
-                            bgColor: Color.fromRGBO(242, 242, 242, 1.0),
-                            textColor: Colors.black,
-                            icon: Image.asset(
-                              'assets/icons/google_logo.png',
-                              fit: BoxFit.contain,
-                            ),
-                            label: "Continue with Google",
-                          ),
+                          ],
                         ),
-                        Gaps.v12,
-                        Opacity(
-                          opacity: 0.5,
-                          child: Text.rich(
-                            textAlign: TextAlign.center,
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text:
-                                          "By continuing, you agree to BMD's\n",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall!
-                                          .copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                    TextSpan(
-                                      text: "Privacy Policy",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall!
-                                          .copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          launchUrl(
-                                            Uri.parse(
-                                              "https://www.bemyday.app/privacy",
-                                            ),
-                                          );
-                                        },
-                                    ),
-                                    TextSpan(
-                                      text: " and ",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall!
-                                          .copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                    TextSpan(
-                                      text: "Terms of Service",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall!
-                                          .copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          launchUrl(
-                                            Uri.parse(
-                                              "https://www.bemyday.app/terms",
-                                            ),
-                                          );
-                                        },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          if (_isSigningIn)
-            Positioned.fill(
-              child: ColoredBox(
-                color:
-                    (dark
-                            ? CustomColors.backgroundColorDark
-                            : CustomColors.backgroundColorLight)
-                        .withValues(alpha: 0.9),
-                child: const Center(
-                  child: CircularProgressIndicator.adaptive(),
-                ),
+            Padding(
+              padding: EdgeInsets.only(
+                top: Sizes.size16,
+                left: Paddings.scaffoldH,
+                right: Paddings.scaffoldH,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                    GestureDetector(
+                      onTap: () => _signInWithApple(context),
+                      child: StartButton(
+                        bgColor: isDarkMode(context)
+                            ? Colors.white
+                            : Colors.black,
+                        textColor: isDarkMode(context)
+                            ? Colors.black
+                            : Colors.white,
+                        icon: Image.asset(
+                          isDarkMode(context)
+                              ? 'assets/icons/apple_logo_dark.png'
+                              : 'assets/icons/apple_logo_light.png',
+                          fit: BoxFit.contain,
+                        ),
+                        label: "Continue with Apple",
+                      ),
+                    ),
+                    Gaps.v16,
+                  ],
+                  GestureDetector(
+                    onTap: () => _signInWithGoogle(),
+                    child: StartButton(
+                      bgColor: Color.fromRGBO(242, 242, 242, 1.0),
+                      textColor: Colors.black,
+                      icon: Image.asset(
+                        'assets/icons/google_logo.png',
+                        fit: BoxFit.contain,
+                      ),
+                      label: "Continue with Google",
+                    ),
+                  ),
+                  Gaps.v16,
+                  Opacity(
+                    opacity: 0.5,
+                    child: Text.rich(
+                      textAlign: TextAlign.center,
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: "By continuing, you agree to BMD's\n",
+                                style: Theme.of(context).textTheme.labelSmall!
+                                    .copyWith(fontWeight: FontWeight.w500),
+                              ),
+                              TextSpan(
+                                text: "Privacy Policy",
+                                style: Theme.of(context).textTheme.labelSmall!
+                                    .copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    launchUrl(
+                                      Uri.parse(
+                                        "https://www.bemyday.app/privacy",
+                                      ),
+                                    );
+                                  },
+                              ),
+                              TextSpan(
+                                text: " and ",
+                                style: Theme.of(context).textTheme.labelSmall!
+                                    .copyWith(fontWeight: FontWeight.w500),
+                              ),
+                              TextSpan(
+                                text: "Terms of Service",
+                                style: Theme.of(context).textTheme.labelSmall!
+                                    .copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    launchUrl(
+                                      Uri.parse(
+                                        "https://www.bemyday.app/terms",
+                                      ),
+                                    );
+                                  },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
+    ];
+    if (_isSigningIn) {
+      stackChildren.add(
+        Positioned.fill(
+          child: ColoredBox(
+            color:
+                (dark
+                        ? CustomColors.backgroundColorDark
+                        : CustomColors.backgroundColorLight)
+                    .withValues(alpha: 0.9),
+            child: const Center(child: CircularProgressIndicator.adaptive()),
+          ),
+        ),
+      );
+    }
+    return Scaffold(
+      backgroundColor: dark
+          ? CustomColors.backgroundColorDark
+          : CustomColors.backgroundColorLight,
+      body: Stack(children: stackChildren),
     );
   }
 }

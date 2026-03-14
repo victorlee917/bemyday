@@ -249,10 +249,15 @@ class _DefaultInviteCard extends StatelessWidget {
   final double width;
   final double height;
 
+  static bool _isAssetPath(String url) => url.startsWith('assets/');
+
   Future<List<Color>?> _extractGradientColors(String imageUrl) async {
     try {
+      final ImageProvider provider = _isAssetPath(imageUrl)
+          ? AssetImage(imageUrl)
+          : CachedNetworkImageProvider(imageUrl);
       final palette = await PaletteGeneratorMaster.fromImageProvider(
-        CachedNetworkImageProvider(imageUrl),
+        provider,
         maximumColorCount: 12,
         colorSpace: ColorSpace.rgb,
       );
@@ -291,6 +296,21 @@ class _DefaultInviteCard extends StatelessWidget {
                 : CustomColors.borderLight,
           ),
           color: !hasGradient ? defaultColor : null,
+          boxShadow: hasGradient
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                    spreadRadius: -2,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         );
 
         return Container(
@@ -302,24 +322,7 @@ class _DefaultInviteCard extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.hardEdge,
               children: [
-                if (inviterAvatarUrl != null)
-                  Positioned.fill(
-                    child: ClipRect(
-                      child: ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Transform.scale(
-                          scale: 1.15,
-                          child: Image(
-                            image: CachedNetworkImageProvider(
-                              inviterAvatarUrl!,
-                            ),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (effectiveColors != null)
+                if (effectiveColors != null) ...[
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
@@ -327,20 +330,27 @@ class _DefaultInviteCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: effectiveColors
-                              .map((c) => c.withValues(alpha: 0.85))
+                              .map((c) => c.withValues(alpha: 0.9))
                               .toList(),
                         ),
                       ),
                     ),
-                  )
-                else if (inviterAvatarUrl != null)
+                  ),
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        gradient: RadialGradient(
+                          center: Alignment.center,
+                          radius: 1.2,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.12),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                ],
                 Positioned.fill(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(

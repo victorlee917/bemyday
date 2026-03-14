@@ -1,8 +1,11 @@
+import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_select.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_widget.dart';
+import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/group/utils.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -45,7 +48,7 @@ class SheetWeekdayPicker extends ConsumerWidget {
   }
 }
 
-/// 포스팅용: 참여 그룹만, title=weekday.name, subTitle=group.name or 멤버(현재유저제외), nickname=group.name or 첫멤버
+/// 포스팅용: 참여 그룹만, title=weekday.name, subTitle=group.name or 멤버(현재유저제외), avatar=AvatarGroupStack
 class _PostingWeekdayPickerRow extends ConsumerWidget {
   const _PostingWeekdayPickerRow({
     required this.item,
@@ -64,8 +67,6 @@ class _PostingWeekdayPickerRow extends ConsumerWidget {
     final group = item.group!;
     final memberNicknamesAsync =
         ref.watch(groupMemberNicknamesProvider(group.id));
-    final avatarUrl =
-        ref.watch(groupFirstAvatarProvider(group.id)).valueOrNull;
     final info = groupDisplayInfo(group, memberNicknamesAsync.valueOrNull);
 
     return SheetWidget(
@@ -73,7 +74,11 @@ class _PostingWeekdayPickerRow extends ConsumerWidget {
         children: [
           AvatarPackage(
             nickname: info.nickname,
-            avatarUrl: avatarUrl,
+            avatarWidget: AvatarGroupStack(
+              groupId: group.id,
+              radius: CustomSizes.avatarComment,
+              showBorder: true,
+            ),
             title: item.weekday.name,
             subTitle: info.subTitle,
             isDarkOnly: isDarkOnly,
@@ -104,6 +109,7 @@ class _WeekdayPickerRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final int? count;
     if (item.memberCount != null) {
       count = item.memberCount;
@@ -116,7 +122,7 @@ class _WeekdayPickerRow extends ConsumerWidget {
     final isDimmed = count != null && count >= 8;
 
     final canInvite = item.group == null || (count ?? 0) < 8;
-    final childTitle = canInvite ? null : 'Already Full';
+    final childTitle = canInvite ? null : l10n.inviteAlreadyFull;
 
     return SheetWidget(
       left: Row(
@@ -126,7 +132,7 @@ class _WeekdayPickerRow extends ConsumerWidget {
                   nickname: item.weekday.name,
                   title: item.weekday.name,
                   childTitle: childTitle,
-                  subTitle: 'Vacant',
+                  subTitle: l10n.vacant,
                   isDarkOnly: isDarkOnly,
                 )
               : _GroupAvatarPackage(
@@ -162,37 +168,32 @@ class _GroupAvatarPackage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final group = item.group!;
-    final memberAvatarsAsync = ref.watch(groupMemberAvatarsProvider(group.id));
     final memberNicknamesAsync =
         ref.watch(groupMemberNicknamesProvider(group.id));
-
-    final avatars = memberAvatarsAsync.valueOrNull;
-    final firstAvatarUrl = avatars != null && avatars.isNotEmpty
-        ? avatars.first.avatarUrl
-        : null;
-    final firstNickname = avatars != null && avatars.isNotEmpty
-        ? avatars.first.nickname
-        : item.weekday.name;
+    final nicknames = memberNicknamesAsync.valueOrNull;
 
     final String subTitle;
     if (memberCount == 0) {
-      subTitle = 'Vacant';
+      subTitle = l10n.vacant;
     } else {
       final hasGroupName = group.name?.trim().isNotEmpty == true;
       if (hasGroupName) {
         subTitle = group.name!.trim();
       } else {
-        final nicknames = memberNicknamesAsync.valueOrNull;
-        subTitle = nicknames != null && nicknames.isNotEmpty
-            ? nicknames.join(', ')
-            : '…';
+        final others = memberNicknamesExcludingCurrent(nicknames ?? []);
+        subTitle = others.isNotEmpty ? others.join(', ') : '…';
       }
     }
 
     return AvatarPackage(
-      nickname: firstNickname,
-      avatarUrl: firstAvatarUrl,
+      nickname: item.weekday.name,
+      avatarWidget: AvatarGroupStack(
+        groupId: group.id,
+        radius: CustomSizes.avatarComment,
+        showBorder: true,
+      ),
       title: item.weekday.name,
       childTitle: childTitle,
       subTitle: subTitle,

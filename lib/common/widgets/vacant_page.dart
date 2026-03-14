@@ -1,5 +1,6 @@
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,21 +9,23 @@ import 'package:google_fonts/google_fonts.dart';
 ///
 /// - [message]: 메인 문구 (예: "Who's your Monday?", "Invite friends to get started")
 /// - [onInviteTap]: Invite Friend 버튼 탭 시 호출
-/// - [buttonLabel]: 버튼 텍스트 (기본: "Invite Friend")
+/// - [buttonLabel]: 버튼 텍스트 (null이면 로컬라이즈된 "Invite Friends" 사용)
 class VacantPage extends StatelessWidget {
   const VacantPage({
     super.key,
     required this.message,
     this.onInviteTap,
-    this.buttonLabel = 'Invite Friends',
+    this.buttonLabel,
   });
 
   final String message;
   final VoidCallback? onInviteTap;
-  final String buttonLabel;
+  final String? buttonLabel;
 
   @override
   Widget build(BuildContext context) {
+    final label =
+        buttonLabel ?? AppLocalizations.of(context)!.inviteFriends;
     return Padding(
       padding: EdgeInsetsGeometry.symmetric(
         horizontal: Paddings.scaffoldH,
@@ -59,7 +62,7 @@ class VacantPage extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  buttonLabel,
+                  label,
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),

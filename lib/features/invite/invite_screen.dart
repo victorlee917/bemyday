@@ -11,6 +11,7 @@ import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/invite/providers/invitation_provider.dart';
 import 'package:bemyday/features/invite/widgets/invite_card.dart'
     show extractGradientColorsAsHex, InviteSheetBody;
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,29 +85,32 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
           );
     } catch (e) {
       if (context.mounted) {
-        showAppSnackBar(context, '초대 생성에 실패했습니다: $e');
+        final l10n = AppLocalizations.of(context)!;
+        showAppSnackBar(context, l10n.inviteCreateFailed(e.toString()));
       }
       return;
     }
 
     if (!context.mounted) return;
     final inviteUrl = 'https://bemyday.app/invitation/$token';
-    final weekdayName = weekdays[effectiveIndex].name;
+    final nickname = profile?.nickname ?? '?';
     final size = MediaQuery.sizeOf(context);
     final shareOrigin = Rect.fromCenter(
       center: Offset(size.width / 2, size.height / 2),
       width: 10,
       height: 10,
     );
+    final l10n = AppLocalizations.of(context)!;
     await Share.share(
-      'Would you be my $weekdayName? $inviteUrl',
-      subject: 'Be My Day - Invitation',
+      l10n.inviteShareMessage(nickname, inviteUrl),
+      subject: l10n.inviteShareSubject,
       sharePositionOrigin: shareOrigin,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final preferredIndex =
         _overriddenWeekdayIndex ?? widget.selectedWeekdayIndex;
     final effectiveAsync = ref.watch(
@@ -140,7 +144,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             ? CustomColors.sheetColorDark
             : CustomColors.sheetColorLight,
         appBar: AppBar(
-          title: Text("Invite Friends"),
+          title: Text(l10n.inviteScreenTitle),
           automaticallyImplyLeading: false,
           backgroundColor: isDarkMode(context)
               ? CustomColors.sheetColorDark
@@ -194,7 +198,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          isAlreadyFull ? "Already Full" : "Share Invitation",
+                          isAlreadyFull
+                              ? l10n.inviteAlreadyFull
+                              : l10n.inviteShareInvitation,
                           style: Theme.of(context).textTheme.labelLarge!
                               .copyWith(
                                 color: isDarkMode(context)

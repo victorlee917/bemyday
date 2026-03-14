@@ -8,6 +8,7 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/post/models/post.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/features/post/post_screen.dart';
 import 'package:bemyday/features/posting/posting_album_screen.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
@@ -206,7 +207,7 @@ class WeekGridCard extends ConsumerWidget {
             children: [
               ImageFiltered(
                 imageFilter: shouldBlur
-                    ? ImageFilter.blur(sigmaX: 20, sigmaY: 20)
+                    ? Blurs.content
                     : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                 child: CachedPostImage(
                   imageUrl: post.photoUrl,
@@ -239,7 +240,7 @@ class WeekGridCard extends ConsumerWidget {
                           border: Border.all(color: CustomColors.borderDark),
                         ),
                         child: Text(
-                          "${item.postCount} Posts",
+                          AppLocalizations.of(context)!.statPostsCount(item.postCount),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: Sizes.size11,
@@ -279,14 +280,14 @@ class WeekGridCard extends ConsumerWidget {
               const FaIcon(FontAwesomeIcons.circlePlus),
               Gaps.v12,
               Text(
-                "No posts yet",
+                AppLocalizations.of(context)!.noPostsYet,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               Gaps.v6,
               Opacity(
                 opacity: 0.5,
                 child: Text(
-                  "Add posts",
+                  AppLocalizations.of(context)!.addPosts,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
