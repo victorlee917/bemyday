@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
 import 'package:bemyday/common/widgets/timeleft_chip.dart';
@@ -13,13 +12,17 @@ import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:palette_generator_master/palette_generator_master.dart';
 
-/// 프로필 이미지에서 그라데이션 색상 추출 (앱·웹 동일 UI용 저장)
-///
-/// Returns: [dark, base, light] hex 문자열. 실패 시 null.
-Future<List<String>?> extractGradientColorsAsHex(String imageUrl) async {
+bool _isAssetPath(String url) => url.startsWith('assets/');
+
+/// 이미지에서 그라데이션 색상 [dark, base, light] 추출.
+/// [imageUrl]: 네트워크 URL 또는 assets/ 경로.
+Future<List<Color>?> extractGradientColors(String imageUrl) async {
   try {
+    final ImageProvider provider = _isAssetPath(imageUrl)
+        ? AssetImage(imageUrl)
+        : CachedNetworkImageProvider(imageUrl);
     final palette = await PaletteGeneratorMaster.fromImageProvider(
-      CachedNetworkImageProvider(imageUrl),
+      provider,
       maximumColorCount: 12,
       colorSpace: ColorSpace.rgb,
     );
@@ -30,15 +33,22 @@ Future<List<String>?> extractGradientColorsAsHex(String imageUrl) async {
     if (base == null) return null;
     final dark = Color.lerp(base, Colors.black, 0.4)!;
     final light = Color.lerp(base, Colors.white, 0.5)!;
-    return [dark, base, light]
-        .map(
-          (c) =>
-              '#${c.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
-        )
-        .toList();
+    return [dark, base, light];
   } catch (_) {
     return null;
   }
+}
+
+/// [extractGradientColors] 결과를 hex 문자열 리스트로 변환 (API 저장용).
+Future<List<String>?> extractGradientColorsAsHex(String imageUrl) async {
+  final colors = await extractGradientColors(imageUrl);
+  if (colors == null) return null;
+  return colors
+      .map(
+        (c) =>
+            '#${c.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
+      )
+      .toList();
 }
 
 /// 초대장 카드 위젯.
@@ -133,6 +143,7 @@ class InviteCard extends StatelessWidget {
   final String weekdayName;
   final String inviterNickname;
   final String? inviterAvatarUrl;
+
   /// API에 저장된 [dark, base, light] hex 배열. 있으면 아바타 팔레트 추출 생략
   final List<Color>? gradientColors;
   final double width;
@@ -184,9 +195,7 @@ class _InviteExpiryCountdownState extends State<InviteExpiryCountdown> {
   @override
   Widget build(BuildContext context) {
     final remaining = widget.expiresAt.difference(DateTime.now());
-    final textColor = isDarkMode(context)
-        ? Colors.white
-        : Colors.black87;
+    final textColor = isDarkMode(context) ? Colors.white : Colors.black87;
     if (remaining.isNegative) {
       return ChipContainer(
         child: Text(
@@ -249,31 +258,6 @@ class _DefaultInviteCard extends StatelessWidget {
   final double width;
   final double height;
 
-  static bool _isAssetPath(String url) => url.startsWith('assets/');
-
-  Future<List<Color>?> _extractGradientColors(String imageUrl) async {
-    try {
-      final ImageProvider provider = _isAssetPath(imageUrl)
-          ? AssetImage(imageUrl)
-          : CachedNetworkImageProvider(imageUrl);
-      final palette = await PaletteGeneratorMaster.fromImageProvider(
-        provider,
-        maximumColorCount: 12,
-        colorSpace: ColorSpace.rgb,
-      );
-      final base =
-          palette.dominantColor?.color ??
-          palette.vibrantColor?.color ??
-          palette.mutedColor?.color;
-      if (base == null) return null;
-      final dark = Color.lerp(base, Colors.black, 0.4)!;
-      final light = Color.lerp(base, Colors.white, 0.5)!;
-      return [dark, base, light];
-    } catch (_) {
-      return null;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final defaultColor = isDarkMode(context)
@@ -282,12 +266,14 @@ class _DefaultInviteCard extends StatelessWidget {
 
     return FutureBuilder<List<Color>?>(
       future: gradientColors == null && inviterAvatarUrl != null
-          ? _extractGradientColors(inviterAvatarUrl!)
+          ? extractGradientColors(inviterAvatarUrl!)
           : null,
       builder: (context, snapshot) {
         final extractedColors = snapshot.data;
         final effectiveColors = gradientColors ?? extractedColors;
-        final hasGradient = effectiveColors != null && (gradientColors != null || inviterAvatarUrl != null);
+        final hasGradient =
+            effectiveColors != null &&
+            (gradientColors != null || inviterAvatarUrl != null);
         final decoration = BoxDecoration(
           borderRadius: BorderRadius.circular(RValues.island),
           border: Border.all(

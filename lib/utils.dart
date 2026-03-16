@@ -47,8 +47,19 @@ String formatCountdown(Duration duration) {
 }
 
 /// 앱 스타일 스낵바: scaffoldH/V 패딩, RValues.button, 블러, 테두리, 텍스트 가운데 정렬
-void showAppSnackBar(BuildContext context, String message) {
+///
+/// [hasBottomNavBar]: true면 네비 바(60) + 여유(24) 위에 표시.
+/// false면 화면 최하단(safe area + scaffoldV).
+void showAppSnackBar(
+  BuildContext context,
+  String message, {
+  bool hasBottomNavBar = true,
+}) {
   final dark = isDarkMode(context);
+  final mq = MediaQuery.of(context);
+  final bottomMargin = hasBottomNavBar
+      ? Paddings.scaffoldV + 84 // 네비게이션 바(60) + 여유(24)
+      : Paddings.scaffoldV + mq.viewPadding.bottom;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: Colors.transparent,
@@ -59,8 +70,7 @@ void showAppSnackBar(BuildContext context, String message) {
         Paddings.scaffoldH,
         Paddings.scaffoldV,
         Paddings.scaffoldH,
-        // 네비게이션 바(60) + 여유(20) 위에 표시해 탭 영역 확보
-        Paddings.scaffoldV + 84,
+        bottomMargin,
       ),
       padding: EdgeInsets.zero,
       content: Material(

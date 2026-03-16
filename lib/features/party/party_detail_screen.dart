@@ -91,8 +91,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
     showInviteSheet(
       context,
       ref,
-      selectedWeekdayIndex:
-          widget.group != null ? widget.group!.weekday - 1 : 0,
+      selectedWeekdayIndex: widget.group != null
+          ? widget.group!.weekday - 1
+          : 0,
     );
   }
 
@@ -141,11 +142,13 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
     final memberNicknamesAsync = group != null
         ? ref.watch(groupMemberNicknamesProvider(group.id))
         : null;
-    final memberAvatarsAsync =
-        group != null ? ref.watch(groupMemberAvatarsProvider(group.id)) : null;
+    final memberAvatarsAsync = group != null
+        ? ref.watch(groupMemberAvatarsProvider(group.id))
+        : null;
 
     final info = groupDisplayInfo(group, memberNicknamesAsync?.valueOrNull);
-    final displayText = _userEditedName ??
+    final displayText =
+        _userEditedName ??
         displayNameAsync?.valueOrNull ??
         info.subTitle ??
         info.nickname;
@@ -167,9 +170,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                 ? l10n.partyAboutTitle(weekdays[group.weekday - 1].name)
                 : l10n.partyAboutTitle(l10n.weekdayMonday),
           ),
-          actions: [
-            CloseAppBarButton(onTap: _onCloseTap),
-          ],
+          actions: [CloseAppBarButton(onTap: _onCloseTap)],
         ),
         body: SingleChildScrollView(
           padding: EdgeInsets.only(top: Paddings.profileV),
@@ -197,6 +198,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                                 autocorrect: false,
                                 enableSuggestions: false,
                                 textAlign: TextAlign.center,
+                                cursorColor: isDarkMode(context)
+                                    ? Colors.white
+                                    : Colors.black,
                                 style: Theme.of(context).textTheme.bodyMedium,
                                 decoration: InputDecoration(
                                   isDense: true,
@@ -236,15 +240,15 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                     TilesSection(
                       title: l10n.partyMembers,
                       items: [
-                        ...(memberAvatarsAsync?.valueOrNull
-                                ?.map(
-                                  (m) => TileAvatar(
-                                    nickname: m.nickname,
-                                    avatarUrl: m.avatarUrl,
-                                  ),
-                                ) ??
-                            memberNicknamesAsync?.valueOrNull
-                                ?.map((n) => TileAvatar(nickname: n)) ??
+                        ...(memberAvatarsAsync?.valueOrNull?.map(
+                              (m) => TileAvatar(
+                                nickname: m.nickname,
+                                avatarUrl: m.avatarUrl,
+                              ),
+                            ) ??
+                            memberNicknamesAsync?.valueOrNull?.map(
+                              (n) => TileAvatar(nickname: n),
+                            ) ??
                             [TileAvatar(nickname: "…")]),
                         GestureDetector(
                           onTap: _onInviteTap,
@@ -275,7 +279,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                         TileAct(
                           action: _onLeaveTap,
                           title: group != null
-                              ? l10n.partyLeaveTitle(weekdays[group.weekday - 1].name)
+                              ? l10n.partyLeaveTitle(
+                                  weekdays[group.weekday - 1].name,
+                                )
                               : l10n.partyLeaveTitle(l10n.weekdayMonday),
                           isDestructive: true,
                         ),

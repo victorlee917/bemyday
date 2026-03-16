@@ -1,8 +1,5 @@
-import 'dart:ui';
-
-import 'package:avatar_stack/avatar_stack.dart';
-import 'package:avatar_stack/positions.dart';
-import 'package:bemyday/common/widgets/cached_post_image.dart';
+import 'package:bemyday/common/widgets/avatar/horizontal_avatar_stack.dart';
+import 'package:bemyday/common/widgets/blur_overlay_card.dart';
 import 'package:bemyday/common/widgets/stat/stats_collection.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
@@ -150,88 +147,53 @@ class _GroupPostStackWithBlurContent extends ConsumerWidget {
                 bottom: 0,
                 height: blurContainerHeight,
                 child: Center(
-                  child: Container(
+                  child: RepaintBoundary(
+                    child: BlurOverlayCard(
                     width: blurContainerWidth,
                     height: blurContainerHeight,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(RValues.island),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                    dark: dark,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          weekdays[weekdayIndex].name,
+                          style: GoogleFonts.darumadropOne(
+                            fontSize: Sizes.size20,
+                          ),
+                        ),
+                        Gaps.v16,
+                        _GroupAvatarStack(groupId: group.id, dark: dark),
+                        Gaps.v8,
+                        Text(
+                          displayName,
+                          style: TextStyle(
+                            fontSize: Sizes.size14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Gaps.v12,
+                        StatsCollection(
+                          stats: [
+                            StatItem(
+                              title: l10n.statWeeks,
+                              value: weeks,
+                            ),
+                            StatItem(
+                              title: l10n.statStreaks,
+                              value: group.streak,
+                            ),
+                            StatItem(
+                              title: l10n.statPosts,
+                              value: group.postCount,
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(RValues.island),
-                      child: BackdropFilter(
-                        filter: Blurs.stackOverlay,
-                        child: Container(
-                          height: blurContainerHeight,
-                          decoration: BoxDecoration(
-                            color:
-                                (dark
-                                        ? CustomColors.backgroundColorDark
-                                        : CustomColors.backgroundColorLight)
-                                    .withValues(alpha: 0.3),
-                            border: Border.all(
-                              color: dark
-                                  ? CustomColors.borderDark
-                                  : CustomColors.borderLight,
-                              width: 1,
-                            ),
-                            borderRadius: BorderRadius.circular(RValues.island),
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  weekdays[weekdayIndex].name,
-                                  style: GoogleFonts.darumadropOne(
-                                    fontSize: Sizes.size20,
-                                  ),
-                                ),
-                                Gaps.v16,
-                                _GroupAvatarStack(
-                                  groupId: group.id,
-                                  dark: dark,
-                                ),
-                                Gaps.v8,
-                                Text(
-                                  displayName,
-                                  style: TextStyle(
-                                    fontSize: Sizes.size14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Gaps.v12,
-                                StatsCollection(
-                                  stats: [
-                                    StatItem(
-                                      title: l10n.statWeeks,
-                                      value: weeks,
-                                    ),
-                                    StatItem(
-                                      title: l10n.statStreaks,
-                                      value: group.streak,
-                                    ),
-                                    StatItem(
-                                      title: l10n.statPosts,
-                                      value: group.postCount,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 ),
               ),
+            ),
             ],
           ),
         ),
@@ -271,7 +233,7 @@ class _GroupAvatarStack extends ConsumerWidget {
             ),
           );
         }
-        return _AvatarStackContent(members: others, dark: dark);
+        return HorizontalAvatarStack(members: others, dark: dark);
       },
       loading: () => SizedBox(
         height: _avatarSize,
@@ -302,97 +264,3 @@ class _GroupAvatarStack extends ConsumerWidget {
   }
 }
 
-class _AvatarStackContent extends StatelessWidget {
-  const _AvatarStackContent({required this.members, required this.dark});
-
-  final List<({String? avatarUrl, String nickname})> members;
-  final bool dark;
-
-  static const _avatarSize = 50.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final borderColor = dark
-        ? CustomColors.borderDark
-        : CustomColors.borderLight;
-    const borderWidth = 2.0;
-
-    final avatarWidgets = members.map((m) {
-      return Container(
-        width: _avatarSize,
-        height: _avatarSize,
-        decoration: ShapeDecoration(
-          shape: CircleBorder(
-            side: BorderSide(color: borderColor, width: borderWidth),
-          ),
-        ),
-        child: ClipOval(
-          child: m.avatarUrl != null && m.avatarUrl!.isNotEmpty
-              ? CachedPostImage(
-                  imageUrl: m.avatarUrl!,
-                  fit: BoxFit.cover,
-                  placeholderColor: dark
-                      ? CustomColors.primaryColorDark
-                      : CustomColors.primaryColorLight,
-                )
-              : ColoredBox(
-                  color: dark
-                      ? CustomColors.primaryColorDark
-                      : CustomColors.primaryColorLight,
-                  child: Center(
-                    child: Text(
-                      m.nickname.characters.first.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: dark ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-        ),
-      );
-    }).toList();
-
-    final settings = RestrictedPositions(
-      maxCoverage: 0.5,
-      minCoverage: 0.4,
-      align: StackAlign.center,
-      laying: StackLaying.first,
-    );
-
-    return SizedBox(
-      height: _avatarSize,
-      width: _avatarSize * members.length.clamp(1, 5).toDouble(),
-      child: WidgetStack(
-        positions: settings,
-        stackedWidgets: avatarWidgets,
-        buildInfoWidget: (surplus, _) => Container(
-          width: _avatarSize,
-          height: _avatarSize,
-          decoration: ShapeDecoration(
-            color: Colors.grey.shade300,
-            shape: CircleBorder(
-              side: BorderSide(
-                color: dark
-                    ? CustomColors.borderDark
-                    : CustomColors.borderLight,
-                width: 1.5,
-              ),
-            ),
-          ),
-          child: Center(
-            child: Text(
-              '+$surplus',
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.bold,
-                color: dark ? Colors.white : Colors.black87,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

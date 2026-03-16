@@ -169,10 +169,16 @@ class _TutorialPostStackState extends State<TutorialPostStack> {
                                       ),
                                   child: SizedBox.expand(
                                     key: ValueKey(_photoUrlAt(i)),
-                                    child: CachedPostImage(
-                                      imageUrl: _photoUrlAt(i),
-                                      cacheKey: 'tutorial-$i',
-                                      placeholderColor: bgColor,
+                                    child: FittedBox(
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.center,
+                                      clipBehavior: Clip.hardEdge,
+                                      child: CachedPostImage(
+                                        imageUrl: _photoUrlAt(i),
+                                        cacheKey: 'tutorial-$i',
+                                        placeholderColor: bgColor,
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                   ),
                                 ),

@@ -6,6 +6,7 @@ import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/data/weekdays.dart';
+import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/invite/invite_utils.dart';
 import 'package:bemyday/features/posting/viewmodels/posting_viewmodel.dart';
@@ -48,8 +49,7 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
   bool _hasSyncedWeekdayFromGroups = false;
   Uint8List? _highResImage;
 
-  int _currentWeekdayIndex() {
-    final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
+  int _currentWeekdayIndex(List<Group> groups) {
     return _selectedWeekdayIndex ??
         effectivePostingWeekdayIndex(groups, widget.selectedWeekdayIndex);
   }
@@ -105,8 +105,7 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
     Navigator.of(context).pop();
   }
 
-  void _onWeekdayTap() {
-    final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
+  void _onWeekdayTap(List<Group> groups) {
     final items = buildWeekdayPickerItems(groups, postingOnly: true);
     showWeekdayPicker(
       context: context,
@@ -122,12 +121,11 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
     );
   }
 
-  Future<void> _onPostTap() async {
+  Future<void> _onPostTap(List<Group> groups) async {
     if (_isPosting) return;
-    final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
     if (groups.isEmpty) return;
 
-    final weekdayIndex = _currentWeekdayIndex();
+    final weekdayIndex = _currentWeekdayIndex(groups);
     final group = groupForWeekday(groups, weekdayIndex);
     if (group == null) return;
 
@@ -152,29 +150,31 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
   Widget build(BuildContext context) {
     final groups = ref.watch(currentUserGroupsProvider).valueOrNull ?? [];
 
-    if (groups.isNotEmpty &&
-        _selectedWeekdayIndex == null &&
-        !_hasSyncedWeekdayFromGroups) {
-      _hasSyncedWeekdayFromGroups = true;
-      final idx = effectivePostingWeekdayIndex(
-        groups,
-        widget.selectedWeekdayIndex,
-      );
-      if (weekdays[idx].name != _selectedWeekday) {
+    ref.listen(currentUserGroupsProvider, (prev, next) {
+      final g = next.valueOrNull ?? [];
+      if (g.isNotEmpty &&
+          _selectedWeekdayIndex == null &&
+          !_hasSyncedWeekdayFromGroups) {
+        _hasSyncedWeekdayFromGroups = true;
+        final idx = effectivePostingWeekdayIndex(
+          g,
+          widget.selectedWeekdayIndex,
+        );
+        if (weekdays[idx].name != _selectedWeekday) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _selectedWeekday = weekdays[idx].name);
+          });
+        }
+      }
+      if (g.isEmpty && !_hasScheduledRedirect) {
+        _hasScheduledRedirect = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _selectedWeekday = weekdays[idx].name);
+          redirectToInviteIfNoGroups(context, ref, popCount: 2);
         });
       }
-    }
+    });
 
-    if (groups.isEmpty && !_hasScheduledRedirect) {
-      _hasScheduledRedirect = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        redirectToInviteIfNoGroups(context, ref, popCount: 2);
-      });
-    }
-
-    final weekdayIndex = _currentWeekdayIndex();
+    final weekdayIndex = _currentWeekdayIndex(groups);
     final group = groupForWeekday(groups, weekdayIndex);
     final displayNameAsync = group != null
         ? ref.watch(groupDisplayNameProvider(group.id))
@@ -250,7 +250,7 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
                         children: [
                           Expanded(
                             child: GestureDetector(
-                              onTap: _onWeekdayTap,
+                              onTap: () => _onWeekdayTap(groups),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(
                                   RValues.button,
@@ -299,11 +299,9 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
                           ),
                           CustomSizes.commentTrailingGap,
                           GestureDetector(
-                            onTap: _isPosting ? null : _onPostTap,
+                            onTap: _isPosting ? null : () => _onPostTap(groups),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                Sizes.size36,
-                              ),
+                              borderRadius: BorderRadius.circular(Sizes.size36),
                               child: BackdropFilter(
                                 filter: Blurs.backdrop,
                                 child: Container(

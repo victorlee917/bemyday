@@ -1,5 +1,7 @@
 import 'package:app_links/app_links.dart';
 import 'package:bemyday/config/supabase_config.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:bemyday/features/invite/repositories/invitation_repository.dart';
 import 'package:bemyday/features/push/push_notification_service.dart' deferred as push;
 import 'package:bemyday/features/start/start_screen.dart';
@@ -38,7 +40,8 @@ String? _invitePathFromUri(Uri? uri) {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -47,6 +50,10 @@ void main() async {
   await GoogleFonts.pendingFonts([GoogleFonts.darumadropOne()]);
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+
+  if (kakaoNativeAppKey.isNotEmpty) {
+    KakaoSdk.init(nativeAppKey: kakaoNativeAppKey);
+  }
 
   await push.loadLibrary();
   await push.PushNotificationService.initialize();
@@ -110,6 +117,7 @@ void main() async {
     }
   });
 
+  FlutterNativeSplash.remove();
   runApp(
     ProviderScope(
       // SharedPreferences를 override하여 주입 (MVVM: Model 레이어에서 사용)
@@ -151,8 +159,12 @@ class BeMyDay extends ConsumerWidget {
         ref.invalidate(alarmPreferencesProvider);
         if (nextUserId != null) {
           push.PushNotificationService.registerTokenIfNeeded();
+          ref.read(alarmPreferencesProvider.future).then((prefs) {
+            push.PushNotificationService.syncDailyReminder(prefs.dailyReminder);
+          });
         } else {
           push.PushNotificationService.unregisterToken();
+          push.PushNotificationService.cancelDailyReminder();
         }
       }
     });

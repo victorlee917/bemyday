@@ -23,10 +23,13 @@ class PostStack extends ConsumerWidget {
   });
 
   final Group group;
+
   /// true면 그룹의 최신 포스트 최대 4개, false면 현재 주 포스트
   final bool useLatestPosts;
+
   /// true면 공개된(blur 해제된) 포스트만. useLatestPosts와 함께 사용.
   final bool useRevealedPostsOnly;
+
   /// null이면 기본 동작(PostScreen으로 이동). 지정 시 해당 콜백 사용.
   final VoidCallback? onTap;
 
@@ -45,17 +48,16 @@ class PostStack extends ConsumerWidget {
     final postsAsync = useRevealedPostsOnly
         ? ref.watch(groupLatestRevealedPostsProvider(group))
         : (useLatestPosts
-            ? ref.watch(groupLatestPostsProvider(group))
-            : ref.watch(currentWeekPostsProvider(group)));
+              ? ref.watch(groupLatestPostsProvider(group))
+              : ref.watch(currentWeekPostsProvider(group)));
     final dark = isDarkMode(context);
     final borderColor = dark
-        ? CustomColors.clickableAreaDark
-        : CustomColors.clickableAreaLight;
+        ? CustomColors.postCardBorderDark
+        : CustomColors.postCardBorderLight;
     final bgColor = dark
         ? CustomColors.clickableAreaDark
         : CustomColors.clickableAreaLight;
-    final beforeReveal =
-        !useLatestPosts && isCurrentWeekBeforeReveal(group);
+    final beforeReveal = !useLatestPosts && isCurrentWeekBeforeReveal(group);
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
     return postsAsync.when(
@@ -100,7 +102,9 @@ class PostStack extends ConsumerWidget {
                           alignment: Alignment.center,
                           child: Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(RValues.thumbnail),
+                              borderRadius: BorderRadius.circular(
+                                RValues.thumbnail,
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.1),
@@ -119,7 +123,9 @@ class PostStack extends ConsumerWidget {
                               ),
                               lightConfig: LightConfig(disable: true),
                               shadowConfig: ShadowConfig(disable: true),
-                              borderRadius: BorderRadius.circular(RValues.thumbnail),
+                              borderRadius: BorderRadius.circular(
+                                RValues.thumbnail,
+                              ),
                               child: SizedBox(
                                 width: cardWidth,
                                 height: cardHeight,
@@ -127,7 +133,8 @@ class PostStack extends ConsumerWidget {
                                   post: visible[i],
                                   borderColor: borderColor,
                                   bgColor: bgColor,
-                                  blur: beforeReveal &&
+                                  blur:
+                                      beforeReveal &&
                                       visible[i].authorId != currentUserId,
                                 ),
                               ),

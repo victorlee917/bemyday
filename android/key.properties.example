@@ -1,0 +1,15 @@
+# Release 서명용. 이 파일을 key.properties로 복사 후 값을 채우세요.
+# key.properties는 .gitignore에 포함되어 있어 Git에 커밋되지 않습니다.
+#
+# 1. Keystore 생성 (최초 1회):
+#    keytool -genkey -v -keystore android/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# 2. 이 파일을 key.properties로 복사:
+#    cp key.properties.example key.properties
+#
+# 3. 아래 값을 실제 값으로 수정
+
+storePassword=your-keystore-password
+keyPassword=your-key-password
+keyAlias=upload
+storeFile=upload-keystore.jks

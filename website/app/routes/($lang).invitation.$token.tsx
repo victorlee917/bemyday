@@ -143,7 +143,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   const canonicalUrl = `${SITE_URL}${canonicalLang}/invitation/${token}`;
   const ogImage = inv
     ? `${SITE_URL}/og/invitation/${token}`
-    : `${SITE_URL}/images/app_icon.png`;
+    : `${SITE_URL}/ogImg.png`;
 
   return [
     { title },

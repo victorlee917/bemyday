@@ -1,6 +1,8 @@
+import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class TileAct extends StatelessWidget {
   const TileAct({
@@ -31,8 +33,23 @@ class TileAct extends StatelessWidget {
               : null,
         ),
       ),
-      subtitle: subTitle != null ? Text(subTitle!) : null,
+      subtitle: subTitle != null
+          ? Padding(
+              padding: const EdgeInsets.only(top: Sizes.size4),
+              child: Opacity(
+                opacity: 0.5,
+                child: Text(
+                  subTitle!,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+            )
+          : null,
       onTap: action,
+      trailing: FaIcon(
+        FontAwesomeIcons.chevronRight,
+        size: CustomSizes.tileTrailingIcon,
+      ),
     );
   }
 }

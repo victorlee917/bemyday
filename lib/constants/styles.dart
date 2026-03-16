@@ -54,6 +54,8 @@ class CustomColors {
   static const destructiveColorLight = Color.fromRGBO(255, 73, 64, 1.0);
   static const positiveColorDark = Color.fromRGBO(52, 199, 89, 1.0);
   static const positiveColorLight = Color.fromRGBO(52, 199, 89, 1.0);
+  static const postCardBorderDark = Color.fromRGBO(32, 32, 32, 1.0);
+  static const postCardBorderLight = Color.fromRGBO(242, 242, 242, 1.0);
 }
 
 class Blurs {
@@ -63,18 +65,24 @@ class Blurs {
 
   /// PostStack blur container 등 가벼운 오버레이
   static const sigmaStackOverlay = 8.0;
-  static final stackOverlay =
-      ImageFilter.blur(sigmaX: sigmaStackOverlay, sigmaY: sigmaStackOverlay);
+  static final stackOverlay = ImageFilter.blur(
+    sigmaX: sigmaStackOverlay,
+    sigmaY: sigmaStackOverlay,
+  );
 
   /// 포스트 카드/그리드 등 콘텐츠 가리기용
   static const sigmaContent = 20.0;
-  static final content =
-      ImageFilter.blur(sigmaX: sigmaContent, sigmaY: sigmaContent);
+  static final content = ImageFilter.blur(
+    sigmaX: sigmaContent,
+    sigmaY: sigmaContent,
+  );
 
   /// 포스트 상세 화면 전체 blur
   static const sigmaFullScreen = 30.0;
-  static final fullScreen =
-      ImageFilter.blur(sigmaX: sigmaFullScreen, sigmaY: sigmaFullScreen);
+  static final fullScreen = ImageFilter.blur(
+    sigmaX: sigmaFullScreen,
+    sigmaY: sigmaFullScreen,
+  );
 
   static const overlayColor = Color.fromRGBO(0, 0, 0, 0.2);
   static const overlayColorLight = Color.fromRGBO(255, 255, 255, 0.3);

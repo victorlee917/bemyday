@@ -245,8 +245,15 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                               child: TextField(
                                 controller: _commentController,
                                 onChanged: _onCommentChanged,
+                                onSubmitted: (_) => _onSendComment(),
+                                textInputAction: TextInputAction.send,
+                                keyboardType: TextInputType.text,
+                                maxLines: 1,
                                 style: TextStyle(fontSize: Sizes.size14),
                                 cursorHeight: Sizes.size14,
+                                cursorColor: isDarkMode(context)
+                                    ? Colors.white
+                                    : Colors.black,
                                 decoration: InputDecoration(
                                   prefixIcon: Padding(
                                     padding: EdgeInsets.only(

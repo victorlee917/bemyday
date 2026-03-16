@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bemyday/config/supabase_config.dart';
 import 'package:bemyday/constants/gaps.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/start/widgets/start_button.dart';
@@ -16,7 +17,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart' show launchUrl;
+import 'package:url_launcher/url_launcher.dart' show LaunchMode, launchUrl;
 
 class StartScreen extends StatefulWidget {
   const StartScreen({
@@ -30,6 +31,7 @@ class StartScreen extends StatefulWidget {
 
   final bool authErrorRetry;
   final String? inviteToken;
+
   /// 바텀시트 등 GoRouter가 context 상위에 없을 때 전달. 있으면 router.go() 사용.
   final GoRouter? router;
 
@@ -41,14 +43,14 @@ class _StartScreenState extends State<StartScreen> {
   bool _isSigningIn = false;
 
   void _navigateAfterLogin(BuildContext context) {
-    final token = widget.inviteToken ??
+    final token =
+        widget.inviteToken ??
         (widget.router == null
             ? GoRouterState.of(context).uri.queryParameters['invite_token']
             : null);
-    final path =
-        token != null && token.isNotEmpty
-            ? '/home?invitation_token=$token'
-            : '/home';
+    final path = token != null && token.isNotEmpty
+        ? '/home?invitation_token=$token'
+        : '/home';
 
     if (widget.router != null) {
       widget.router!.go(path);
@@ -187,6 +189,46 @@ class _StartScreenState extends State<StartScreen> {
     }
   }
 
+  Future<void> _signInWithKakao() async {
+    if (_isSigningIn) return;
+    setState(() => _isSigningIn = true);
+    try {
+      // 카카오톡 앱이 있으면 카카오톡으로 로그인, 없으면 OAuth(웹) 폴백
+      if (!kIsWeb && kakaoNativeAppKey.isNotEmpty) {
+        try {
+          final token = await UserApi.instance.loginWithKakaoTalk();
+          final idToken = token.idToken;
+          if (idToken != null) {
+            await Supabase.instance.client.auth.signInWithIdToken(
+              provider: OAuthProvider.kakao,
+              idToken: idToken,
+            );
+            if (context.mounted) {
+              _navigateAfterLogin(context);
+            }
+            return;
+          }
+        } catch (_) {
+          // 카카오톡 미설치/취소 등 → OAuth 폴백
+        }
+      }
+
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.kakao,
+        redirectTo: kIsWeb ? null : 'com.bemyday://login-callback',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+      // OAuth는 브라우저에서 완료 후 com.bemyday://login-callback으로 앱 복귀.
+      // 세션은 onAuthStateChange로 처리되고, router redirect가 /home으로 이동.
+    } catch (e) {
+      if (mounted) {
+        showAppSnackBar(context, '카카오 로그인 실패: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isSigningIn = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = isDarkMode(context);
@@ -271,6 +313,19 @@ class _StartScreenState extends State<StartScreen> {
                         fit: BoxFit.contain,
                       ),
                       label: "Continue with Google",
+                    ),
+                  ),
+                  Gaps.v16,
+                  GestureDetector(
+                    onTap: () => _signInWithKakao(),
+                    child: StartButton(
+                      bgColor: Color.fromRGBO(255, 230, 23, 1.0),
+                      textColor: Colors.black,
+                      icon: Image.asset(
+                        'assets/icons/kakao_logo.png',
+                        fit: BoxFit.contain,
+                      ),
+                      label: "Continue with Kakao",
                     ),
                   ),
                   Gaps.v16,

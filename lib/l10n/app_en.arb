@@ -116,6 +116,18 @@
   "@alarmTileNewLikeSubtitle": {
     "description": "Alarm tile subtitle for new likes"
   },
+  "alarmNotificationsDisabled": "Notifications are off. Enable Be My Day in Settings to receive alerts.",
+  "@alarmNotificationsDisabled": {
+    "description": "Banner when system notifications are disabled"
+  },
+  "alarmOpenSettings": "Open Settings",
+  "@alarmOpenSettings": {
+    "description": "Button to open app settings"
+  },
+  "alarmEnableNotifications": "Enable Notifications",
+  "@alarmEnableNotifications": {
+    "description": "Tile title to prompt enabling notifications"
+  },
   "pushDailyReminder": "Time to share your day with your besties!",
   "@pushDailyReminder": {
     "description": "Push notification message for daily reminder"

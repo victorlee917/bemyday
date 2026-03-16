@@ -4,7 +4,10 @@ import 'package:bemyday/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz_data;
 
 /// 백그라운드 메시지 핸들러 (top-level 필수)
 @pragma('vm:entry-point')
@@ -20,7 +23,18 @@ class PushNotificationService {
   static const _channelId = 'bemyday_push';
   static const _channelName = 'Be My Day';
 
+  /// Daily reminder 로컬 알림 ID (FCM message.hashCode와 충돌 방지)
+  static const _dailyReminderId = 999999;
+
   static Future<void> initialize() async {
+    tz_data.initializeTimeZones();
+    try {
+      final name = await FlutterTimezone.getLocalTimezone();
+      final loc = tz.getLocation(name);
+      tz.setLocalLocation(loc);
+    } catch (_) {
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
     // main()에서 이미 초기화됨. 백그라운드 핸들러는 별도 isolate에서 자체 초기화.
 
     // 포그라운드 메시지 표시용 로컬 알림
@@ -160,5 +174,63 @@ class PushNotificationService {
           .delete()
           .eq('token', token);
     } catch (_) {}
+  }
+
+  /// Daily reminder: 매일 22시 로컬 알림 (서버 없음)
+  static Future<void> scheduleDailyReminder() async {
+    try {
+      final local = tz.local;
+      var scheduled = tz.TZDateTime(
+        local,
+        DateTime.now().year,
+        DateTime.now().month,
+        DateTime.now().day,
+        22,
+        0,
+      );
+      if (scheduled.isBefore(tz.TZDateTime.now(local))) {
+        scheduled = scheduled.add(const Duration(days: 1));
+      }
+
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      );
+
+      await _localNotifications.zonedSchedule(
+        _dailyReminderId,
+        'Be My Day',
+        'Time to share your day with your besties!',
+        scheduled,
+        details,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    } catch (_) {
+      // 권한/플랫폼 오류 시 무시
+    }
+  }
+
+  /// Daily reminder 예약 취소
+  static Future<void> cancelDailyReminder() async {
+    try {
+      await _localNotifications.cancel(_dailyReminderId);
+    } catch (_) {}
+  }
+
+  /// Daily reminder 동기화 (enabled면 예약, 아니면 취소)
+  static Future<void> syncDailyReminder(bool enabled) async {
+    if (enabled) {
+      await scheduleDailyReminder();
+    } else {
+      await cancelDailyReminder();
+    }
   }
 }

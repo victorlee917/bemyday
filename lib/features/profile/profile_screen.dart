@@ -51,8 +51,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _pendingImagePath;
   bool _pendingDeleteImage = false;
 
+  /// 폼 초기화 시 원본 닉네임 (변경 여부 판단용)
+  String _originalNickname = "";
+
+  bool get _hasChanges =>
+      _nickname.trim() != _originalNickname ||
+      _pendingImagePath != null ||
+      _pendingDeleteImage;
+
   Future<void> _onSubmit() async {
-    if (_formKey.currentState == null || !_isNicknameValid || _isSaving) return;
+    if (_formKey.currentState == null ||
+        !_isNicknameValid ||
+        !_hasChanges ||
+        _isSaving)
+      return;
 
     _formKey.currentState!.save();
     final nickname = _nickname.trim();
@@ -79,7 +91,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final message = e is PostgrestException && e.code == '23505'
           ? l10n.profileNicknameInUse
           : l10n.profileSaveFailed;
-      showAppSnackBar(context, message);
+      showAppSnackBar(context, message, hasBottomNavBar: false);
     }
   }
 
@@ -95,7 +107,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _onReset() {
     _nicknameController.clear();
-    _formKey.currentState?.reset();
+    // Form.reset()은 controller와 함께 사용 시 초기값으로 복원해 clear를 덮어씀
     setState(() {
       _nickname = "";
       _isNicknameValid = false;
@@ -268,6 +280,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
     setState(() {
       _nickname = profile.nickname;
+      _originalNickname = profile.nickname;
       _isNicknameValid =
           profile.nickname.isNotEmpty &&
           profile.nickname.length <= _nicknameMaxLength;
@@ -305,9 +318,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           title: Text(l10n.profileTitle),
           actions: [
             GestureDetector(
-              onTap: _isSaving ? null : _onSubmit,
+              onTap: (_hasChanges && _isNicknameValid && !_isSaving)
+                  ? _onSubmit
+                  : null,
               child: Opacity(
-                opacity: _isNicknameValid && !_isSaving ? 1.0 : 0.3,
+                opacity: _hasChanges && _isNicknameValid && !_isSaving
+                    ? 1.0
+                    : 0.3,
                 child: FaIcon(FontAwesomeIcons.solidCircleCheck),
               ),
             ),
@@ -362,11 +379,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   maxLength: _nicknameMaxLength,
                   style: TextStyle(fontSize: Sizes.size14),
                   cursorHeight: Sizes.size14,
-                  cursorColor: Theme.of(context).primaryColor,
-                  cursorErrorColor: Theme.of(context).primaryColor,
+                  cursorColor: isDarkMode(context)
+                      ? Colors.white
+                      : Colors.black,
+                  cursorErrorColor: isDarkMode(context)
+                      ? Colors.white
+                      : Colors.black,
                   autocorrect: false,
+                  enableSuggestions: false,
                   autofocus: true,
                   keyboardType: TextInputType.name,
+                  textInputAction: TextInputAction.done,
+                  hintLocales: const [Locale('en', 'US')],
                   inputFormatters: [
                     LengthLimitingTextInputFormatter(_nicknameMaxLength),
                   ],
@@ -425,7 +449,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         : null,
                   ),
                   onChanged: _onChange,
-                  onEditingComplete: _onSubmit,
+                  onEditingComplete: () {
+                    // return 누르면 키보드 먼저 내림 (iOS에서 키보드 타입이 숫자로 바뀌는 버그 회피)
+                    FocusScope.of(context).unfocus();
+                    _onSubmit();
+                  },
                   onSaved: _onSaved,
                 ),
               ),

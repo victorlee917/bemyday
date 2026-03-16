@@ -52,18 +52,23 @@ GoRouter createRouter(
       if (err is GoException) {
         final msg = err.message;
         // com.bemyday://invitation/TOKEN → /invitation/TOKEN
-        final inviteMatch = RegExp(r'no routes for location: (com\.bemyday://invitation/[^"\s]+)')
-            .firstMatch(msg);
+        final inviteMatch = RegExp(
+          r'no routes for location: (com\.bemyday://invitation/[^"\s]+)',
+        ).firstMatch(msg);
         if (inviteMatch != null) {
           final uriStr = inviteMatch.group(1)!;
-          final tokenMatch = RegExp(r'com\.bemyday://invitation/([^/?#]+)').firstMatch(uriStr);
+          final tokenMatch = RegExp(
+            r'com\.bemyday://invitation/([^/?#]+)',
+          ).firstMatch(uriStr);
           if (tokenMatch != null) {
             router.go('/invitation/${tokenMatch.group(1)!}');
             return;
           }
         }
         // com.bemyday://login-callback, com.bemyday:// 등 OAuth 콜백 → /start (redirect에서 /home 등으로 처리)
-        final schemeMatch = RegExp(r'no routes for location: (com\.bemyday://[^"]*)').firstMatch(msg);
+        final schemeMatch = RegExp(
+          r'no routes for location: (com\.bemyday://[^"]*)',
+        ).firstMatch(msg);
         if (schemeMatch != null) {
           router.go(StartScreen.routeUrl);
           return;
@@ -78,7 +83,9 @@ GoRouter createRouter(
 
       // com.bemyday://invitation/TOKEN → 로그인 시 바텀시트, 로그아웃 시 /start
       // getInitialLink stale 값 방지: 유효한 초대만 리다이렉트
-      final schemeMatch = RegExp(r'^com\.bemyday://invitation/([^/?#]+)').firstMatch(location);
+      final schemeMatch = RegExp(
+        r'^com\.bemyday://invitation/([^/?#]+)',
+      ).firstMatch(location);
       if (schemeMatch != null) {
         final token = schemeMatch.group(1)!;
         final data = await InvitationRepository().getInvitationByToken(token);
@@ -92,10 +99,12 @@ GoRouter createRouter(
 
       // 로그아웃 상태
       if (session == null) {
-        final inviteMatch = RegExp(r'^/invitation/([^/?#]+)').firstMatch(location);
+        final inviteMatch = RegExp(
+          r'^/invitation/([^/?#]+)',
+        ).firstMatch(location);
         final path = state.uri.path;
-        final isPublicRoute = path == StartScreen.routeUrl ||
-            path == TutorialScreen.routeUrl;
+        final isPublicRoute =
+            path == StartScreen.routeUrl || path == TutorialScreen.routeUrl;
         // /invitation/:token → 로그인 필요하므로 /start?invite_token=TOKEN으로
         if (inviteMatch != null) {
           final token = inviteMatch.group(1)!;
@@ -107,10 +116,10 @@ GoRouter createRouter(
             final token = match.group(1)!;
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString(pendingInviteTokenKey, token);
-          return '${StartScreen.routeUrl}?invite_token=$token';
+            return '${StartScreen.routeUrl}?invite_token=$token';
+          }
+          return TutorialScreen.routeUrl;
         }
-        return TutorialScreen.routeUrl;
-      }
         return null;
       }
 
@@ -119,17 +128,23 @@ GoRouter createRouter(
       final pendingToken = prefs.getString(pendingInviteTokenKey);
       if (pendingToken != null) {
         await prefs.remove(pendingInviteTokenKey);
-        final data = await InvitationRepository().getInvitationByToken(pendingToken);
+        final data = await InvitationRepository().getInvitationByToken(
+          pendingToken,
+        );
         if (data != null) return '/home?invitation_token=$pendingToken';
       }
       final inviteToken = state.uri.queryParameters['invite_token'];
       if (inviteToken != null && location.startsWith(StartScreen.routeUrl)) {
-        final data = await InvitationRepository().getInvitationByToken(inviteToken);
+        final data = await InvitationRepository().getInvitationByToken(
+          inviteToken,
+        );
         if (data != null) return '/home?invitation_token=$inviteToken';
       }
 
       // /invitation/TOKEN 경로로 진입 시 (로그인) → /home?invitation_token=TOKEN (바텀시트)
-      final pathInviteMatch = RegExp(r'^/invitation/([^/?#]+)').firstMatch(state.uri.path);
+      final pathInviteMatch = RegExp(
+        r'^/invitation/([^/?#]+)',
+      ).firstMatch(state.uri.path);
       if (pathInviteMatch != null) {
         final token = pathInviteMatch.group(1)!;
         final data = await InvitationRepository().getInvitationByToken(token);
@@ -141,8 +156,9 @@ GoRouter createRouter(
       try {
         Profile? profile;
         try {
-          profile = await ProviderScope.containerOf(context)
-              .read(currentProfileProvider.future);
+          profile = await ProviderScope.containerOf(
+            context,
+          ).read(currentProfileProvider.future);
         } on StateError {
           // ProviderScope 미사용 시 Repository로 조회 (테스트 등)
           profile = await ProfileRepository().getProfile();
@@ -152,7 +168,8 @@ GoRouter createRouter(
         // 형식만 보면 user_xxx 형태를 유저가 선택할 수 있으므로, 실제 기본값과 일치할 때만 ProfileScreen 유도
         final defaultNickname =
             'user_${session.user.id.replaceAll('-', '').substring(0, 8)}';
-        final isDefaultNickname = nickname.isEmpty || nickname == defaultNickname;
+        final isDefaultNickname =
+            nickname.isEmpty || nickname == defaultNickname;
 
         if (isDefaultNickname) {
           if (location.startsWith(ProfileScreen.routeUrl)) return null;
@@ -171,142 +188,143 @@ GoRouter createRouter(
       return null;
     },
     routes: [
-    GoRoute(
-      path: TutorialScreen.routeUrl,
-      name: TutorialScreen.routeName,
-      builder: (context, state) => TutorialScreen(),
-    ),
-    GoRoute(
-      path: StartScreen.routeUrl,
-      name: StartScreen.routeName,
-      pageBuilder: (context, state) {
-        final authError = state.uri.queryParameters['auth_error'];
-        final inviteToken = state.uri.queryParameters['invite_token'];
-        return fadeOutTransitionPage(
-          child: StartScreen(
-            authErrorRetry: authError == 'retry',
-            inviteToken: inviteToken,
-          ),
-        );
-      },
-    ),
-    GoRoute(
-      path: ProfileScreen.routeUrl,
-      name: ProfileScreen.routeName,
-      builder: (context, state) {
-        final from = state.uri.queryParameters['from'];
-        final initialProfile =
-            state.extra is Profile ? state.extra as Profile : null;
-        return ProfileScreen(
-          fromOnboarding: from == 'onboarding',
-          initialProfile: initialProfile,
-        );
-      },
-    ),
-    GoRoute(
-      path: "/:tab(home|friends|my)",
-      name: NavigationScreen.routeName,
-      builder: (context, state) {
-        final tab = state.pathParameters["tab"]!;
-        final weekdayParam = state.uri.queryParameters['weekday'];
-        final initialWeekdayIndex = weekdayParam != null
-            ? int.tryParse(weekdayParam)
-            : null;
-        final invitationToken = state.uri.queryParameters['invitation_token'];
-        return NavigationScreen(
-          tab: tab,
-          initialWeekdayIndex: initialWeekdayIndex,
-          invitationToken: invitationToken,
-        );
-      },
-    ),
-    GoRoute(
-      path: InviteScreen.routeUrl,
-      name: InviteScreen.routeName,
-      pageBuilder: (context, state) {
-        final selectedWeekdayIndex = state.extra as int?;
-        return slideUpTransitionPage(
-          child: InviteScreen(selectedWeekdayIndex: selectedWeekdayIndex),
-        );
-      },
-    ),
-    // 딥링크: https://bemyday.app/invitation/:token → 초대 받은 사람용
-    GoRoute(
-      path: '${InvitationScreen.routeUrl}/:token',
-      name: InvitationScreen.routeName,
-      pageBuilder: (context, state) {
-        final token = state.pathParameters['token'] ?? '';
-        return slideUpTransitionPage(
-          child: InvitationScreen(inviteToken: token),
-        );
-      },
-    ),
-    GoRoute(
-      path: PartyScreen.routeUrl,
-      name: PartyScreen.routeName,
-      pageBuilder: (context, state) {
-        final group = state.extra as Group?;
-        return slideUpTransitionPage(child: PartyScreen(group: group));
-      },
-    ),
-    GoRoute(
-      path: PartyDetailScreen.routeUrl,
-      name: PartyDetailScreen.routeName,
-      pageBuilder: (context, state) {
-        final group = state.extra as Group?;
-        return slideUpTransitionPage(
-          child: PartyDetailScreen(group: group),
-        );
-      },
-    ),
-    GoRoute(
-      path: AlarmScreen.routeUrl,
-      name: AlarmScreen.routeName,
-      builder: (context, state) => AlarmScreen(),
-    ),
-    GoRoute(
-      path: PostScreen.routeUrl,
-      name: PostScreen.routeName,
-      pageBuilder: (context, state) {
-        final extra = state.extra;
-        final Widget child;
-        if (extra is Map) {
-          child = PostScreen(
-            group: extra['group'] as Group?,
-            weekIndex: extra['weekIndex'] as int?,
-            startFromLatest: extra['startFromLatest'] as bool? ?? false,
+      GoRoute(
+        path: TutorialScreen.routeUrl,
+        name: TutorialScreen.routeName,
+        builder: (context, state) => TutorialScreen(),
+      ),
+      GoRoute(
+        path: StartScreen.routeUrl,
+        name: StartScreen.routeName,
+        pageBuilder: (context, state) {
+          final authError = state.uri.queryParameters['auth_error'];
+          final inviteToken = state.uri.queryParameters['invite_token'];
+          return fadeOutTransitionPage(
+            child: StartScreen(
+              authErrorRetry: authError == 'retry',
+              inviteToken: inviteToken,
+            ),
           );
-        } else {
-          child = PostScreen(group: extra as Group?);
-        }
-        return slideUpTransitionPage(child: child, opaque: false);
-      },
-    ),
-    GoRoute(
-      path: ThemeScreen.routeUrl,
-      name: ThemeScreen.routeName,
-      builder: (context, state) => ThemeScreen(),
-    ),
-    GoRoute(
-      path: LanguageScreen.routeUrl,
-      name: LanguageScreen.routeName,
-      builder: (context, state) => LanguageScreen(),
-    ),
-    GoRoute(
-      path: LicenseScreen.routeUrl,
-      name: LicenseScreen.routeName,
-      builder: (context, state) => LicenseScreen(),
-    ),
-    GoRoute(
-      path: PostingAlbumScreen.routeUrl,
-      name: PostingAlbumScreen.routeName,
-      pageBuilder: (context, state) {
-        final selectedWeekdayIndex = state.extra as int?;
-        return slideUpTransitionPage(
-          child: PostingAlbumScreen(selectedWeekdayIndex: selectedWeekdayIndex),
-        );
-      },
-    ),
-  ],
+        },
+      ),
+      GoRoute(
+        path: ProfileScreen.routeUrl,
+        name: ProfileScreen.routeName,
+        builder: (context, state) {
+          final from = state.uri.queryParameters['from'];
+          final initialProfile = state.extra is Profile
+              ? state.extra as Profile
+              : null;
+          return ProfileScreen(
+            fromOnboarding: from == 'onboarding',
+            initialProfile: initialProfile,
+          );
+        },
+      ),
+      GoRoute(
+        path: "/:tab(home|friends|my)",
+        name: NavigationScreen.routeName,
+        builder: (context, state) {
+          final tab = state.pathParameters["tab"]!;
+          final weekdayParam = state.uri.queryParameters['weekday'];
+          final initialWeekdayIndex = weekdayParam != null
+              ? int.tryParse(weekdayParam)
+              : null;
+          final invitationToken = state.uri.queryParameters['invitation_token'];
+          return NavigationScreen(
+            tab: tab,
+            initialWeekdayIndex: initialWeekdayIndex,
+            invitationToken: invitationToken,
+          );
+        },
+      ),
+      GoRoute(
+        path: InviteScreen.routeUrl,
+        name: InviteScreen.routeName,
+        pageBuilder: (context, state) {
+          final selectedWeekdayIndex = state.extra as int?;
+          return slideUpTransitionPage(
+            child: InviteScreen(selectedWeekdayIndex: selectedWeekdayIndex),
+          );
+        },
+      ),
+      // 딥링크: https://bemyday.app/invitation/:token → 초대 받은 사람용
+      GoRoute(
+        path: '${InvitationScreen.routeUrl}/:token',
+        name: InvitationScreen.routeName,
+        pageBuilder: (context, state) {
+          final token = state.pathParameters['token'] ?? '';
+          return slideUpTransitionPage(
+            child: InvitationScreen(inviteToken: token),
+          );
+        },
+      ),
+      GoRoute(
+        path: PartyScreen.routeUrl,
+        name: PartyScreen.routeName,
+        pageBuilder: (context, state) {
+          final group = state.extra as Group?;
+          return slideUpTransitionPage(child: PartyScreen(group: group));
+        },
+      ),
+      GoRoute(
+        path: PartyDetailScreen.routeUrl,
+        name: PartyDetailScreen.routeName,
+        pageBuilder: (context, state) {
+          final group = state.extra as Group?;
+          return slideUpTransitionPage(child: PartyDetailScreen(group: group));
+        },
+      ),
+      GoRoute(
+        path: AlarmScreen.routeUrl,
+        name: AlarmScreen.routeName,
+        builder: (context, state) => AlarmScreen(),
+      ),
+      GoRoute(
+        path: PostScreen.routeUrl,
+        name: PostScreen.routeName,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          final Widget child;
+          if (extra is Map) {
+            child = PostScreen(
+              group: extra['group'] as Group?,
+              weekIndex: extra['weekIndex'] as int?,
+              startFromLatest: extra['startFromLatest'] as bool? ?? false,
+            );
+          } else {
+            child = PostScreen(group: extra as Group?);
+          }
+          return slideUpTransitionPage(child: child, opaque: false);
+        },
+      ),
+      GoRoute(
+        path: ThemeScreen.routeUrl,
+        name: ThemeScreen.routeName,
+        builder: (context, state) => ThemeScreen(),
+      ),
+      GoRoute(
+        path: LanguageScreen.routeUrl,
+        name: LanguageScreen.routeName,
+        builder: (context, state) => LanguageScreen(),
+      ),
+      GoRoute(
+        path: LicenseScreen.routeUrl,
+        name: LicenseScreen.routeName,
+        builder: (context, state) => LicenseScreen(),
+      ),
+      GoRoute(
+        path: PostingAlbumScreen.routeUrl,
+        name: PostingAlbumScreen.routeName,
+        pageBuilder: (context, state) {
+          final selectedWeekdayIndex = state.extra as int?;
+          return slideUpTransitionPage(
+            child: PostingAlbumScreen(
+              selectedWeekdayIndex: selectedWeekdayIndex,
+            ),
+          );
+        },
+      ),
+    ],
   );
 }

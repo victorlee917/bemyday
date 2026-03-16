@@ -55,43 +55,62 @@ class CommentNudgeBanner extends ConsumerWidget {
                   ),
                   CustomSizes.commentLeadingGap,
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final textStyle = TextStyle(
+                          color: Colors.white,
+                          fontSize: Sizes.size12,
+                        );
+                        final painter = TextPainter(
+                          text: TextSpan(text: comment.content, style: textStyle),
+                          maxLines: 1,
+                          textDirection: TextDirection.ltr,
+                        )..layout(maxWidth: constraints.maxWidth);
+                        final hasOverflow = painter.didExceedMaxLines;
 
-                      children: [
-                        ShaderMask(
-                          blendMode: BlendMode.dstIn,
-                          shaderCallback: (bounds) => LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Colors.black,
-                              Colors.black,
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.7, 1.0],
-                          ).createShader(bounds),
-                          child: Text(
-                            comment.content,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: Sizes.size12,
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            hasOverflow
+                                ? ShaderMask(
+                                    blendMode: BlendMode.dstIn,
+                                    shaderCallback: (bounds) => LinearGradient(
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                      colors: [
+                                        Colors.black,
+                                        Colors.black,
+                                        Colors.transparent,
+                                      ],
+                                      stops: const [0.0, 0.7, 1.0],
+                                    ).createShader(bounds),
+                                    child: Text(
+                                      comment.content,
+                                      style: textStyle,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.clip,
+                                      softWrap: false,
+                                    ),
+                                  )
+                                : Text(
+                                    comment.content,
+                                    style: textStyle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.clip,
+                                    softWrap: false,
+                                  ),
+                            Text(
+                              formatTimeAgo(comment.createdAt, context),
+                              style: Theme.of(context).textTheme.bodySmall!
+                                  .copyWith(
+                                    color: CustomColors.hintColorDark,
+                                    fontSize: Sizes.size10,
+                                  ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.clip,
-                            softWrap: false,
-                          ),
-                        ),
-
-                        Text(
-                          formatTimeAgo(comment.createdAt, context),
-                          style: Theme.of(context).textTheme.bodySmall!
-                              .copyWith(
-                                color: CustomColors.hintColorDark,
-                                fontSize: Sizes.size10,
-                              ),
-                        ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
                   ),
                   CustomSizes.commentTrailingGap,

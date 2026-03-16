@@ -262,6 +262,24 @@ abstract class AppLocalizations {
   /// **'When someone likes your post'**
   String get alarmTileNewLikeSubtitle;
 
+  /// Banner when system notifications are disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off. Enable Be My Day in Settings to receive alerts.'**
+  String get alarmNotificationsDisabled;
+
+  /// Button to open app settings
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get alarmOpenSettings;
+
+  /// Tile title to prompt enabling notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Notifications'**
+  String get alarmEnableNotifications;
+
   /// Push notification message for daily reminder
   ///
   /// In en, this message translates to:

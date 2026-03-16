@@ -1,36 +1,20 @@
 import 'package:bemyday/common/widgets/confirm_dialog.dart';
-import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_item.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_select.dart';
-import 'package:bemyday/common/widgets/cached_post_image.dart';
-import 'package:bemyday/common/widgets/gradient_overlay.dart';
-import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/comments/comments_sheet.dart';
 import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
-import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/post/models/post.dart';
-import 'package:bemyday/features/post/models/post_with_details.dart';
 import 'package:bemyday/features/post/providers/post_provider.dart';
-import 'package:bemyday/features/profile/models/profile.dart';
-import 'package:bemyday/features/profile/providers/profile_provider.dart';
-import 'package:bemyday/features/post/widgets/post_bottom_bar.dart';
-import 'package:bemyday/features/post/widgets/post_header_bar.dart';
-import 'package:bemyday/features/comments/providers/comment_provider.dart';
-import 'package:bemyday/features/post/widgets/comment_nudge_banner.dart';
-import 'package:bemyday/features/post/widgets/post_nudge_banner.dart';
-import 'package:bemyday/features/post/widgets/reveal_countdown.dart';
+import 'package:bemyday/features/post/widgets/post_content.dart';
 import 'package:bemyday/features/posting/posting_album_screen.dart';
 import 'package:bemyday/generated/l10n/app_localizations.dart';
-import 'package:bemyday/utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PostScreen extends ConsumerStatefulWidget {
   const PostScreen({
@@ -345,7 +329,31 @@ class _PostScreenState extends ConsumerState<PostScreen>
             _currentIndex = idx;
             final post = posts[idx];
             _precacheAdjacentImages(posts, idx);
-            return _buildPostContent(context, group, post, posts, idx);
+            return PostContent(
+              group: group,
+              post: post,
+              allPosts: posts,
+              currentIndex: idx,
+              weekIndex: widget.weekIndex,
+              dragOffset: _dragOffset,
+              likeOverride: _likeOverride,
+              likeCountOverride: _likeCountOverride,
+              dismissedCommentIdByPost: _dismissedCommentIdByPost,
+              onTapUp: _onTapUp,
+              onVerticalDragUpdate: _onVerticalDragUpdate,
+              onVerticalDragEnd: _onVerticalDragEnd,
+              onCloseTap: _onCloseTap,
+              onMoreTap: _onMoreTap,
+              onPostTap: _onPostTap,
+              onLikeTap: _onLikeTap,
+              onCommentTap: (post, {bool autofocus = true, String? scrollToCommentId}) =>
+                  _onCommentsTap(context, post, autofocus: autofocus, scrollToCommentId: scrollToCommentId),
+              onCommentNudgeDismiss: (postId, commentId) {
+                setState(
+                  () => _dismissedCommentIdByPost[postId] = commentId,
+                );
+              },
+            );
           },
           loading: () =>
               Center(child: CircularProgressIndicator(color: Colors.white)),
@@ -357,214 +365,4 @@ class _PostScreenState extends ConsumerState<PostScreen>
     );
   }
 
-  Widget _buildBottomSection(
-    BuildContext context,
-    Post post,
-    AsyncValue<Profile?> authorProfileAsync,
-    AsyncValue<PostWithDetails> detailsAsync, {
-    required bool shouldBlur,
-    required int authorPostIndex,
-    required int authorPostCount,
-  }) {
-    final cachedNickname = authorProfileAsync.valueOrNull?.nickname ?? '';
-    final cachedAvatarUrl = authorProfileAsync.valueOrNull?.avatarUrl;
-
-    if (shouldBlur) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (cachedNickname.isNotEmpty)
-            PostNudgeBanner(nickname: cachedNickname, onTap: _onPostTap),
-          PostBottomBar(
-            nickname:
-                detailsAsync.valueOrNull?.authorNickname ?? cachedNickname,
-            avatarUrl:
-                detailsAsync.valueOrNull?.authorAvatarUrl ?? cachedAvatarUrl,
-            date: formatTimeAgo(post.createdAt, context),
-            postIndex: authorPostIndex,
-            postCount: authorPostCount,
-            likeCount: 0,
-            commentCount: 0,
-            isLiked: false,
-            hideLikeComment: true,
-          ),
-        ],
-      );
-    }
-
-    final d = detailsAsync.valueOrNull;
-    final commentsAsync = d != null && d.commentCount > 0
-        ? ref.watch(commentsProvider(post.id))
-        : null;
-    final latestComment = commentsAsync?.valueOrNull?.isNotEmpty == true
-        ? commentsAsync!.value!.last
-        : null;
-    final isBannerDismissed =
-        latestComment != null &&
-        _dismissedCommentIdByPost[post.id] == latestComment.id;
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    final isOwnComment =
-        latestComment != null && latestComment.authorId == currentUserId;
-
-    return Column(
-      children: [
-        if (latestComment != null && !isBannerDismissed && !isOwnComment)
-          CommentNudgeBanner(
-            comment: latestComment,
-            onTap: () {
-              setState(
-                () => _dismissedCommentIdByPost[post.id] = latestComment.id,
-              );
-              _onCommentsTap(
-                context,
-                post,
-                autofocus: false,
-                scrollToCommentId: latestComment.id,
-              );
-            },
-          ),
-
-        PostBottomBar(
-          nickname: d?.authorNickname ?? cachedNickname,
-          avatarUrl: d?.authorAvatarUrl ?? cachedAvatarUrl,
-          date: formatTimeAgo(post.createdAt, context),
-          likeCount: _likeCountOverride ?? d?.likeCount ?? 0,
-          commentCount: d?.commentCount ?? 0,
-          isLiked: _likeOverride ?? d?.isLiked ?? false,
-          likedUserIds: d?.likedUserIds ?? [],
-          postIndex: authorPostIndex,
-          postCount: authorPostCount,
-          onLikeTap: () => _onLikeTap(
-            post,
-            _likeOverride ?? d?.isLiked ?? false,
-            _likeCountOverride ?? d?.likeCount ?? 0,
-          ),
-          onCommentTap: () => _onCommentsTap(context, post, autofocus: true),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPostContent(
-    BuildContext context,
-    Group group,
-    Post post,
-    List<Post> allPosts,
-    int currentIndex,
-  ) {
-    final authorProfileAsync = ref.watch(profileProvider(post.authorId));
-    final detailsAsync = ref.watch(postWithDetailsProvider(post));
-    final weekdayIndex = group.weekday - 1;
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    final isOwnPost = post.authorId == currentUserId;
-    final beforeReveal = isCurrentWeekBeforeReveal(
-      group,
-      viewingWeekIndex: widget.weekIndex,
-    );
-    final shouldBlur = beforeReveal && !isOwnPost;
-    final itemCount = allPosts.length;
-
-    final authorPosts = allPosts
-        .where((p) => p.authorId == post.authorId)
-        .toList();
-    final authorPostIndex = authorPosts.indexOf(post) + 1;
-    final authorPostCount = authorPosts.length;
-
-    final screenHeight = MediaQuery.of(context).size.height;
-    final opacity = (1 - (_dragOffset / screenHeight) * 1.5).clamp(0.0, 1.0);
-    final isDragging = _dragOffset > 0;
-    final borderRadius = isDragging
-        ? BorderRadius.vertical(top: Radius.circular(16))
-        : BorderRadius.zero;
-
-    return GestureDetector(
-      onTapUp: (d) => _onTapUp(d, itemCount),
-      onVerticalDragUpdate: _onVerticalDragUpdate,
-      onVerticalDragEnd: _onVerticalDragEnd,
-      child: ColoredBox(
-        color: Colors.black.withValues(alpha: opacity),
-        child: Transform.translate(
-          offset: Offset(0, _dragOffset),
-          child: ClipRRect(
-            borderRadius: borderRadius,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ImageFiltered(
-                    imageFilter: shouldBlur
-                        ? Blurs.fullScreen
-                        : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-                    child: CachedPostImage(
-                      imageUrl: post.photoUrl,
-                      cacheKey: post.storagePath,
-                      errorWidget: Builder(
-                        builder: (context) {
-                          final l10n = AppLocalizations.of(context)!;
-                          return Container(
-                            color: Colors.black,
-                            child: Center(
-                              child: Text(
-                                l10n.postFailedToLoad,
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-                GradientOverlay(
-                  height: MediaQuery.of(context).padding.top + 120,
-                  alignment: Alignment.topCenter,
-                  opacity: 0.55,
-                ),
-                GradientOverlay(
-                  height: 200,
-                  alignment: Alignment.bottomCenter,
-                  opacity: 0.55,
-                ),
-                if (shouldBlur)
-                  Center(child: RevealCountdown(targetWeekday: group.weekday)),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: PostHeaderBar(
-                    weekdayName: weekdays[weekdayIndex].name,
-                    weekNumber: groupWeekNumber(group),
-                    currentIndex: currentIndex,
-                    itemCount: itemCount,
-                    onCloseTap: _onCloseTap,
-                    onMoreTap: isOwnPost ? () => _onMoreTap(post) : null,
-                    onPostTap:
-                        widget.weekIndex == null ||
-                            widget.weekIndex == groupWeekNumber(group)
-                        ? _onPostTap
-                        : null,
-                  ),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: SafeArea(
-                    child: _buildBottomSection(
-                      context,
-                      post,
-                      authorProfileAsync,
-                      detailsAsync,
-                      shouldBlur: shouldBlur,
-                      authorPostIndex: authorPostIndex,
-                      authorPostCount: authorPostCount,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

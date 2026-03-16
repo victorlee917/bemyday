@@ -1,9 +1,11 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { ImageResponse } from "@vercel/og";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? "";
 const SITE_URL = "https://www.bemyday.app";
+const DEFAULT_OG_IMAGE = `${SITE_URL}/ogImg.png`;
 
 function parseGradientColors(value: unknown): string[] | null {
   if (!value || !Array.isArray(value)) return null;
@@ -55,20 +57,20 @@ export async function loader({ params }: LoaderFunctionArgs) {
     ? parseGradientColors(invitation.gradient_colors)
     : null;
   const hasGradient = colors && colors.length >= 3;
-  const defaultBg = "#f5f5f5";
-  const avatarUrl = invitation?.inviter_avatar_url;
-  const nickname = invitation?.inviter_nickname ?? "";
+
+  if (!invitation || !hasGradient) {
+    return redirect(DEFAULT_OG_IMAGE);
+  }
+
+  const avatarUrl = invitation.inviter_avatar_url;
+  const nickname = invitation.inviter_nickname ?? "";
   const initial = nickname ? nickname[0].toUpperCase() : "?";
 
-  const gradientStyle = hasGradient
-    ? {
-        background: `linear-gradient(to bottom right, ${colors!
-          .map((c) => `${c}da`)
-          .join(", ")})`,
-      }
-    : avatarUrl
-      ? { backgroundColor: "rgba(0,0,0,0.3)" }
-      : { backgroundColor: defaultBg };
+  const gradientStyle = {
+    background: `linear-gradient(to bottom right, ${colors
+      .map((c) => `${c}da`)
+      .join(", ")})`,
+  };
 
   return new ImageResponse(
     (

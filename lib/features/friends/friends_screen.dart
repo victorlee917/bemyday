@@ -11,6 +11,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+/// Android에서만: BackdropFilter overscroll 시 깜빡임 방지 (Flutter 3.16+ 이슈)
+/// iOS는 바운스 유지
+class _FriendsScrollBehavior extends ScrollBehavior {
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    if (Theme.of(context).platform == TargetPlatform.android) {
+      return const ClampingScrollPhysics();
+    }
+    return super.getScrollPhysics(context);
+  }
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    if (Theme.of(context).platform == TargetPlatform.android) {
+      return child;
+    }
+    return super.buildOverscrollIndicator(context, child, details);
+  }
+}
+
 class FriendsScreen extends ConsumerStatefulWidget {
   const FriendsScreen({super.key, required this.bottomPadding});
   static const routeName = "friends";
@@ -61,8 +85,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               ),
             );
           }
-          return ListView.separated(
-            padding: EdgeInsets.only(
+          return ScrollConfiguration(
+            behavior: _FriendsScrollBehavior(),
+            child: ListView.separated(
+              cacheExtent: 500,
+              padding: EdgeInsets.only(
               bottom: widget.bottomPadding,
               top: Paddings.scaffoldV,
               left: 0,
@@ -78,6 +105,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             separatorBuilder: (context, index) =>
                 SizedBox(height: Sizes.size32),
             itemCount: groups.length,
+            ),
           );
         },
       ),

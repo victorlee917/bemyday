@@ -8,6 +8,7 @@ import 'package:bemyday/features/tutorial/widgets/tutorial_post_reveal.dart';
 import 'package:bemyday/features/tutorial/widgets/tutorial_post_stack.dart';
 import 'package:bemyday/features/tutorial/widgets/tutorial_post_stack_with_blur.dart';
 import 'package:bemyday/utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,13 +37,15 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   void _showStartBottomSheet() {
     final router = GoRouter.of(context);
+    // iOS: Apple + Google + Kakao 3개 버튼 → 바텀시트 높이 확대
+    final heightFactor = defaultTargetPlatform == TargetPlatform.iOS ? 0.52 : 0.4;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,
       builder: (sheetContext) => Container(
-        height: MediaQuery.of(sheetContext).size.height * 0.4,
+        height: MediaQuery.of(sheetContext).size.height * heightFactor,
         decoration: BoxDecoration(
           color: isDarkMode(sheetContext)
               ? CustomColors.backgroundColorDark

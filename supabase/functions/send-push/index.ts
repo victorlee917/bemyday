@@ -11,13 +11,13 @@ const MESSAGES: Record<
   string,
   (p: Record<string, unknown>) => { title: string; body: string }
 > = {
-  daily_reminder: () => ({
+  daily_reminder: (p) => ({
     title: "Be My Day",
-    body: "Time to share your day with your besties!",
+    body: `${p.weekday_name ?? "Your day"} Unlocked! Make your besties' day.`,
   }),
   new_post: (p) => ({
     title: "Be My Day",
-    body: `${p.author_nickname ?? "Someone"} posted in your group`,
+    body: `${p.author_nickname ?? "Someone"} has a new update`,
   }),
   new_comment: (p) => ({
     title: "Be My Day",
@@ -48,7 +48,7 @@ async function sendFcm(
   token: string,
   title: string,
   body: string,
-  data?: Record<string, string>
+  data?: Record<string, string>,
 ): Promise<boolean> {
   const res = await fetch(
     `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
@@ -65,7 +65,7 @@ async function sendFcm(
           data: data ?? {},
         },
       }),
-    }
+    },
   );
   if (!res.ok) {
     const err = await res.text();
@@ -102,10 +102,10 @@ Deno.serve(async (req) => {
       .limit(100);
 
     if (!pending || pending.length === 0) {
-      return new Response(
-        JSON.stringify({ sent: 0 }),
-        { status: 200, headers: { ...corsHeaders(), "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ sent: 0 }), {
+        status: 200,
+        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      });
     }
 
     let sent = 0;
@@ -122,14 +122,9 @@ Deno.serve(async (req) => {
 
       if (tokens && tokens.length > 0) {
         for (const { token } of tokens) {
-          const ok = await sendFcm(
-            accessToken,
-            projectId,
-            token,
-            title,
-            body,
-            { notification_type: row.notification_type }
-          );
+          const ok = await sendFcm(accessToken, projectId, token, title, body, {
+            notification_type: row.notification_type,
+          });
           if (ok) sent++;
         }
       }
@@ -140,16 +135,16 @@ Deno.serve(async (req) => {
         .eq("id", row.id);
     }
 
-    return new Response(
-      JSON.stringify({ sent, processed: pending.length }),
-      { status: 200, headers: { ...corsHeaders(), "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ sent, processed: pending.length }), {
+      status: 200,
+      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...corsHeaders(), "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+    });
   }
 });
 

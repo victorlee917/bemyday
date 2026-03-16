@@ -1,6 +1,16 @@
 import 'package:bemyday/core/providers.dart';
 import 'package:bemyday/features/alarm/repositories/alarm_repository.dart';
+import 'package:bemyday/features/push/push_notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// 시스템 알림 권한 상태. denied이면 설정에서 꺼진 상태.
+final notificationPermissionProvider =
+    FutureProvider<AuthorizationStatus>((ref) async {
+  final settings =
+      await FirebaseMessaging.instance.getNotificationSettings();
+  return settings.authorizationStatus;
+});
 
 final alarmRepositoryProvider = Provider<AlarmRepository>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
@@ -23,6 +33,7 @@ class AlarmPreferencesNotifier extends AsyncNotifier<AlarmPreferences> {
     if (current == null) return;
     state = AsyncData(current.copyWith(dailyReminder: value));
     await _repository.save(state.value!);
+    await PushNotificationService.syncDailyReminder(value);
   }
 
   Future<void> setNewPost(bool value) async {
@@ -45,4 +56,5 @@ class AlarmPreferencesNotifier extends AsyncNotifier<AlarmPreferences> {
     state = AsyncData(current.copyWith(newLike: value));
     await _repository.save(state.value!);
   }
+
 }
