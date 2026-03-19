@@ -59,7 +59,7 @@ void showAppSnackBar(
   final mq = MediaQuery.of(context);
   final bottomMargin = hasBottomNavBar
       ? Paddings.scaffoldV + 84 // 네비게이션 바(60) + 여유(24)
-      : Paddings.scaffoldV + mq.viewPadding.bottom;
+      : Paddings.scaffoldV + mq.padding.bottom;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: Colors.transparent,

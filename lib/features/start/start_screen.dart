@@ -91,11 +91,20 @@ class _StartScreenState extends State<StartScreen> {
         throw Exception('Could not get ID token from Apple');
       }
 
-      await Supabase.instance.client.auth.signInWithIdToken(
-        provider: OAuthProvider.apple,
-        idToken: idToken,
-        nonce: rawNonce,
-      );
+      final response = await Supabase.instance.client.auth
+          .signInWithIdToken(
+            provider: OAuthProvider.apple,
+            idToken: idToken,
+            nonce: rawNonce,
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () =>
+                throw Exception('로그인 요청이 시간 초과되었습니다 (30초)'),
+          );
+      if (response.session == null) {
+        throw Exception('세션이 생성되지 않았습니다');
+      }
 
       if (credential.givenName != null || credential.familyName != null) {
         final fullName =
@@ -117,28 +126,44 @@ class _StartScreenState extends State<StartScreen> {
         _navigateAfterLogin(context);
       }
     } on SignInWithAppleAuthorizationException catch (e) {
-      // 유저 취소/닫기(canceled, notHandled)는 스낵바 표시 안 함
-      const _noSnackBarCodes = {
+      const noSnackBarCodes = {
         AuthorizationErrorCode.canceled,
         AuthorizationErrorCode.notHandled,
       };
-      if (!_noSnackBarCodes.contains(e.code) && context.mounted) {
-        showAppSnackBar(context, e.message);
+      if (!noSnackBarCodes.contains(e.code) && mounted) {
+        _showLoginError('Apple: ${e.message}');
       }
     } catch (e) {
-      // 유저 취소가 다른 예외로 올 수 있음 (예: "cancel", "cancelled", "notHandled" 등)
       final msg = e.toString().toLowerCase();
       final isUserDismissed =
           msg.contains('cancel') ||
           msg.contains('cancelled') ||
           msg.contains('nothandled') ||
           msg.contains('not handled');
-      if (!isUserDismissed && context.mounted) {
-        showAppSnackBar(context, 'Apple sign in failed: $e');
+      if (!isUserDismissed && mounted) {
+        _showLoginError('Apple: $e');
       }
     } finally {
       if (mounted) setState(() => _isSigningIn = false);
     }
+  }
+
+  void _showLoginError(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        title: const Text('로그인 실패'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _signInWithGoogle() async {
@@ -162,17 +187,28 @@ class _StartScreenState extends State<StartScreen> {
       final accessToken = googleAuth.accessToken;
 
       if (idToken == null) {
-        throw Exception('Could not get ID token from Google');
+        throw Exception('Google ID 토큰을 받지 못했습니다');
       }
 
-      await Supabase.instance.client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
-      );
+      final response = await Supabase.instance.client.auth
+          .signInWithIdToken(
+            provider: OAuthProvider.google,
+            idToken: idToken,
+            accessToken: accessToken,
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () =>
+                throw Exception('로그인 요청이 시간 초과되었습니다 (30초)'),
+          );
+      if (response.session == null) {
+        throw Exception('세션이 생성되지 않았습니다');
+      }
       if (context.mounted) {
         _navigateAfterLogin(context);
       }
+    } on AuthException catch (e) {
+      if (mounted) _showLoginError('Google: ${e.message}');
     } catch (e) {
       final msg = e.toString().toLowerCase();
       final isUserDismissed =
@@ -182,7 +218,7 @@ class _StartScreenState extends State<StartScreen> {
           msg.contains('cancel') ||
           msg.contains('cancelled');
       if (!isUserDismissed && mounted) {
-        showAppSnackBar(context, 'Google sign in failed: $e');
+        _showLoginError('Google: $e');
       }
     } finally {
       if (mounted) setState(() => _isSigningIn = false);
@@ -199,10 +235,19 @@ class _StartScreenState extends State<StartScreen> {
           final token = await UserApi.instance.loginWithKakaoTalk();
           final idToken = token.idToken;
           if (idToken != null) {
-            await Supabase.instance.client.auth.signInWithIdToken(
-              provider: OAuthProvider.kakao,
-              idToken: idToken,
-            );
+            final response = await Supabase.instance.client.auth
+                .signInWithIdToken(
+                  provider: OAuthProvider.kakao,
+                  idToken: idToken,
+                )
+                .timeout(
+                  const Duration(seconds: 30),
+                  onTimeout: () =>
+                      throw Exception('로그인 요청이 시간 초과되었습니다 (30초)'),
+                );
+            if (response.session == null) {
+              throw Exception('세션이 생성되지 않았습니다');
+            }
             if (context.mounted) {
               _navigateAfterLogin(context);
             }
@@ -219,11 +264,8 @@ class _StartScreenState extends State<StartScreen> {
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
       // OAuth는 브라우저에서 완료 후 com.bemyday://login-callback으로 앱 복귀.
-      // 세션은 onAuthStateChange로 처리되고, router redirect가 /home으로 이동.
     } catch (e) {
-      if (mounted) {
-        showAppSnackBar(context, '카카오 로그인 실패: $e');
-      }
+      if (mounted) _showLoginError('카카오: $e');
     } finally {
       if (mounted) setState(() => _isSigningIn = false);
     }
@@ -237,47 +279,40 @@ class _StartScreenState extends State<StartScreen> {
         child: Column(
           children: [
             Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: Paddings.scaffoldH,
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Be My Day",
+                        style: GoogleFonts.darumadropOne(
+                          textStyle: TextStyle(fontSize: Sizes.size48),
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              "Be My Day",
-                              style: GoogleFonts.darumadropOne(
-                                textStyle: TextStyle(fontSize: Sizes.size48),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            Gaps.v2,
-                            Opacity(
-                              opacity: 0.5,
-                              child: Text(
-                                "Besties who make my day",
-                                style: GoogleFonts.darumadropOne(
-                                  textStyle: TextStyle(fontSize: Sizes.size16),
-                                ),
-                              ),
-                            ),
-                          ],
+                        textAlign: TextAlign.center,
+                      ),
+                      Gaps.v2,
+                      Opacity(
+                        opacity: 0.5,
+                        child: Text(
+                          "Besties who make my day",
+                          style: GoogleFonts.darumadropOne(
+                            textStyle: TextStyle(fontSize: Sizes.size16),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
             Padding(
               padding: EdgeInsets.only(
-                top: Sizes.size16,
+                top: Paddings.scaffoldV,
                 left: Paddings.scaffoldH,
                 right: Paddings.scaffoldH,
+                bottom: Paddings.scaffoldV,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

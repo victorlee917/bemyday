@@ -18,7 +18,6 @@ import 'package:bemyday/features/post/post_screen.dart';
 import 'package:bemyday/features/posting/posting_album_screen.dart';
 import 'package:bemyday/features/theme/theme_screen.dart';
 import 'package:bemyday/features/tutorial/tutorial_screen.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -163,7 +162,16 @@ GoRouter createRouter(
           // ProviderScope 미사용 시 Repository로 조회 (테스트 등)
           profile = await ProfileRepository().getProfile();
         }
-        final nickname = profile?.nickname ?? '';
+        // 프로필 없음: ensure_profile로 생성 시도 (soft delete 후 재가입 등)
+        if (profile == null) {
+          await ProfileRepository().ensureProfile();
+          profile = await ProfileRepository().getProfile();
+          if (profile == null) {
+            await Supabase.instance.client.auth.signOut();
+            return TutorialScreen.routeUrl;
+          }
+        }
+        final nickname = profile.nickname;
         // 트리거가 부여한 본인 전용 기본값과 비교 (user_ + uuid 앞 8자)
         // 형식만 보면 user_xxx 형태를 유저가 선택할 수 있으므로, 실제 기본값과 일치할 때만 ProfileScreen 유도
         final defaultNickname =
@@ -182,6 +190,11 @@ GoRouter createRouter(
           return '/home';
         }
       } catch (_) {
+        // 프로필 조회 실패 (예외): /tutorial, /start에 있으면 유지, 아니면 ProfileScreen
+        final path = state.uri.path;
+        if (path == StartScreen.routeUrl || path == TutorialScreen.routeUrl) {
+          return null;
+        }
         return ProfileScreen.routeUrl;
       }
 

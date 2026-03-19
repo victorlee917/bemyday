@@ -299,6 +299,11 @@ class _DefaultInviteCard extends StatelessWidget {
               : null,
         );
 
+        // avatar_url 없으면 라이트: 검은색, 다크: 흰색
+        final textColor = hasGradient
+            ? Colors.white
+            : (isDarkMode(context) ? Colors.white : Colors.black);
+
         return Container(
           height: height,
           width: width,
@@ -349,7 +354,7 @@ class _DefaultInviteCard extends StatelessWidget {
                         Text(
                           'Invitation',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: textColor,
                             fontSize: Sizes.size12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -369,7 +374,7 @@ class _DefaultInviteCard extends StatelessWidget {
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.darumadropOne(
                                   textStyle: TextStyle(
-                                    color: Colors.white,
+                                    color: textColor,
                                     fontSize: Sizes.size24,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -384,7 +389,7 @@ class _DefaultInviteCard extends StatelessWidget {
                             'From.',
                             style: TextStyle(
                               fontSize: Sizes.size10,
-                              color: Colors.white,
+                              color: textColor,
                             ),
                           ),
                         ),
@@ -393,7 +398,7 @@ class _DefaultInviteCard extends StatelessWidget {
                           inviterNickname,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: textColor,
                             fontSize: Sizes.size14,
                             fontWeight: FontWeight.w600,
                           ),

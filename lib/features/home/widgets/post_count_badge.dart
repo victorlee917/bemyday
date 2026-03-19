@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/utils.dart';
@@ -26,9 +25,7 @@ class PostCountBadge extends StatelessWidget {
             color: dark ? Blurs.overlayColorDark : Blurs.overlayColorLight,
             borderRadius: BorderRadius.circular(Sizes.size20),
             border: Border.all(
-              color: dark
-                  ? CustomColors.borderDark
-                  : CustomColors.borderLight,
+              color: dark ? CustomColors.borderDark : CustomColors.borderLight,
             ),
           ),
           child: Row(
@@ -43,11 +40,7 @@ class PostCountBadge extends StatelessWidget {
                 ),
               ),
               SizedBox(width: Sizes.size4),
-              Icon(
-                Icons.arrow_forward,
-                color: fgColor,
-                size: Sizes.size14,
-              ),
+              Icon(Icons.arrow_forward, color: fgColor, size: Sizes.size14),
             ],
           ),
         ),

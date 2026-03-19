@@ -49,9 +49,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     if (!context.mounted) return;
     final groupIds = groups.map((g) => g.id).toList();
     final counts = groupIds.isNotEmpty
-        ? await ref
-            .read(groupRepositoryProvider)
-            .getGroupMemberCounts(groupIds)
+        ? await ref.read(groupRepositoryProvider).getGroupMemberCounts(groupIds)
         : <String, int>{};
     if (!context.mounted) return;
     showWeekdayPicker(
@@ -66,8 +64,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     final profile = ref.read(currentProfileProvider).valueOrNull;
     final preferredIndex =
         _overriddenWeekdayIndex ?? widget.selectedWeekdayIndex;
-    final effectiveIndex = await ref
-        .read(effectiveInviteWeekdayIndexProvider(preferredIndex).future);
+    final effectiveIndex = await ref.read(
+      effectiveInviteWeekdayIndexProvider(preferredIndex).future,
+    );
     final group = groupForWeekday(groups, effectiveIndex);
     final dbWeekday = effectiveIndex + 1;
 
@@ -78,7 +77,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
 
     String token;
     try {
-      token = await ref.read(invitationRepositoryProvider).createInvitation(
+      token = await ref
+          .read(invitationRepositoryProvider)
+          .createInvitation(
             groupId: group?.id,
             dbWeekday: dbWeekday,
             gradientColors: gradientColors,
@@ -156,12 +157,10 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             Gaps.v24,
             Expanded(
               child: Center(
-                child: SingleChildScrollView(
-                  child: InviteSheetBody(
-                    weekdayName: weekdays[effectiveIndex].name,
-                    inviterNickname: inviterNickname,
-                    inviterAvatarUrl: inviterAvatarUrl,
-                  ),
+                child: InviteSheetBody(
+                  weekdayName: weekdays[effectiveIndex].name,
+                  inviterNickname: inviterNickname,
+                  inviterAvatarUrl: inviterAvatarUrl,
                 ),
               ),
             ),

@@ -63,8 +63,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (_formKey.currentState == null ||
         !_isNicknameValid ||
         !_hasChanges ||
-        _isSaving)
+        _isSaving) {
       return;
+    }
 
     _formKey.currentState!.save();
     final nickname = _nickname.trim();
@@ -274,16 +275,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (_initialDataLoaded) return;
     if (_nicknameController.text.isNotEmpty) return;
 
-    _nicknameController.text = profile.nickname;
+    // 시스템 기본 닉네임(user_xxx)은 유저에게 공란으로 표시
+    final displayNickname =
+        profile.isSystemDefaultNickname ? '' : profile.nickname;
+
+    _nicknameController.text = displayNickname;
     _nicknameController.selection = TextSelection.collapsed(
-      offset: profile.nickname.length,
+      offset: displayNickname.length,
     );
     setState(() {
-      _nickname = profile.nickname;
-      _originalNickname = profile.nickname;
+      _nickname = displayNickname;
+      _originalNickname = displayNickname;
       _isNicknameValid =
-          profile.nickname.isNotEmpty &&
-          profile.nickname.length <= _nicknameMaxLength;
+          displayNickname.isNotEmpty &&
+          displayNickname.length <= _nicknameMaxLength;
       _initialDataLoaded = true;
     });
   }

@@ -11,6 +11,11 @@ class ProfileRepository {
 
   SupabaseClient get _client => Supabase.instance.client;
 
+  /// 프로필 없으면 생성 (soft delete 후 재가입 등)
+  Future<void> ensureProfile() async {
+    await _client.rpc('ensure_profile', params: {});
+  }
+
   /// 프로필 조회 (닉네임, 프로필 사진)
   ///
   /// - [userId] 없으면 현재 로그인 유저

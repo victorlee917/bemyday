@@ -6,12 +6,9 @@ class AccountRepository {
 
   /// 계정 삭제
   ///
-  /// 1. prepare_user_deletion RPC: 그룹 승계/삭제, 게시글·좋아요 삭제
-  /// 2. Edge Function: auth.admin.deleteUser 호출
-  /// 3. signOut: 로컬 세션 정리
+  /// Edge Function에서 prepare_user_deletion RPC → storage 정리 → auth.admin.deleteUser 수행.
+  /// (클라이언트에서 RPC 먼저 호출하면 프로필 삭제 후 401 Invalid JWT 발생 가능)
   Future<void> deleteAccount() async {
-    await _client.rpc('prepare_user_deletion');
-
     final session = _client.auth.currentSession;
     if (session == null) return;
 
@@ -23,7 +20,10 @@ class AccountRepository {
     );
 
     if (response.status != 200) {
-      throw Exception(response.data?['error'] ?? 'Failed to delete account');
+      final msg = response.data is Map
+          ? (response.data as Map)['error'] as String?
+          : null;
+      throw Exception(msg ?? 'Failed to delete account');
     }
 
     await _client.auth.signOut();

@@ -61,7 +61,7 @@ class _TutorialPostStackWithBlurState extends State<TutorialPostStackWithBlur> {
   Widget build(BuildContext context) {
     final (_, postStackCardHeight) = inviteCardDimensions(context);
     final stackHeight = postStackCardHeight * _scaleFactor;
-    final blurContainerHeight = stackHeight / 1.5;
+    final blurContainerHeight = stackHeight / 1.35;
     final dark = isDarkMode(context);
     final l10n = AppLocalizations.of(context)!;
 
@@ -103,6 +103,7 @@ class _TutorialPostStackWithBlurState extends State<TutorialPostStackWithBlur> {
                   dark: dark,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         tutorialDayMocks[_dayIndex].weekday,

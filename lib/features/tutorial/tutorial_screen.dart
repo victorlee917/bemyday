@@ -1,6 +1,8 @@
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/features/invite/widgets/invite_card.dart'
+    show inviteCardDimensions;
 import 'package:bemyday/features/start/start_screen.dart';
 import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/features/tutorial/widgets/tutorial_fan_carousel.dart';
@@ -38,7 +40,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
   void _showStartBottomSheet() {
     final router = GoRouter.of(context);
     // iOS: Apple + Google + Kakao 3개 버튼 → 바텀시트 높이 확대
-    final heightFactor = defaultTargetPlatform == TargetPlatform.iOS ? 0.52 : 0.4;
+    final heightFactor = defaultTargetPlatform == TargetPlatform.iOS
+        ? 0.60
+        : 0.50;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -65,10 +69,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Gaps.v36,
+        Gaps.v24,
         Container(
-          width: Sizes.size64,
-          height: Sizes.size64,
+          width: Sizes.size48,
+          height: Sizes.size48,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Sizes.size16),
             border: Border.all(
@@ -99,7 +103,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
             ),
           ),
         ),
-        Gaps.v28,
+        Gaps.v24,
       ],
     );
   }
@@ -116,9 +120,12 @@ class _TutorialScreenState extends State<TutorialScreen> {
           child: const TutorialPostStack(),
         );
       case 2:
+        final (cardW, cardH) = inviteCardDimensions(context);
         return SizedBox(
-          height: 380,
-          child: TutorialPostReveal(key: ValueKey(index)),
+          key: ValueKey(index),
+          width: cardW,
+          height: cardH,
+          child: const TutorialPostReveal(),
         );
       case 3:
         return TutorialPostStackWithBlur(key: ValueKey(index));
@@ -191,6 +198,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     );
   }
 
+  static const _titleHeight = 72.0;
   static const _titleGap = Gaps.v2;
 
   @override
@@ -202,40 +210,40 @@ class _TutorialScreenState extends State<TutorialScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // 1. 최상단 로고 영역 (고정)
-            _buildLogoSection(),
-            // 2. 가변 시각적 설명 영역 (비율 3) - 콘텐츠 화면 중앙 배치
+            SizedBox(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: _buildLogoSection(),
+              ),
+            ),
             Expanded(
-              flex: 3,
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: Sizes.size24),
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: _fadeDuration,
-                    switchInCurve: Curves.easeIn,
-                    switchOutCurve: Curves.easeOut,
-                    transitionBuilder: (child, animation) =>
-                        FadeTransition(opacity: animation, child: child),
-                    child: _buildVisualSection(_currentIndex),
-                  ),
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: _fadeDuration,
+                  switchInCurve: Curves.easeIn,
+                  switchOutCurve: Curves.easeOut,
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
+                  child: _buildVisualSection(_currentIndex),
                 ),
               ),
             ),
-            // 타이틀과 시각 영역·버튼 영역 간 동일 간격
             _titleGap,
-            // 3. 가변 타이틀 영역 (비율 1)
-            Flexible(
-              flex: 1,
-              child: AnimatedSwitcher(
-                duration: _fadeDuration,
-                switchInCurve: Curves.easeIn,
-                switchOutCurve: Curves.easeOut,
-                transitionBuilder: (child, animation) =>
-                    FadeTransition(opacity: animation, child: child),
-                child: _buildTitleSection(_currentIndex),
+            SizedBox(
+              height: _titleHeight,
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: _fadeDuration,
+                  switchInCurve: Curves.easeIn,
+                  switchOutCurve: Curves.easeOut,
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
+                  child: _buildTitleSection(_currentIndex),
+                ),
               ),
             ),
             _titleGap,
+            Gaps.v24,
           ],
         ),
       ),

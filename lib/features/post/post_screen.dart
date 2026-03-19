@@ -346,23 +346,29 @@ class _PostScreenState extends ConsumerState<PostScreen>
               onMoreTap: _onMoreTap,
               onPostTap: _onPostTap,
               onLikeTap: _onLikeTap,
-              onCommentTap: (post, {bool autofocus = true, String? scrollToCommentId}) =>
-                  _onCommentsTap(context, post, autofocus: autofocus, scrollToCommentId: scrollToCommentId),
+              onCommentTap:
+                  (post, {bool autofocus = true, String? scrollToCommentId}) =>
+                      _onCommentsTap(
+                        context,
+                        post,
+                        autofocus: autofocus,
+                        scrollToCommentId: scrollToCommentId,
+                      ),
               onCommentNudgeDismiss: (postId, commentId) {
-                setState(
-                  () => _dismissedCommentIdByPost[postId] = commentId,
-                );
+                setState(() => _dismissedCommentIdByPost[postId] = commentId);
               },
             );
           },
           loading: () =>
               Center(child: CircularProgressIndicator(color: Colors.white)),
           error: (e, _) => Center(
-            child: Text(l10n.postError(e.toString()), style: TextStyle(color: Colors.white)),
+            child: Text(
+              l10n.postError(e.toString()),
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ),
       ),
     );
   }
-
 }

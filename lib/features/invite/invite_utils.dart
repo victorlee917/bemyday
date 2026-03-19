@@ -4,7 +4,11 @@ import 'package:bemyday/features/invite/invitation_screen.dart';
 import 'package:bemyday/features/invite/invite_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
+/// InviteScreen·InvitationScreen 공통 시트 높이 비율
+double _inviteSheetHeightFactor(double availableHeight) {
+  return availableHeight < 680 ? 0.85 : 0.8;
+}
 
 /// InvitationScreen을 모달 시트로 표시 (InviteScreen과 동일한 높이)
 Future<void> showInvitationSheet(
@@ -15,19 +19,25 @@ Future<void> showInvitationSheet(
   final screenHeight = MediaQuery.of(context).size.height;
   final safeAreaTop = MediaQuery.of(context).padding.top;
   final availableHeight = screenHeight - safeAreaTop;
+  final heightFactor = _inviteSheetHeightFactor(availableHeight);
 
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useRootNavigator: true,
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(RValues.bottomsheet),
       ),
     ),
-    builder: (context) => SizedBox(
-      height: availableHeight * 0.8,
-      child: InvitationScreen(inviteToken: inviteToken, asSheet: true),
+    builder: (context) => DraggableScrollableSheet(
+      initialChildSize: heightFactor,
+      minChildSize: heightFactor,
+      maxChildSize: heightFactor,
+      expand: false,
+      builder: (context, _) =>
+          InvitationScreen(inviteToken: inviteToken, asSheet: true),
     ),
   );
 }
@@ -47,24 +57,30 @@ Future<void> showInviteSheet(
   final screenHeight = MediaQuery.of(context).size.height;
   final safeAreaTop = MediaQuery.of(context).padding.top;
   final availableHeight = screenHeight - safeAreaTop;
+  final heightFactor = _inviteSheetHeightFactor(availableHeight);
 
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useRootNavigator: true,
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(RValues.bottomsheet),
       ),
     ),
-    builder: (context) => SizedBox(
-      height: availableHeight * 0.8,
-      child: InviteScreen(selectedWeekdayIndex: resolvedIndex),
+    builder: (context) => DraggableScrollableSheet(
+      initialChildSize: heightFactor,
+      minChildSize: heightFactor,
+      maxChildSize: heightFactor,
+      expand: false,
+      builder: (context, _) =>
+          InviteScreen(selectedWeekdayIndex: resolvedIndex),
     ),
   );
 }
 
-/// 그룹이 없으면 InviteScreen으로 이동
+/// 그룹이 없으면 InviteScreen 바텀시트 표시
 ///
 /// [popCount]: 이동 전 pop할 횟수 (PostingDecorate는 2)
 void redirectToInviteIfNoGroups(
@@ -78,7 +94,7 @@ void redirectToInviteIfNoGroups(
       Navigator.of(context).pop();
     }
     if (context.mounted) {
-      context.go(InviteScreen.routeUrl);
+      showInviteSheet(context, ref);
     }
   }
 }

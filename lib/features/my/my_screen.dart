@@ -8,12 +8,12 @@ import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/alarm/alarm_screen.dart';
-import 'package:bemyday/features/language/language_screen.dart';
 import 'package:bemyday/features/auth/providers/account_repository_provider.dart';
 import 'package:bemyday/features/profile/profile_screen.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/license/license_screen.dart';
 import 'package:bemyday/features/theme/theme_screen.dart';
+import 'package:bemyday/features/tutorial/tutorial_screen.dart';
 import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
@@ -49,10 +49,13 @@ class _MyScreenState extends ConsumerState<MyScreen> {
     try {
       await ref.read(accountRepositoryProvider).deleteAccount();
       if (!mounted) return;
-      context.go('/start');
+      context.go(TutorialScreen.routeUrl);
     } catch (e) {
       if (!mounted) return;
-      showAppSnackBar(context, l10n.deleteAccountFailed);
+      final msg = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : '$e';
+      showAppSnackBar(context, msg.isNotEmpty ? msg : l10n.deleteAccountFailed);
     }
   }
 

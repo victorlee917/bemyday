@@ -1,6 +1,5 @@
 import 'package:app_links/app_links.dart';
 import 'package:bemyday/config/supabase_config.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:bemyday/features/invite/repositories/invitation_repository.dart';
 import 'package:bemyday/features/push/push_notification_service.dart' deferred as push;
@@ -40,12 +39,18 @@ String? _invitePathFromUri(Uri? uri) {
 }
 
 void main() async {
-  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
 
   await GoogleFonts.pendingFonts([GoogleFonts.darumadropOne()]);
 
@@ -117,7 +122,6 @@ void main() async {
     }
   });
 
-  FlutterNativeSplash.remove();
   runApp(
     ProviderScope(
       // SharedPreferences를 override하여 주입 (MVVM: Model 레이어에서 사용)
@@ -149,6 +153,29 @@ class BeMyDay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Riverpod으로 테마 상태 구독 (ViewModel Provider 사용)
+    final themeMode = ref.watch(themeViewModelProvider);
+
+    // 테마 변경 시 status bar 스타일 동기화 (앱 배경과 맞춤, 회색 방지)
+    ref.listen(themeViewModelProvider, (_, mode) {
+      final dark = mode == ThemeMode.dark;
+      SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        ),
+      );
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dark = themeMode == ThemeMode.dark;
+      SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        ),
+      );
+    });
+
     // 로그아웃/계정 전환 시 유저별 캐시 무효화 + FCM 토큰 등록/해제
     ref.listen(authStateProvider, (prev, next) {
       final prevUserId = prev?.valueOrNull?.session?.user.id;
@@ -174,9 +201,6 @@ class BeMyDay extends ConsumerWidget {
       fontSize: Sizes.size16,
       fontWeight: FontWeight.w700,
     );
-
-    // Riverpod으로 테마 상태 구독 (ViewModel Provider 사용)
-    final themeMode = ref.watch(themeViewModelProvider);
 
     return MaterialApp.router(
       routerConfig: router,

@@ -5,6 +5,7 @@ description: "A new Flutter project."
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
+# Play Store/App Store 업로드 전: ./scripts/bump_version.sh 로 버전 코드 자동 증가
 # A version number is three numbers separated by dots, like 1.2.43
 # followed by an optional build number separated by a +.
 # Both the version and the builder number may be overridden in flutter
@@ -16,7 +17,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.1+2
+version: 1.0.1+5
 
 environment:
   sdk: ^3.9.2
@@ -67,7 +68,6 @@ dependencies:
   kakao_flutter_sdk_user: ^1.10.0
   timezone: ^0.10.0
   flutter_timezone: ^4.1.0
-  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:
@@ -88,16 +88,6 @@ flutter_launcher_icons:
     generate: true
   image_path: "assets/icon/app_icon.png"
   remove_alpha_ios: true # App Store는 투명도 불가
-
-# CustomColors.backgroundColorLight / backgroundColorDark (lib/constants/styles.dart)
-flutter_native_splash:
-  color: "#ffffff"
-  color_dark: "#000000"
-  image: assets/icon/app_icon.png
-  android_12:
-    color: "#ffffff"
-    color_dark: "#000000"
-    image: assets/icon/app_icon.png
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

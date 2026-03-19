@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
@@ -65,7 +67,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
       _animationController.value = 0.125;
     }
     if (widget.invitationToken != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _showInvitationSheetIfNeeded());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _showInvitationSheetIfNeeded(),
+      );
     }
   }
 
@@ -74,7 +78,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
     super.didUpdateWidget(oldWidget);
     if (widget.invitationToken != null &&
         widget.invitationToken != oldWidget.invitationToken) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _showInvitationSheetIfNeeded());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _showInvitationSheetIfNeeded(),
+      );
     }
     // 딥링크 등으로 탭 변경 시 동기화
     if (widget.tab != oldWidget.tab) {
@@ -130,9 +136,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
       final dbWeekday = selectedIndex + 1;
       final hasGroup = groups.any((g) => g.weekday == dbWeekday);
 
-      final weekdayIndex = hasGroup
-          ? selectedIndex
-          : null;
+      final weekdayIndex = hasGroup ? selectedIndex : null;
 
       final result = await context.push(
         PostingAlbumScreen.routeUrl,
@@ -149,9 +153,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(
-      context,
-    ).padding.bottom; // SafeArea 하단 패딩
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     final navBarHeight = 70.0; // 네비게이션 바 높이
     final totalBottomPadding = bottomPadding + navBarHeight + 20;
     return Scaffold(
@@ -199,13 +201,13 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
           Positioned(
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: Platform.isAndroid ? Paddings.scaffoldV : 0,
             child: SafeArea(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: _selectedIndex == 1 ? 300 : 60, // 고정 너비
+                    width: _selectedIndex == 1 ? 240 : 60, // 고정 너비
                     height: 60,
                     decoration: BoxDecoration(
                       color: isDarkMode(context)
@@ -231,7 +233,6 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
                             icon: FontAwesomeIcons.solidCalendarDays,
                             onTap: () => _onNavTap(0),
                           ),
-                          Gaps.h16,
                         ],
                         GestureDetector(
                           onTap: () => _onCenterButtonTap(),
@@ -261,7 +262,6 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
                           ),
                         ),
                         if (_selectedIndex == 1) ...[
-                          Gaps.h16,
                           NavigationTab(
                             text: "My",
                             isSelected: _selectedIndex == 2,

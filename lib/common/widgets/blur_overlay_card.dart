@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:bemyday/constants/styles.dart';
 import 'package:flutter/material.dart';
 
@@ -41,12 +39,15 @@ class BlurOverlayCard extends StatelessWidget {
           child: Container(
             height: height,
             decoration: BoxDecoration(
-              color: (dark
-                      ? CustomColors.backgroundColorDark
-                      : CustomColors.backgroundColorLight)
-                  .withValues(alpha: 0.3),
+              color:
+                  (dark
+                          ? CustomColors.backgroundColorDark
+                          : CustomColors.backgroundColorLight)
+                      .withValues(alpha: 0.3),
               border: Border.all(
-                color: dark ? CustomColors.borderDark : CustomColors.borderLight,
+                color: dark
+                    ? CustomColors.borderDark
+                    : CustomColors.borderLight,
                 width: 1,
               ),
               borderRadius: BorderRadius.circular(RValues.island),

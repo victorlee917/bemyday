@@ -52,10 +52,7 @@ class _TutorialFanCarouselState extends State<TutorialFanCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    final (_, cardH) = inviteCardDimensions(context);
-
     return SizedBox(
-      height: cardH + Sizes.size24,
       width: double.infinity,
       child: PageView.builder(
         controller: _pageController,
@@ -74,8 +71,10 @@ class _TutorialFanCarouselState extends State<TutorialFanCarousel> {
               } else {
                 value = _currentIndex.toDouble() - index;
               }
-              final scale = (1 - (value.abs() * (1 - _sideScale)))
-                  .clamp(_sideScale, 1.0);
+              final scale = (1 - (value.abs() * (1 - _sideScale))).clamp(
+                _sideScale,
+                1.0,
+              );
 
               return Transform.scale(
                 scale: scale,

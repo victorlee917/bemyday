@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:bemyday/common/widgets/cached_post_image.dart';
@@ -56,12 +57,10 @@ class PostContent extends ConsumerWidget {
   final VoidCallback onCloseTap;
   final void Function(Post post) onMoreTap;
   final VoidCallback? onPostTap;
-  final void Function(Post post, bool currentlyLiked, int currentCount) onLikeTap;
-  final void Function(
-    Post post, {
-    bool autofocus,
-    String? scrollToCommentId,
-  }) onCommentTap;
+  final void Function(Post post, bool currentlyLiked, int currentCount)
+  onLikeTap;
+  final void Function(Post post, {bool autofocus, String? scrollToCommentId})
+  onCommentTap;
   final void Function(String postId, String commentId) onCommentNudgeDismiss;
 
   @override
@@ -78,8 +77,9 @@ class PostContent extends ConsumerWidget {
     final shouldBlur = beforeReveal && !isOwnPost;
     final itemCount = allPosts.length;
 
-    final authorPosts =
-        allPosts.where((p) => p.authorId == post.authorId).toList();
+    final authorPosts = allPosts
+        .where((p) => p.authorId == post.authorId)
+        .toList();
     final authorPostIndex = authorPosts.indexOf(post) + 1;
     final authorPostCount = authorPosts.length;
 
@@ -150,8 +150,8 @@ class PostContent extends ConsumerWidget {
                     itemCount: itemCount,
                     onCloseTap: onCloseTap,
                     onMoreTap: isOwnPost ? () => onMoreTap(post) : null,
-                    onPostTap: weekIndex == null ||
-                            weekIndex == groupWeekNumber(group)
+                    onPostTap:
+                        weekIndex == null || weekIndex == groupWeekNumber(group)
                         ? onPostTap
                         : null,
                   ),
@@ -161,20 +161,25 @@ class PostContent extends ConsumerWidget {
                   right: 0,
                   bottom: 0,
                   child: SafeArea(
-                    child: PostBottomSection(
-                      post: post,
-                      authorProfileAsync: authorProfileAsync,
-                      detailsAsync: detailsAsync,
-                      shouldBlur: shouldBlur,
-                      authorPostIndex: authorPostIndex,
-                      authorPostCount: authorPostCount,
-                      likeOverride: likeOverride,
-                      likeCountOverride: likeCountOverride,
-                      dismissedCommentIdByPost: dismissedCommentIdByPost,
-                      onCommentNudgeDismiss: onCommentNudgeDismiss,
-                      onLikeTap: onLikeTap,
-                      onCommentTap: onCommentTap,
-                      onPostTap: onPostTap ?? () {},
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        bottom: Platform.isAndroid ? Paddings.scaffoldV : 0,
+                      ),
+                      child: PostBottomSection(
+                        post: post,
+                        authorProfileAsync: authorProfileAsync,
+                        detailsAsync: detailsAsync,
+                        shouldBlur: shouldBlur,
+                        authorPostIndex: authorPostIndex,
+                        authorPostCount: authorPostCount,
+                        likeOverride: likeOverride,
+                        likeCountOverride: likeCountOverride,
+                        dismissedCommentIdByPost: dismissedCommentIdByPost,
+                        onCommentNudgeDismiss: onCommentNudgeDismiss,
+                        onLikeTap: onLikeTap,
+                        onCommentTap: onCommentTap,
+                        onPostTap: onPostTap ?? () {},
+                      ),
                     ),
                   ),
                 ),

@@ -93,20 +93,28 @@ class _TutorialPostRevealState extends State<TutorialPostReveal>
               AnimatedBuilder(
                 animation: _blurOutOpacity,
                 builder: (context, _) {
-                  if (_blurOutOpacity.value <= 0)
+                  if (_blurOutOpacity.value <= 0) {
                     return const SizedBox.shrink();
+                  }
                   return Positioned.fill(
-                    child: ClipRect(
-                      clipBehavior: Clip.hardEdge,
-                      child: Opacity(
-                        opacity: _blurOutOpacity.value,
-                        child: ImageFiltered(
-                          imageFilter: Blurs.stackOverlay,
-                          child: Transform.scale(
-                            scale: 1.15,
-                            child: Image.asset(
-                              'assets/mockups/posts/post5.jpg',
-                              fit: BoxFit.cover,
+                    child: RepaintBoundary(
+                      child: ClipRect(
+                        clipBehavior: Clip.hardEdge,
+                        child: Opacity(
+                          opacity: _blurOutOpacity.value,
+                          child: ImageFiltered(
+                            imageFilter: ImageFilter.blur(
+                              sigmaX: 4,
+                              sigmaY: 4,
+                            ),
+                            child: Transform.scale(
+                              scale: 1.15,
+                              child: Image.asset(
+                                'assets/mockups/posts/post5.jpg',
+                                fit: BoxFit.cover,
+                                cacheWidth: 540,
+                                cacheHeight: 810,
+                              ),
                             ),
                           ),
                         ),
@@ -118,8 +126,9 @@ class _TutorialPostRevealState extends State<TutorialPostReveal>
               AnimatedBuilder(
                 animation: _blurOutOpacity,
                 builder: (context, _) {
-                  if (_blurOutOpacity.value <= 0)
+                  if (_blurOutOpacity.value <= 0) {
                     return const SizedBox.shrink();
+                  }
                   return Center(
                     child: Opacity(
                       opacity: _blurOutOpacity.value,

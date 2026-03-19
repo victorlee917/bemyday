@@ -29,9 +29,11 @@ function formatCountdown(ms: number): string {
 function InviteAvatar({
   nickname,
   avatarUrl,
+  fallbackTextColor = "white",
 }: {
   nickname: string;
   avatarUrl?: string | null;
+  fallbackTextColor?: "white" | "black";
 }) {
   const initial = nickname ? nickname[0].toUpperCase() : "?";
   const size = "clamp(24px, 15cqh, 64px)";
@@ -48,13 +50,14 @@ function InviteAvatar({
   }
   return (
     <div
-      className="rounded-full bg-white/30 flex items-center justify-center text-white font-semibold"
+      className="rounded-full bg-white/30 flex items-center justify-center font-semibold"
       style={{
         width: size,
         height: size,
         minWidth: 24,
         minHeight: 24,
         fontSize: "clamp(12px, 7.5cqh, 32px)",
+        color: fallbackTextColor,
       } as React.CSSProperties}
     >
       {initial}
@@ -83,6 +86,7 @@ export function InviteCard({
   const hasGradient = colors && colors.length >= 3;
   const defaultBg = "#f5f5f5";
   const hasAvatar = !!inviterAvatarUrl;
+  const textColor = hasGradient || hasAvatar ? "white" : "black";
 
   const overlayStyle = hasGradient
     ? {
@@ -126,8 +130,11 @@ export function InviteCard({
       {/* Content (cqh로 카드 높이에 맞춰 스케일) */}
       <div className="relative h-full flex flex-col justify-between p-[clamp(8px,3cqh,16px)]">
         <span
-          className="text-white font-semibold shrink-0"
-          style={{ fontSize: "clamp(10px, 2.8cqh, 12px)" } as React.CSSProperties}
+          className="font-semibold shrink-0"
+          style={{
+            fontSize: "clamp(10px, 2.8cqh, 12px)",
+            color: textColor,
+          } as React.CSSProperties}
         >
           Invitation
         </span>
@@ -138,10 +145,14 @@ export function InviteCard({
           <InviteAvatar
             nickname={inviterNickname}
             avatarUrl={inviterAvatarUrl}
+            fallbackTextColor={textColor as "white" | "black"}
           />
           <p
-            className="font-display text-white font-bold text-center leading-tight"
-            style={{ fontSize: "clamp(14px, 5.7cqh, 24px)" } as React.CSSProperties}
+            className="font-display font-bold text-center leading-tight"
+            style={{
+              fontSize: "clamp(14px, 5.7cqh, 24px)",
+              color: textColor,
+            } as React.CSSProperties}
           >
             Would You Be
             <br />
@@ -150,14 +161,19 @@ export function InviteCard({
         </div>
         <div className="text-center shrink-0">
           <p
-            className="text-white/50"
-            style={{ fontSize: "clamp(8px, 2.4cqh, 10px)" } as React.CSSProperties}
+            style={{
+              fontSize: "clamp(8px, 2.4cqh, 10px)",
+              color: textColor === "white" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
+            } as React.CSSProperties}
           >
             From.
           </p>
           <p
-            className="text-white font-semibold mt-0.5"
-            style={{ fontSize: "clamp(10px, 3.3cqh, 14px)" } as React.CSSProperties}
+            className="font-semibold mt-0.5"
+            style={{
+              fontSize: "clamp(10px, 3.3cqh, 14px)",
+              color: textColor,
+            } as React.CSSProperties}
           >
             {inviterNickname}
           </p>

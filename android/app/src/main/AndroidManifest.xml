@@ -54,6 +54,11 @@
                 <data android:scheme="https" android:host="bemyday.app" android:pathPrefix="/invitation" />
             </intent-filter>
         </activity>
+        <!-- image_cropper: UCropActivity -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <!-- Kakao Login: Redirect URI for loginWithKakaoTalk -->
         <activity
             android:name="com.kakao.sdk.flutter.AuthCodeCustomTabsActivity"

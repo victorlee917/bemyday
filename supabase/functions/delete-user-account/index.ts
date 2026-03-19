@@ -35,7 +35,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    await supabaseAuth.auth.admin.deleteUser(user.id);
+    // 1. prepare_user_deletion RPC (유저 토큰으로 호출 → auth.uid() 사용)
+    const { error: rpcError } = await supabaseUser.rpc("prepare_user_deletion");
+    if (rpcError) {
+      console.error("prepare_user_deletion failed:", rpcError);
+      return new Response(
+        JSON.stringify({ error: rpcError.message }),
+        { status: 400, headers: { ...corsHeaders(), "Content-Type": "application/json" } }
+      );
+    }
+
+    // 2. avatars 버킷에서 유저 파일 삭제 (FK 이슈 방지)
+    const { error: storageError } = await supabaseAuth.storage
+      .from("avatars")
+      .remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.webp`]);
+    if (storageError) {
+      console.warn("Avatar cleanup:", storageError);
+    }
+
+    // shouldSoftDelete: true → 동일 소셜 계정으로 재가입 가능 (provider_id 해시 처리)
+    const { error: deleteError } = await supabaseAuth.auth.admin.deleteUser(
+      user.id,
+      true,
+    );
+
+    if (deleteError) {
+      console.error("deleteUser failed:", deleteError);
+      return new Response(
+        JSON.stringify({ error: deleteError.message }),
+        { status: 400, headers: { ...corsHeaders(), "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
