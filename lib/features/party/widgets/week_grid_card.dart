@@ -137,7 +137,9 @@ class WeekGridCard extends ConsumerWidget {
                         profile?.nickname.characters.first ?? '?',
                         style: TextStyle(
                           fontSize: 9,
-                          color: Colors.white,
+                          color: isDarkMode(context)
+                              ? Colors.white
+                              : Colors.black,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

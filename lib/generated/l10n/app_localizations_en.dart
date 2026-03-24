@@ -110,17 +110,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pushNewPost(String nickname) {
-    return '$nickname posted in your group';
+    return '$nickname posted in your group 🎉';
   }
 
   @override
   String pushNewComment(String nickname) {
-    return '$nickname commented on your post';
+    return '$nickname commented on your post 💬';
   }
 
   @override
   String pushNewLike(String nickname) {
-    return '$nickname liked your post';
+    return '$nickname liked your post ❤️';
   }
 
   @override
@@ -327,6 +327,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get postingNoPhotosFound => 'No photos found';
+
+  @override
+  String get postingPhotoLoadFailed =>
+      'Could not load photo. If it\'s from iCloud, ensure it\'s downloaded and check your network.';
 
   @override
   String get postNoGroup => 'No group';

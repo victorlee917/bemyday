@@ -95,16 +95,17 @@ class _GroupPostStackWithBlurContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final blurHeightFactor = screenWidth < 330 ? 1.4 : 1.5;
     final stackHeight = postStackCardHeight * _scaleFactor;
-    final blurContainerHeight = stackHeight / 1.5;
+    final blurContainerHeight = stackHeight / blurHeightFactor;
     final dark = isDarkMode(context);
 
     final cardWidth = postStackCardHeight * ARatio.common;
     final postStackTotalWidth =
         cardWidth + (_postStackCardCount - 1) * _postStackSpacing;
     final postStackScaledWidth = postStackTotalWidth * _scaleFactor;
-    final availableWidth =
-        MediaQuery.of(context).size.width - Paddings.scaffoldH * 2;
+    final availableWidth = screenWidth - Paddings.scaffoldH * 2;
     final blurContainerWidth = (postStackScaledWidth * _blurWidthFactor).clamp(
       0.0,
       availableWidth * 0.85,
@@ -145,55 +146,52 @@ class _GroupPostStackWithBlurContent extends ConsumerWidget {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: blurContainerHeight,
+                // height: blurContainerHeight,
                 child: Center(
                   child: RepaintBoundary(
                     child: BlurOverlayCard(
-                    width: blurContainerWidth,
-                    height: blurContainerHeight,
-                    dark: dark,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          weekdays[weekdayIndex].name,
-                          style: GoogleFonts.darumadropOne(
-                            fontSize: Sizes.size20,
+                      width: blurContainerWidth,
+                      height: blurContainerHeight,
+                      dark: dark,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            weekdays[weekdayIndex].name,
+                            style: GoogleFonts.darumadropOne(
+                              fontSize: Sizes.size20,
+                            ),
                           ),
-                        ),
-                        Gaps.v16,
-                        _GroupAvatarStack(groupId: group.id, dark: dark),
-                        Gaps.v8,
-                        Text(
-                          displayName,
-                          style: TextStyle(
-                            fontSize: Sizes.size14,
-                            fontWeight: FontWeight.w600,
+                          Gaps.v16,
+                          _GroupAvatarStack(groupId: group.id, dark: dark),
+                          Gaps.v8,
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: Sizes.size14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        Gaps.v12,
-                        StatsCollection(
-                          stats: [
-                            StatItem(
-                              title: l10n.statWeeks,
-                              value: weeks,
-                            ),
-                            StatItem(
-                              title: l10n.statStreaks,
-                              value: group.streak,
-                            ),
-                            StatItem(
-                              title: l10n.statPosts,
-                              value: group.postCount,
-                            ),
-                          ],
-                        ),
-                      ],
+                          Gaps.v12,
+                          StatsCollection(
+                            stats: [
+                              StatItem(title: l10n.statWeeks, value: weeks),
+                              StatItem(
+                                title: l10n.statStreaks,
+                                value: group.streak,
+                              ),
+                              StatItem(
+                                title: l10n.statPosts,
+                                value: group.postCount,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
             ],
           ),
         ),
@@ -263,4 +261,3 @@ class _GroupAvatarStack extends ConsumerWidget {
     );
   }
 }
-

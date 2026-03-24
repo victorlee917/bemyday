@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/post/models/post.dart';
@@ -6,6 +8,9 @@ import 'package:bemyday/features/post/repositories/post_repository.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// 포스트 간 전환 시 상세를 잠시 재사용; 마지막 구독 해제 후 이 시간이 지나면 메모리에서 비움.
+const _postDetailsListenAwayCache = Duration(seconds: 45);
 
 final postRepositoryProvider = Provider<PostRepository>((ref) {
   return PostRepository();
@@ -62,7 +67,23 @@ final weekPostSummariesProvider = FutureProvider.family<
 
 /// 포스트 상세 (작성자 닉네임, 좋아요/댓글 수, 좋아요한 유저 닉네임)
 final postWithDetailsProvider =
-    FutureProvider.family<PostWithDetails, Post>((ref, post) async {
+    FutureProvider.autoDispose.family<PostWithDetails, Post>((ref, post) async {
+  final link = ref.keepAlive();
+  Timer? releaseTimer;
+
+  ref.onCancel(() {
+    releaseTimer?.cancel();
+    releaseTimer = Timer(_postDetailsListenAwayCache, link.close);
+  });
+
+  ref.onResume(() {
+    releaseTimer?.cancel();
+  });
+
+  ref.onDispose(() {
+    releaseTimer?.cancel();
+  });
+
   final repo = ref.read(postRepositoryProvider);
 
   final authorProfile =

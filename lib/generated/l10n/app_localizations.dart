@@ -289,19 +289,19 @@ abstract class AppLocalizations {
   /// No description provided for @pushNewPost.
   ///
   /// In en, this message translates to:
-  /// **'{nickname} posted in your group'**
+  /// **'{nickname} posted in your group 🎉'**
   String pushNewPost(String nickname);
 
   /// No description provided for @pushNewComment.
   ///
   /// In en, this message translates to:
-  /// **'{nickname} commented on your post'**
+  /// **'{nickname} commented on your post 💬'**
   String pushNewComment(String nickname);
 
   /// No description provided for @pushNewLike.
   ///
   /// In en, this message translates to:
-  /// **'{nickname} liked your post'**
+  /// **'{nickname} liked your post ❤️'**
   String pushNewLike(String nickname);
 
   /// Theme menu item
@@ -675,6 +675,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No photos found'**
   String get postingNoPhotosFound;
+
+  /// Error when loading photo from iCloud or device
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load photo. If it\'s from iCloud, ensure it\'s downloaded and check your network.'**
+  String get postingPhotoLoadFailed;
 
   /// Post screen when group is null
   ///

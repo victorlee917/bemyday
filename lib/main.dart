@@ -5,18 +5,22 @@ import 'package:bemyday/features/invite/repositories/invitation_repository.dart'
 import 'package:bemyday/features/push/push_notification_service.dart' deferred as push;
 import 'package:bemyday/features/start/start_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'firebase_options.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/core/providers.dart';
+import 'package:bemyday/features/home/providers/realtime_provider.dart';
 import 'package:bemyday/features/alarm/providers/alarm_provider.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
+import 'package:bemyday/features/profile/providers/profile_repository_provider.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/tutorial/tutorial_screen.dart';
 import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/features/theme/viewmodels/theme_viewmodel.dart';
 import 'package:bemyday/router.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,7 +58,14 @@ void main() async {
 
   await GoogleFonts.pendingFonts([GoogleFonts.darumadropOne()]);
 
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    realtimeClientOptions: const RealtimeClientOptions(
+      timeout: Duration(seconds: 30),
+      logLevel: RealtimeLogLevel.info,
+    ),
+  );
 
   if (kakaoNativeAppKey.isNotEmpty) {
     KakaoSdk.init(nativeAppKey: kakaoNativeAppKey);
@@ -72,19 +83,22 @@ void main() async {
 
   // 딥링크: 앱이 링크로 실행된 경우 초기 경로 설정 (초대 링크 전용)
   // getInitialLink()는 앱 재시작 후에도 이전 링크를 반환할 수 있으므로, 유효한 초대만 사용
+  // 디버그 재시작 시 stale 값으로 잘못된 리다이렉트 방지: release에서만 사용
   // 로그인: /home?invitation_token=TOKEN (바텀시트), 로그아웃: /start?invite_token=TOKEN (로그인 후 시트)
   String? initialLocation;
   try {
-    final initialUri = await AppLinks().getInitialLink();
-    final invitePath = _invitePathFromUri(initialUri);
-    if (invitePath != null) {
-      final token = invitePath.split('/').last;
-      final data = await InvitationRepository().getInvitationByToken(token);
-      if (data != null) {
-        final session = Supabase.instance.client.auth.currentSession;
-        initialLocation = session != null
-            ? '/home?invitation_token=$token'
-            : '${StartScreen.routeUrl}?invite_token=$token';
+    if (!kDebugMode) {
+      final initialUri = await AppLinks().getInitialLink();
+      final invitePath = _invitePathFromUri(initialUri);
+      if (invitePath != null) {
+        final token = invitePath.split('/').last;
+        final data = await InvitationRepository().getInvitationByToken(token);
+        if (data != null) {
+          final session = Supabase.instance.client.auth.currentSession;
+          initialLocation = session != null
+              ? '/home?invitation_token=$token'
+              : '${StartScreen.routeUrl}?invite_token=$token';
+        }
       }
     }
   } catch (_) {}
@@ -176,6 +190,39 @@ class BeMyDay extends ConsumerWidget {
       );
     });
 
+    // 로그인 시 Realtime 구독 (새 게시글/멤버 추가 시 HomeScreen 등 갱신)
+    ref.watch(homeRealtimeProvider);
+
+    // 푸시 권한 팝업에서 동의 시 앱 내 모든 알람 ON
+    ref.listen(notificationPermissionProvider, (prev, next) {
+      next.whenOrNull(
+        data: (status) {
+          if (status != AuthorizationStatus.authorized) return;
+          final wasDenied = prev?.valueOrNull == AuthorizationStatus.denied ||
+              prev?.valueOrNull == AuthorizationStatus.notDetermined;
+          final wasUnknown = prev?.valueOrNull == null;
+          if (wasDenied) {
+            ref
+                .read(alarmPreferencesProvider.notifier)
+                .enableAll()
+                .catchError((_) {});
+          } else if (wasUnknown) {
+            ref.read(alarmPreferencesProvider.future).then((prefs) {
+              if (!prefs.dailyReminder &&
+                  !prefs.newPost &&
+                  !prefs.newComment &&
+                  !prefs.newLike) {
+                ref
+                    .read(alarmPreferencesProvider.notifier)
+                    .enableAll()
+                    .catchError((_) {});
+              }
+            });
+          }
+        },
+      );
+    });
+
     // 로그아웃/계정 전환 시 유저별 캐시 무효화 + FCM 토큰 등록/해제
     ref.listen(authStateProvider, (prev, next) {
       final prevUserId = prev?.valueOrNull?.session?.user.id;
@@ -189,6 +236,10 @@ class BeMyDay extends ConsumerWidget {
           ref.read(alarmPreferencesProvider.future).then((prefs) {
             push.PushNotificationService.syncDailyReminder(prefs.dailyReminder);
           });
+          ref
+              .read(profileRepositoryProvider)
+              .syncTimezoneToProfile()
+              .catchError((_) {});
         } else {
           push.PushNotificationService.unregisterToken();
           push.PushNotificationService.cancelDailyReminder();

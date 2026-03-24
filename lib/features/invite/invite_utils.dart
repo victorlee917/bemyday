@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// InviteScreen·InvitationScreen 공통 시트 높이 비율
 double _inviteSheetHeightFactor(double availableHeight) {
-  return availableHeight < 680 ? 0.85 : 0.8;
+  return availableHeight < 680 ? 0.85 : 0.75;
 }
 
 /// InvitationScreen을 모달 시트로 표시 (InviteScreen과 동일한 높이)

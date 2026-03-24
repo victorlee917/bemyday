@@ -67,45 +67,49 @@ class FriendCard extends ConsumerWidget {
                 : CustomColors.borderLight,
           ),
         ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AvatarPackage(
-                  nickname: displayText.isNotEmpty
-                      ? displayText.substring(0, 1).toLowerCase()
-                      : '?',
-                  title: displayText,
-                  avatarWidget: group != null
-                      ? AvatarGroupStack(
-                          groupId: group!.id,
-                          radius: CustomSizes.avatarComment,
-                        )
-                      : null,
-                  subTitle: memberCountAsync?.isLoading == true
-                      ? '…'
-                      : subTitle,
-                ),
-              ],
-            ),
-            Gaps.v16,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: StatsCollection(
-                    stats: [
-                      StatItem(title: l10n.statWeeks, value: weeks),
-                      StatItem(title: l10n.statStreaks, value: streaks),
-                      StatItem(title: l10n.statPosts, value: posts),
-                    ],
+        child: SingleChildScrollView(
+          primary: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  AvatarPackage(
+                    nickname: displayText.isNotEmpty
+                        ? displayText.substring(0, 1).toLowerCase()
+                        : '?',
+                    title: displayText,
+                    avatarWidget: group != null
+                        ? AvatarGroupStack(
+                            groupId: group!.id,
+                            radius: CustomSizes.avatarComment,
+                          )
+                        : null,
+                    subTitle: memberCountAsync?.isLoading == true
+                        ? '…'
+                        : subTitle,
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+              Gaps.v16,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: StatsCollection(
+                      stats: [
+                        StatItem(title: l10n.statWeeks, value: weeks),
+                        StatItem(title: l10n.statStreaks, value: streaks),
+                        StatItem(title: l10n.statPosts, value: posts),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

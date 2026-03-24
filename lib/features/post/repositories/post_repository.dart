@@ -22,7 +22,9 @@ class PostRepository {
   ///
   /// - JPEG quality 75, 최대 1280px로 리사이즈 후 업로드
   /// - Storage 경로: {groupId}/{userId}_{timestamp}.jpg
-  Future<void> createPost(Group group, File imageFile, {String? caption}) async {
+  ///
+  /// 반환: 새 행의 `id`
+  Future<String> createPost(Group group, File imageFile, {String? caption}) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('로그인이 필요합니다');
 
@@ -51,13 +53,15 @@ class PostRepository {
 
     final weekIndex = groupWeekNumber(group);
 
-    await _client.from('posts').insert({
+    final row = await _client.from('posts').insert({
       'group_id': group.id,
       'author_id': userId,
       'week_index': weekIndex,
       'photo_url': path,
       'caption': caption,
-    });
+    }).select('id').single();
+
+    return row['id'] as String;
   }
 
   /// 현재 week에 해당하는 포스트 존재 여부

@@ -57,4 +57,24 @@ class AlarmPreferencesNotifier extends AsyncNotifier<AlarmPreferences> {
     await _repository.save(state.value!);
   }
 
+  /// 푸시 권한 동의 시 모든 알람 ON
+  Future<void> enableAll() async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final allOn = current.copyWith(
+      dailyReminder: true,
+      newPost: true,
+      newComment: true,
+      newLike: true,
+    );
+    if (current.dailyReminder &&
+        current.newPost &&
+        current.newComment &&
+        current.newLike) {
+      return;
+    }
+    state = AsyncData(allOn);
+    await _repository.save(allOn);
+    await PushNotificationService.syncDailyReminder(true);
+  }
 }

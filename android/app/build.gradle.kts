@@ -64,6 +64,8 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // image_cropper(UCrop)가 네트워크 이미지 다운로드 시 OkHttp 참조, R8 release 빌드에서 필요
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 flutter {

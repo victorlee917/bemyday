@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class Paddings {
   static const scaffoldH = Sizes.size16;
   static const scaffoldV = Sizes.size16;
-  static const profileV = Sizes.size48;
+  static const profileV = Sizes.size32;
   static const tileH = Sizes.size24;
   static const tileV = Sizes.size20;
   static const buttonH = Sizes.size16;

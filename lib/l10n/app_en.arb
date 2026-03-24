@@ -132,22 +132,28 @@
   "@pushDailyReminder": {
     "description": "Push notification message for daily reminder"
   },
-  "pushNewPost": "{nickname} posted in your group",
+  "pushNewPost": "{nickname} posted in your group 🎉",
   "@pushNewPost": {
     "placeholders": {
-      "nickname": { "type": "String" }
+      "nickname": {
+        "type": "String"
+      }
     }
   },
-  "pushNewComment": "{nickname} commented on your post",
+  "pushNewComment": "{nickname} commented on your post 💬",
   "@pushNewComment": {
     "placeholders": {
-      "nickname": { "type": "String" }
+      "nickname": {
+        "type": "String"
+      }
     }
   },
-  "pushNewLike": "{nickname} liked your post",
+  "pushNewLike": "{nickname} liked your post ❤️",
   "@pushNewLike": {
     "placeholders": {
-      "nickname": { "type": "String" }
+      "nickname": {
+        "type": "String"
+      }
     }
   },
   "myTheme": "Theme",
@@ -428,6 +434,10 @@
   "postingNoPhotosFound": "No photos found",
   "@postingNoPhotosFound": {
     "description": "Empty album state message"
+  },
+  "postingPhotoLoadFailed": "Could not load photo. If it's from iCloud, ensure it's downloaded and check your network.",
+  "@postingPhotoLoadFailed": {
+    "description": "Error when loading photo from iCloud or device"
   },
   "postNoGroup": "No group",
   "@postNoGroup": {

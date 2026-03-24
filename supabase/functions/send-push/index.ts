@@ -27,6 +27,10 @@ const MESSAGES: Record<
     title: "Be My Day",
     body: `${p.liker_nickname ?? "Someone"} liked your post`,
   }),
+  new_member: (p) => ({
+    title: "Be My Day",
+    body: `${p.invitee_nickname ?? "Someone"} is your ${p.weekday_name ?? "day"}`,
+  }),
 };
 
 async function getFcmAccessToken(serviceAccount: {

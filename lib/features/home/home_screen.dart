@@ -32,6 +32,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _weekdayIndex = 0;
   bool _userHasNavigated = false;
 
+  /// 요일(0~6)로 다시 들어올 때마다 증가 → 이름 없는 그룹 헤더 닉네임 재추첨
+  final Map<int, int> _headlineShuffleEpoch = {};
+
   /// 최초 포커스 요일: 남은 시간 가장 적은 그룹 → 없으면 당일 요일
   int _computeInitialFocusWeekdayIndex(List<Group> groups) {
     return computeSoonestWeekdayIndex(groups);
@@ -55,11 +58,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _onPageChanged(int page) {
     _userHasNavigated = true;
     final newWeekdayIndex = page % 7;
-    if (_weekdayIndex != newWeekdayIndex) {
-      setState(() {
-        _weekdayIndex = newWeekdayIndex;
-      });
-    }
+    // _syncWeekdayFromPage가 스크롤 중에 이미 _weekdayIndex를 맞추므로,
+    // 여기서는 비교 없이 "도착한 페이지" 요일만 항상 bump 해야 재진입 시 닉네임이 바뀐다.
+    setState(() {
+      _headlineShuffleEpoch[newWeekdayIndex] =
+          (_headlineShuffleEpoch[newWeekdayIndex] ?? 0) + 1;
+      _weekdayIndex = newWeekdayIndex;
+    });
   }
 
   @override
@@ -160,6 +165,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ? WeekdayOccupied(
                                 weekdayIndex: weekdayIndex,
                                 group: group,
+                                shuffleEpoch:
+                                    _headlineShuffleEpoch[weekdayIndex] ?? 0,
                               )
                             : VacantPage(
                                 message:

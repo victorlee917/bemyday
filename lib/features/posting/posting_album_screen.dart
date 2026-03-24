@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:bemyday/common/widgets/close_app_bar_button.dart';
@@ -7,24 +8,31 @@ import 'package:bemyday/common/widgets/sheet/sheet_select.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/constants/transitions.dart';
-import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/group/utils.dart';
 import 'package:bemyday/features/invite/invite_utils.dart';
-import 'package:bemyday/features/post/providers/post_provider.dart';
 import 'package:bemyday/features/posting/posting_decorate_screen.dart';
 import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:go_router/go_router.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class PostingAlbumScreen extends ConsumerStatefulWidget {
   final int? selectedWeekdayIndex;
+  final bool replaceOnPostSuccess;
 
-  const PostingAlbumScreen({super.key, this.selectedWeekdayIndex});
+  /// PostScreen에서 주별 목록(`weekIndex` 지정)으로 들어온 경우, 포스팅 후 같은 주로 돌아가기 위해 전달.
+  final int? postScreenWeekIndex;
+
+  const PostingAlbumScreen({
+    super.key,
+    this.selectedWeekdayIndex,
+    this.replaceOnPostSuccess = false,
+    this.postScreenWeekIndex,
+  });
   static const routeName = "postingAlbum";
   static const routeUrl = "/posting/album";
 
@@ -39,12 +47,33 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
   bool _isLoading = true;
   bool _isLoadingAlbumPicker = false;
   bool _hasPermission = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _currentPage = 0;
+  static const _pageSize = 100;
   final Map<String, Uint8List> _thumbnailCache = {};
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _requestPermissionAndLoadPhotos();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_hasMore || _isLoadingMore || _selectedAlbum == null) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    if (currentScroll >= maxScroll - 400) {
+      _loadMorePhotos();
+    }
   }
 
   Future<void> _requestPermissionAndLoadPhotos() async {
@@ -95,11 +124,37 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
   Future<void> _loadPhotos() async {
     if (_selectedAlbum == null) return;
 
-    final assets = await _selectedAlbum!.getAssetListPaged(page: 0, size: 100);
+    setState(() {
+      _currentPage = 0;
+      _hasMore = true;
+    });
 
+    final assets =
+        await _selectedAlbum!.getAssetListPaged(page: 0, size: _pageSize);
+
+    if (!mounted) return;
     setState(() {
       _assets = assets;
+      _hasMore = assets.length >= _pageSize;
       _isLoading = false;
+    });
+  }
+
+  Future<void> _loadMorePhotos() async {
+    if (_selectedAlbum == null || _isLoadingMore || !_hasMore) return;
+
+    setState(() => _isLoadingMore = true);
+
+    final nextPage = _currentPage + 1;
+    final newAssets =
+        await _selectedAlbum!.getAssetListPaged(page: nextPage, size: _pageSize);
+
+    if (!mounted) return;
+    setState(() {
+      _assets = [..._assets, ...newAssets];
+      _currentPage = nextPage;
+      _hasMore = newAssets.length >= _pageSize;
+      _isLoadingMore = false;
     });
   }
 
@@ -126,25 +181,18 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
     );
 
     final thumbnail = _thumbnailCache[asset.id];
-    final result = await Navigator.of(context).push(
+    await Navigator.of(context).push(
       heroPageRoute(
         child: PostingDecorateScreen(
           asset: asset,
           thumbnail: thumbnail,
           selectedWeekdayIndex: effectiveIndex,
+          replaceOnPostSuccess: widget.replaceOnPostSuccess,
+          postScreenWeekIndex: widget.postScreenWeekIndex,
         ),
       ),
     );
-
-    if (result is Group && mounted) {
-      ref.invalidate(hasCurrentWeekPostsProvider(result));
-      ref.invalidate(currentWeekPostsProvider(result));
-      ref.invalidate(weekPostSummariesProvider(result));
-      ref.invalidate(currentUserGroupsProvider);
-      // 최신 포스트 목록이 갱신된 뒤 PostScreen으로 이동하도록 대기
-      await ref.read(currentWeekPostsProvider(result).future);
-      if (mounted) context.pop(result);
-    }
+    // 포스트 성공 시 PostingDecorateScreen에서 posting 전부 pop 후 PostScreen으로 이동
   }
 
   void _onCloseTap() {
@@ -284,6 +332,8 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
       children: [
         Expanded(
           child: GridView.builder(
+            controller: _scrollController,
+            cacheExtent: 500,
             padding: EdgeInsets.all(Sizes.size2),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
@@ -291,10 +341,15 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
               crossAxisSpacing: Sizes.size2,
               mainAxisSpacing: Sizes.size2,
             ),
-            itemCount: _assets.length,
+            itemCount: _assets.length + (_hasMore && _isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
+              if (index >= _assets.length) {
+                return const Padding(
+                  padding: EdgeInsets.all(Sizes.size16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
               final asset = _assets[index];
-
               return _ThumbnailTile(
                 asset: asset,
                 thumbnailCache: _thumbnailCache,
@@ -309,15 +364,15 @@ class _PostingAlbumScreenState extends ConsumerState<PostingAlbumScreen> {
 }
 
 class _ThumbnailTile extends StatefulWidget {
-  final AssetEntity asset;
-  final Map<String, Uint8List> thumbnailCache;
-  final VoidCallback onTap;
-
   const _ThumbnailTile({
     required this.asset,
     required this.thumbnailCache,
     required this.onTap,
   });
+
+  final AssetEntity asset;
+  final Map<String, Uint8List> thumbnailCache;
+  final VoidCallback onTap;
 
   @override
   State<_ThumbnailTile> createState() => _ThumbnailTileState();
@@ -325,7 +380,7 @@ class _ThumbnailTile extends StatefulWidget {
 
 class _ThumbnailTileState extends State<_ThumbnailTile> {
   Uint8List? _thumbnail;
-  bool _isLoaded = false;
+  bool _loaded = false;
 
   @override
   void initState() {
@@ -333,36 +388,46 @@ class _ThumbnailTileState extends State<_ThumbnailTile> {
     final cached = widget.thumbnailCache[widget.asset.id];
     if (cached != null) {
       _thumbnail = cached;
-      _isLoaded = true;
+      _loaded = true;
     } else {
-      _loadThumbnail();
+      _load();
     }
   }
 
-  Future<void> _loadThumbnail() async {
-    final data = await widget.asset.thumbnailDataWithSize(
-      const ThumbnailSize(300, 300),
-    );
-
-    if (data != null && mounted) {
-      widget.thumbnailCache[widget.asset.id] = data;
-      setState(() {
-        _thumbnail = data;
-        _isLoaded = true;
-      });
+  Future<void> _load() async {
+    try {
+      final data = await widget.asset.thumbnailDataWithSize(
+        const ThumbnailSize(300, 300),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => null,
+      );
+      if (data != null && mounted) {
+        widget.thumbnailCache[widget.asset.id] = data;
+        setState(() {
+          _thumbnail = data;
+          _loaded = true;
+        });
+      } else if (mounted) {
+        setState(() => _loaded = true);
+      }
+    } on PlatformException catch (_) {
+      if (mounted) setState(() => _loaded = true);
+    } catch (_) {
+      if (mounted) setState(() => _loaded = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isLoaded || _thumbnail == null) {
+    if (!_loaded || _thumbnail == null) {
       return Container(
         color: isDarkMode(context)
             ? CustomColors.clickableAreaDark
             : CustomColors.clickableAreaLight,
+        child: const Center(child: CircularProgressIndicator()),
       );
     }
-
     return GestureDetector(
       onTap: widget.onTap,
       child: Hero(

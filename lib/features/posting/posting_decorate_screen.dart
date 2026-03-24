@@ -2,6 +2,9 @@ import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/avatar/avatar_package.dart';
 import 'package:bemyday/common/widgets/sheet/sheet_weekday_picker.dart';
 import 'package:bemyday/features/group/utils.dart';
+import 'package:bemyday/features/post/models/post.dart';
+import 'package:bemyday/features/post/post_screen.dart';
+import 'package:bemyday/features/post/providers/post_provider.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
@@ -10,9 +13,13 @@ import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/invite/invite_utils.dart';
 import 'package:bemyday/features/posting/viewmodels/posting_viewmodel.dart';
+import 'dart:io';
+
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -21,12 +28,18 @@ class PostingDecorateScreen extends ConsumerStatefulWidget {
   final AssetEntity asset;
   final Uint8List? thumbnail;
   final int? selectedWeekdayIndex;
+  final bool replaceOnPostSuccess;
+
+  /// [PostScreen]이 특정 `weekIndex`로 열려 있을 때 포스팅 후 동일 주 목록으로 복귀.
+  final int? postScreenWeekIndex;
 
   const PostingDecorateScreen({
     super.key,
     required this.asset,
     this.thumbnail,
     this.selectedWeekdayIndex,
+    this.replaceOnPostSuccess = false,
+    this.postScreenWeekIndex,
   });
 
   static const routeName = "postingDecorate";
@@ -88,9 +101,14 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
       w = (w * scale).round();
       h = (h * scale).round();
     }
-    final data = await widget.asset.thumbnailDataWithSize(ThumbnailSize(w, h));
-    if (data != null && mounted) {
-      setState(() => _highResImage = data);
+    try {
+      final data =
+          await widget.asset.thumbnailDataWithSize(ThumbnailSize(w, h));
+      if (data != null && mounted) {
+        setState(() => _highResImage = data);
+      }
+    } on PlatformException catch (_) {
+      if (mounted) setState(() => _highResImage = widget.thumbnail);
     }
   }
 
@@ -129,14 +147,75 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
     final group = groupForWeekday(groups, weekdayIndex);
     if (group == null) return;
 
-    final file = await widget.asset.file;
-    if (file == null || !mounted) return;
-
     setState(() => _isPosting = true);
+    File? file;
     try {
-      await ref.read(postingViewModelProvider).createPost(group, file);
+      file ??= await widget.asset.loadFile(isOrigin: false);
+      file ??= await widget.asset.loadFile(isOrigin: true);
+    } on PlatformException catch (e) {
+      final isIcloudError = e.code.contains('1006') ||
+          e.code.contains('CloudPhotoLibraryErrorDomain') ||
+          (e.message?.contains('CloudPhotoLibraryErrorDomain') ?? false);
+      if (isIcloudError && mounted) {
+        setState(() => _isPosting = false);
+        showAppSnackBar(
+          context,
+          AppLocalizations.of(context)!.postingPhotoLoadFailed,
+        );
+        return;
+      }
+      rethrow;
+    }
+    if (file == null || !mounted) {
+      if (mounted) setState(() => _isPosting = false);
+      return;
+    }
+
+    try {
+      final newPostId = await ref.read(postingViewModelProvider).createPost(
+            group,
+            file,
+          );
       if (mounted) {
-        Navigator.of(context).pop(group);
+        ref.invalidate(hasCurrentWeekPostsProvider(group));
+        ref.invalidate(currentWeekPostsProvider(group));
+        ref.invalidate(weekPostSummariesProvider(group));
+        ref.invalidate(currentUserGroupsProvider);
+        final weekIdx = widget.postScreenWeekIndex;
+        if (weekIdx != null) {
+          ref.invalidate(
+            weekPostsProvider((group: group, weekIndex: weekIdx)),
+          );
+        }
+        // 최신 목록을 먼저 가져와야 PostScreen이 올바른 index / focusPostId 사용
+        await ref
+            .read(currentWeekPostsProvider(group).future)
+            .timeout(const Duration(seconds: 5), onTimeout: () => <Post>[]);
+        if (weekIdx != null) {
+          await ref
+              .read(
+                weekPostsProvider((group: group, weekIndex: weekIdx)).future,
+              )
+              .timeout(const Duration(seconds: 5), onTimeout: () => <Post>[]);
+        }
+        if (!mounted) return;
+        final router = GoRouter.of(context);
+        Navigator.of(context).pop(); // Decorate
+        Navigator.of(context).pop(); // Album
+        final extra = <String, dynamic>{
+          'group': group,
+          'startFromLatest': true,
+          'focusPostId': newPostId,
+          if (weekIdx != null) 'weekIndex': weekIdx,
+        };
+        if (widget.replaceOnPostSuccess) {
+          router.pushReplacement(
+            PostScreen.routeUrl,
+            extra: extra,
+          );
+        } else {
+          router.push(PostScreen.routeUrl, extra: extra);
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -304,6 +304,7 @@ GoRouter createRouter(
               group: extra['group'] as Group?,
               weekIndex: extra['weekIndex'] as int?,
               startFromLatest: extra['startFromLatest'] as bool? ?? false,
+              focusPostId: extra['focusPostId'] as String?,
             );
           } else {
             child = PostScreen(group: extra as Group?);
@@ -330,10 +331,18 @@ GoRouter createRouter(
         path: PostingAlbumScreen.routeUrl,
         name: PostingAlbumScreen.routeName,
         pageBuilder: (context, state) {
-          final selectedWeekdayIndex = state.extra as int?;
+          final extra = state.extra;
+          final int? selectedWeekdayIndex =
+              extra is Map ? extra['selectedWeekdayIndex'] as int? : extra as int?;
+          final bool replaceOnPostSuccess =
+              extra is Map ? (extra['replaceOnPostSuccess'] as bool? ?? false) : false;
+          final int? postScreenWeekIndex =
+              extra is Map ? extra['postScreenWeekIndex'] as int? : null;
           return slideUpTransitionPage(
             child: PostingAlbumScreen(
               selectedWeekdayIndex: selectedWeekdayIndex,
+              replaceOnPostSuccess: replaceOnPostSuccess,
+              postScreenWeekIndex: postScreenWeekIndex,
             ),
           );
         },

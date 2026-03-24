@@ -6,6 +6,8 @@
 .DS_Store
 .env
 .env.*
+# Supabase CLI local cache
+supabase/.temp/
 .mcp.json
 .atom/
 .build/

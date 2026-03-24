@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:bemyday/common/widgets/avatar/avatar_group_stack.dart';
 import 'package:bemyday/common/widgets/timeleft_chip.dart';
 import 'package:bemyday/constants/gaps.dart';
@@ -16,15 +18,42 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// [get_group_members_ordered] 순서: [다른 멤버…, 현재 유저]. 이름 없을 때만 peers 중 하나.
+/// [shuffleEpoch]는 해당 요일 페이지에 다시 들어올 때마다 올려 다른 멤버가 나오게 함.
+String _headlineDisplayName(
+  Group group,
+  List<String> orderedNicknames,
+  int shuffleEpoch,
+) {
+  final named = group.name?.trim();
+  if (named != null && named.isNotEmpty) return named;
+
+  if (orderedNicknames.isEmpty) return '…';
+  if (orderedNicknames.length < 2) return orderedNicknames.first;
+
+  final others =
+      orderedNicknames.sublist(0, orderedNicknames.length - 1);
+  final seed = Object.hash(
+    group.id.hashCode,
+    shuffleEpoch,
+    Object.hashAll(others),
+  );
+  return others[Random(seed).nextInt(others.length)];
+}
+
 class WeekdayOccupied extends ConsumerWidget {
   const WeekdayOccupied({
     super.key,
     required this.weekdayIndex,
     required this.group,
+    required this.shuffleEpoch,
   });
 
   final int weekdayIndex;
   final Group group;
+
+  /// [HomeScreen]에서 해당 요일로 스와이프해 들어올 때마다 증가.
+  final int shuffleEpoch;
 
   void _onAvatarTap(BuildContext context) {
     context.push(PartyScreen.routeUrl, extra: group);
@@ -32,8 +61,15 @@ class WeekdayOccupied extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final displayName =
-        ref.watch(groupDisplayNameProvider(group.id)).valueOrNull ?? '…';
+    final displayName = ref
+        .watch(groupMemberNicknamesProvider(group.id))
+        .when(
+          data: (nicks) => _headlineDisplayName(group, nicks, shuffleEpoch),
+          loading: () => group.name?.trim().isNotEmpty == true
+              ? group.name!.trim()
+              : '…',
+          error: (_, __) => '…',
+        );
 
     return Padding(
       padding: EdgeInsetsGeometry.only(top: Paddings.profileV),

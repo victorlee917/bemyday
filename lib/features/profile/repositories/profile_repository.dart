@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:bemyday/features/profile/models/profile.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// [Repository] 프로필 API - Supabase profiles 테이블 연동
@@ -14,6 +15,30 @@ class ProfileRepository {
   /// 프로필 없으면 생성 (soft delete 후 재가입 등)
   Future<void> ensureProfile() async {
     await _client.rpc('ensure_profile', params: {});
+  }
+
+  /// 기기 timezone을 프로필에 동기화 (요일 언락 푸시의 그룹 기준 시간용)
+  /// owner인 그룹 중 week_boundary_timezone이 UTC/미설정인 경우에도 업데이트
+  Future<void> syncTimezoneToProfile() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final tz = await FlutterTimezone.getLocalTimezone();
+      if (tz.isEmpty) return;
+      await _client.from('profiles').update({'timezone': tz}).eq('id', userId);
+      await _client
+          .from('groups')
+          .update({'week_boundary_timezone': tz})
+          .eq('owner_id', userId)
+          .isFilter('week_boundary_timezone', null);
+      await _client
+          .from('groups')
+          .update({'week_boundary_timezone': tz})
+          .eq('owner_id', userId)
+          .eq('week_boundary_timezone', 'UTC');
+    } catch (_) {
+      // timezone 조회/업데이트 실패 시 무시
+    }
   }
 
   /// 프로필 조회 (닉네임, 프로필 사진)

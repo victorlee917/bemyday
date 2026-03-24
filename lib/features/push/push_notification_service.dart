@@ -176,7 +176,7 @@ class PushNotificationService {
     } catch (_) {}
   }
 
-  /// Daily reminder: 매일 22시 로컬 알림 (서버 없음)
+  /// Daily reminder: 매일 22시 로컬 알림
   static Future<void> scheduleDailyReminder() async {
     try {
       final local = tz.local;
@@ -226,6 +226,7 @@ class PushNotificationService {
   }
 
   /// Daily reminder 동기화 (enabled면 예약, 아니면 취소)
+  /// 요일 언락은 별도로 서버 FCM(그룹 기준 00:00)으로 발송
   static Future<void> syncDailyReminder(bool enabled) async {
     if (enabled) {
       await scheduleDailyReminder();

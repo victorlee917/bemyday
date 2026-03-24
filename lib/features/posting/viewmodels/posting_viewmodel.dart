@@ -17,9 +17,10 @@ class PostingViewModel {
   /// 포스트 생성
   ///
   /// 성공 시 반환. 실패 시 예외 발생.
-  Future<void> createPost(Group group, File file) async {
-    await ref.read(postRepositoryProvider).createPost(group, file);
+  Future<String> createPost(Group group, File file) async {
+    final id = await ref.read(postRepositoryProvider).createPost(group, file);
     ref.invalidate(currentUserGroupsProvider);
+    return id;
   }
 }
 

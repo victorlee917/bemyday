@@ -22,6 +22,7 @@ class PostScreen extends ConsumerStatefulWidget {
     this.group,
     this.weekIndex,
     this.startFromLatest = false,
+    this.focusPostId,
   });
 
   static const routeName = "post";
@@ -30,6 +31,9 @@ class PostScreen extends ConsumerStatefulWidget {
   final Group? group;
   final int? weekIndex;
   final bool startFromLatest;
+
+  /// 포스팅 직후 열릴 때 이 ID에 해당하는 슬라이드로 이동 (목록에 있을 때).
+  final String? focusPostId;
 
   @override
   ConsumerState<PostScreen> createState() => _PostScreenState();
@@ -44,6 +48,9 @@ class _PostScreenState extends ConsumerState<PostScreen>
 
   /// 넛지 배너 탭 시 해당 댓글은 더 이상 표시하지 않음 (postId -> commentId)
   final Map<String, String> _dismissedCommentIdByPost = {};
+
+  /// 이 화면 인스턴스에서 주 목록을 처음 받은 뒤 한 번만 상세를 강제 새로고침 (다시 들어올 때는 항상 최신).
+  bool _didInitialPostDetailsInvalidate = false;
 
   double _dragOffset = 0;
   late final AnimationController _dragAnimController;
@@ -127,24 +134,27 @@ class _PostScreenState extends ConsumerState<PostScreen>
   VoidCallback _dismissListener = () {};
   VoidCallback _snapBackListener = () {};
 
-  void _onTapUp(TapUpDetails details, int itemCount) {
+  void _onTapUp(TapUpDetails details, List<Post> allPosts) {
+    final itemCount = allPosts.length;
     final screenWidth = MediaQuery.of(context).size.width;
     final tapX = details.globalPosition.dx;
     final idx = _currentIndex ?? 0;
     if (tapX < screenWidth / 2) {
       if (idx > 0) {
+        final newIdx = idx - 1;
         _userNavigated = true;
         setState(() {
-          _currentIndex = idx - 1;
+          _currentIndex = newIdx;
           _likeOverride = null;
           _likeCountOverride = null;
         });
       }
     } else {
       if (idx < itemCount - 1) {
+        final newIdx = idx + 1;
         _userNavigated = true;
         setState(() {
-          _currentIndex = idx + 1;
+          _currentIndex = newIdx;
           _likeOverride = null;
           _likeCountOverride = null;
         });
@@ -208,20 +218,15 @@ class _PostScreenState extends ConsumerState<PostScreen>
   void _onPostTap() async {
     final group = widget.group;
     final weekdayIndex = group != null ? (group.weekday - 1) : 0;
-    final result = await context.push(
+    await context.push(
       PostingAlbumScreen.routeUrl,
-      extra: weekdayIndex,
+      extra: {
+        'selectedWeekdayIndex': weekdayIndex,
+        'replaceOnPostSuccess': true,
+        if (widget.weekIndex != null) 'postScreenWeekIndex': widget.weekIndex,
+      },
     );
-    if (result is Group && mounted) {
-      ref.invalidate(currentWeekPostsProvider(result));
-      ref.invalidate(hasCurrentWeekPostsProvider(result));
-      ref.invalidate(weekPostSummariesProvider(result));
-      ref.invalidate(currentUserGroupsProvider);
-      context.pushReplacement(
-        PostScreen.routeUrl,
-        extra: {'group': result, 'startFromLatest': true},
-      );
-    }
+    // 포스트 성공 시 PostingDecorateScreen에서 기존 PostScreen을 대체하여 방금 올린 포스트 표시
   }
 
   void _onMoreTap(Post post) async {
@@ -322,18 +327,43 @@ class _PostScreenState extends ConsumerState<PostScreen>
               }
               return Container(color: Colors.black);
             }
-            final targetIndex = widget.startFromLatest && !_userNavigated
-                ? posts.length - 1
-                : _currentIndex ?? 0;
-            final idx = targetIndex.clamp(0, posts.length - 1);
-            _currentIndex = idx;
-            final post = posts[idx];
-            _precacheAdjacentImages(posts, idx);
+            if (!_didInitialPostDetailsInvalidate) {
+              _didInitialPostDetailsInvalidate = true;
+              // PostContent의 watch보다 먼저 호출해 첫 페치와 invalidate가 겹치지 않게 함.
+              for (final p in posts) {
+                ref.invalidate(postWithDetailsProvider(p));
+              }
+            }
+            final int idx;
+            if (!_userNavigated) {
+              final focus = widget.focusPostId;
+              if (focus != null) {
+                final i = posts.indexWhere((p) => p.id == focus);
+                if (i >= 0) {
+                  idx = i;
+                } else {
+                  idx = widget.startFromLatest
+                      ? posts.length - 1
+                      : (_currentIndex ?? 0);
+                }
+              } else if (widget.startFromLatest) {
+                idx = posts.length - 1;
+              } else {
+                idx = _currentIndex ?? 0;
+              }
+            } else {
+              idx = _currentIndex ?? 0;
+            }
+            final clampedIdx = idx.clamp(0, posts.length - 1);
+            _currentIndex = clampedIdx;
+            final post = posts[clampedIdx];
+            _precacheAdjacentImages(posts, clampedIdx);
             return PostContent(
+              key: ValueKey(post.id),
               group: group,
               post: post,
               allPosts: posts,
-              currentIndex: idx,
+              currentIndex: clampedIdx,
               weekIndex: widget.weekIndex,
               dragOffset: _dragOffset,
               likeOverride: _likeOverride,

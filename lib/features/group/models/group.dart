@@ -26,6 +26,13 @@ class Group {
   final DateTime? streakUpdatedAt;
   final DateTime createdAt;
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is Group && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+
   factory Group.fromJson(Map<String, dynamic> json) {
     return Group(
       id: json['id'] as String,

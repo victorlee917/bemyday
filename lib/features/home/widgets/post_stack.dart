@@ -35,11 +35,25 @@ class PostStack extends ConsumerWidget {
 
   static const int _maxVisible = 4;
 
-  void _onPostTap(BuildContext context) {
+  void _onPostStackTap(BuildContext context) {
     if (onTap != null) {
       onTap!();
     } else {
-      context.push(PostScreen.routeUrl, extra: group);
+      context.push(
+        PostScreen.routeUrl,
+        extra: {'group': group, 'startFromLatest': true},
+      );
+    }
+  }
+
+  void _onBadgeTap(BuildContext context) {
+    if (onTap != null) {
+      onTap!();
+    } else {
+      context.push(
+        PostScreen.routeUrl,
+        extra: {'group': group, 'startFromLatest': false},
+      );
     }
   }
 
@@ -71,7 +85,7 @@ class PostStack extends ConsumerWidget {
         final cardCount = visible.length;
 
         return GestureDetector(
-          onTap: () => _onPostTap(context),
+          onTap: () => _onPostStackTap(context),
           child: FractionallySizedBox(
             heightFactor: 0.95,
             child: LayoutBuilder(
@@ -146,7 +160,11 @@ class PostStack extends ConsumerWidget {
                       Positioned(
                         left: lastCardRight - Sizes.size64,
                         top: cardBottom - Sizes.size28,
-                        child: PostCountBadge(count: totalCount),
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _onBadgeTap(context),
+                          child: PostCountBadge(count: totalCount),
+                        ),
                       ),
                   ],
                 );

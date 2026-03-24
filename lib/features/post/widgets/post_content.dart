@@ -51,7 +51,7 @@ class PostContent extends ConsumerWidget {
   final bool? likeOverride;
   final int? likeCountOverride;
   final Map<String, String> dismissedCommentIdByPost;
-  final void Function(TapUpDetails details, int itemCount) onTapUp;
+  final void Function(TapUpDetails details, List<Post> allPosts) onTapUp;
   final void Function(DragUpdateDetails details) onVerticalDragUpdate;
   final void Function(DragEndDetails details) onVerticalDragEnd;
   final VoidCallback onCloseTap;
@@ -91,7 +91,7 @@ class PostContent extends ConsumerWidget {
         : BorderRadius.zero;
 
     return GestureDetector(
-      onTapUp: (d) => onTapUp(d, itemCount),
+      onTapUp: (d) => onTapUp(d, allPosts),
       onVerticalDragUpdate: onVerticalDragUpdate,
       onVerticalDragEnd: onVerticalDragEnd,
       child: ColoredBox(
