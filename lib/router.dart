@@ -300,14 +300,26 @@ GoRouter createRouter(
           final extra = state.extra;
           final Widget child;
           if (extra is Map) {
+            final g = extra['group'] as Group?;
+            final focusId = extra['focusPostId'] as String?;
+            // 동일 /post 라우트라도 focusPostId 등이 바뀌면 State 재사용되지 않게 함
+            // (이전에 _userNavigated=true인 채로 포스팅 후 복귀하면 예전 슬라이드에 고정되던 문제)
             child = PostScreen(
-              group: extra['group'] as Group?,
+              key: ValueKey(
+                '${g?.id ?? 'nogroup'}|${extra['weekIndex']}|'
+                '${focusId ?? 'nofocus'}|${extra['startFromLatest']}',
+              ),
+              group: g,
               weekIndex: extra['weekIndex'] as int?,
               startFromLatest: extra['startFromLatest'] as bool? ?? false,
-              focusPostId: extra['focusPostId'] as String?,
+              focusPostId: focusId,
             );
           } else {
-            child = PostScreen(group: extra as Group?);
+            final g = extra as Group?;
+            child = PostScreen(
+              key: ValueKey('post-${g?.id ?? 'none'}'),
+              group: g,
+            );
           }
           return slideUpTransitionPage(child: child, opaque: false);
         },

@@ -9,6 +9,7 @@
 # Supabase CLI local cache
 supabase/.temp/
 .mcp.json
+.mcp_apply*.json
 .atom/
 .build/
 .buildlog/

@@ -116,6 +116,14 @@
   "@alarmTileNewLikeSubtitle": {
     "description": "Alarm tile subtitle for new likes"
   },
+  "alarmTileCommentMention": "Mentions",
+  "@alarmTileCommentMention": {
+    "description": "Alarm tile when someone @mentions you in a comment"
+  },
+  "alarmTileCommentMentionSubtitle": "When someone mentions you in a comment",
+  "@alarmTileCommentMentionSubtitle": {
+    "description": "Alarm tile subtitle for comment mentions"
+  },
   "alarmNotificationsDisabled": "Notifications are off. Enable Be My Day in Settings to receive alerts.",
   "@alarmNotificationsDisabled": {
     "description": "Banner when system notifications are disabled"

@@ -20,6 +20,7 @@ import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Friends 화면용. PostStack + blur 오버레이로 그룹 표현.
@@ -210,29 +211,62 @@ class _GroupAvatarStack extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final avatarsAsync = ref.watch(groupMemberAvatarsProvider(groupId));
+    final memberCountAsync = ref.watch(groupMemberCountProvider(groupId));
+    final membersAsync = ref.watch(groupMembersOrderedProvider(groupId));
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
-    return avatarsAsync.when(
-      data: (avatars) {
-        final others = avatars.length > 1
-            ? avatars.sublist(0, avatars.length - 1)
-            : avatars;
-        if (others.isEmpty) {
-          return SizedBox(
-            height: _avatarSize,
-            child: Center(
-              child: Text(
-                '?',
-                style: TextStyle(
-                  fontSize: Sizes.size14,
-                  color: dark ? Colors.white70 : Colors.black54,
+    return memberCountAsync.when(
+      data: (memberCount) => membersAsync.when(
+        data: (members) {
+          final excludeSelf = memberCount > 1;
+          final chosen = excludeSelf && currentUserId != null
+              ? members.where((m) => m.userId != currentUserId).toList()
+              : members;
+          final display = chosen
+              .map((e) => (avatarUrl: e.avatarUrl, nickname: e.nickname))
+              .toList();
+          if (display.isEmpty) {
+            return SizedBox(
+              height: _avatarSize,
+              child: Center(
+                child: Text(
+                  '?',
+                  style: TextStyle(
+                    fontSize: Sizes.size14,
+                    color: dark ? Colors.white70 : Colors.black54,
+                  ),
                 ),
               ),
+            );
+          }
+          return HorizontalAvatarStack(members: display, dark: dark);
+        },
+        loading: () => SizedBox(
+          height: _avatarSize,
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: dark ? Colors.white54 : Colors.black54,
+              ),
             ),
-          );
-        }
-        return HorizontalAvatarStack(members: others, dark: dark);
-      },
+          ),
+        ),
+        error: (_, __) => SizedBox(
+          height: _avatarSize,
+          child: Center(
+            child: Text(
+              '?',
+              style: TextStyle(
+                fontSize: Sizes.size14,
+                color: dark ? Colors.white70 : Colors.black54,
+              ),
+            ),
+          ),
+        ),
+      ),
       loading: () => SizedBox(
         height: _avatarSize,
         child: Center(

@@ -159,6 +159,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
       for (final group in groups) {
         ref.invalidate(groupMemberAvatarsProvider(group.id));
+        ref.invalidate(groupMembersOrderedProvider(group.id));
         ref.invalidate(groupFirstAvatarProvider(group.id));
       }
     }

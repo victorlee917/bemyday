@@ -122,6 +122,14 @@ class _AlarmScreenState extends ConsumerState<AlarmScreen>
                               .read(alarmPreferencesProvider.notifier)
                               .setNewLike(v),
                         ),
+                        TileSwitch(
+                          title: l10n.alarmTileCommentMention,
+                          // subTitle: l10n.alarmTileCommentMentionSubtitle,
+                          value: prefs.commentMention,
+                          action: (v) => ref
+                              .read(alarmPreferencesProvider.notifier)
+                              .setCommentMention(v),
+                        ),
                       ],
                     ),
                 ],

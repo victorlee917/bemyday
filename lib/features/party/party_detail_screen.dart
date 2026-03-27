@@ -81,9 +81,12 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
       isDestructive: true,
     );
     if (confirmed == true) {
+      if (!mounted) return;
+      final router = GoRouter.of(context);
       await ref.read(groupRepositoryProvider).leaveGroup(group.id);
       ref.invalidate(currentUserGroupsProvider);
-      if (mounted) context.pop();
+      if (router.canPop()) router.pop();
+      if (router.canPop()) router.pop();
     }
   }
 

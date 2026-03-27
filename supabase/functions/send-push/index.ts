@@ -31,6 +31,10 @@ const MESSAGES: Record<
     title: "Be My Day",
     body: `${p.invitee_nickname ?? "Someone"} is your ${p.weekday_name ?? "day"}`,
   }),
+  comment_mention: (p) => ({
+    title: "Be My Day",
+    body: `${p.mentioner_nickname ?? "Someone"} mentioned you!`,
+  }),
 };
 
 async function getFcmAccessToken(serviceAccount: {

@@ -155,7 +155,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen>
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final navBarHeight = 70.0; // 네비게이션 바 높이
-    final totalBottomPadding = bottomPadding + navBarHeight + 20;
+    final totalBottomPadding = bottomPadding + navBarHeight + 10;
     return Scaffold(
       body: Stack(
         children: [

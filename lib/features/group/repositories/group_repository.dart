@@ -20,11 +20,11 @@ class GroupRepository {
         .toList();
   }
 
-  /// 그룹 멤버 아바타 정보 (avatar_url, nickname)
+  /// 그룹 멤버 (user_id, nickname, avatar_url)
   ///
   /// - [다른 멤버..., 현재 유저] 순. RPC get_group_members_ordered가 서버 auth.uid()로 정렬.
-  Future<List<({String? avatarUrl, String nickname})>> getGroupMemberAvatars(
-      String groupId) async {
+  Future<List<({String userId, String? avatarUrl, String nickname})>>
+      getGroupMembersOrdered(String groupId) async {
     final rows = await _client.rpc(
       'get_group_members_ordered',
       params: {'p_group_id': groupId},
@@ -33,58 +33,41 @@ class GroupRepository {
     return rows.map((e) {
       final map = e as Map;
       return (
+        userId: map['user_id'] as String,
         avatarUrl: map['avatar_url'] as String?,
         nickname: (map['nickname'] as String?)?.trim() ?? '',
       );
     }).where((e) => e.nickname.isNotEmpty).toList();
   }
 
+  /// 그룹 멤버 아바타 정보 (avatar_url, nickname)
+  ///
+  /// - [다른 멤버..., 현재 유저] 순. RPC get_group_members_ordered가 서버 auth.uid()로 정렬.
+  Future<List<({String? avatarUrl, String nickname})>> getGroupMemberAvatars(
+      String groupId) async {
+    final members = await getGroupMembersOrdered(groupId);
+    return members
+        .map((e) => (avatarUrl: e.avatarUrl, nickname: e.nickname))
+        .toList();
+  }
+
   /// 그룹 멤버 닉네임 목록 (group.name fallback용)
   ///
   /// - [다른 멤버..., 현재 유저] 순. RPC get_group_members_ordered가 서버 auth.uid()로 정렬.
   Future<List<String>> getGroupMemberNicknames(String groupId) async {
-    final rows = await _client.rpc(
-      'get_group_members_ordered',
-      params: {'p_group_id': groupId},
-    ) as List;
-
-    return rows
-        .map((e) => (e as Map)['nickname'] as String?)
-        .whereType<String>()
-        .map((n) => n.trim())
-        .where((n) => n.isNotEmpty)
-        .toList();
+    final members = await getGroupMembersOrdered(groupId);
+    return members.map((e) => e.nickname).toList();
   }
 
   /// 그룹 탈퇴 (현재 유저를 group_members에서 삭제)
   ///
-  /// - 삭제 후 남은 멤버가 2명 이상이면 successor_id를 owner 다음 가입자로 갱신
-  /// - 마지막 멤버 탈퇴 시 successor 갱신 안 함
+  /// - RPC [leave_group]: RLS 때문에 클라이언트에서 delete 후 groups.update가 실패하거나
+  ///   비오너는 멤버 목록을 전부 조회할 수 없어 successor 계산이 틀어지는 문제를 피함.
   Future<void> leaveGroup(String groupId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
 
-    await _client
-        .from('group_members')
-        .delete()
-        .eq('group_id', groupId)
-        .eq('user_id', userId);
-
-    final remaining = await _client
-        .from('group_members')
-        .select('user_id')
-        .eq('group_id', groupId)
-        .order('joined_at', ascending: true);
-
-    final rows = remaining as List;
-    final newSuccessorId = rows.length >= 2
-        ? (rows[1] as Map)['user_id'] as String
-        : null;
-
-    await _client
-        .from('groups')
-        .update({'successor_id': newSuccessorId})
-        .eq('id', groupId);
+    await _client.rpc('leave_group', params: {'p_group_id': groupId});
   }
 
   /// 그룹 이름 업데이트

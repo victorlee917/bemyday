@@ -2,6 +2,7 @@ import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/comments/models/comment.dart';
+import 'package:bemyday/features/comments/widgets/comment_mention_text_spans.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
@@ -61,8 +62,14 @@ class CommentNudgeBanner extends ConsumerWidget {
                           color: Colors.white,
                           fontSize: Sizes.size12,
                         );
+                        final contentSpan = TextSpan(
+                          children: commentMentionTextSpans(
+                            comment.content,
+                            textStyle,
+                          ),
+                        );
                         final painter = TextPainter(
-                          text: TextSpan(text: comment.content, style: textStyle),
+                          text: contentSpan,
                           maxLines: 1,
                           textDirection: TextDirection.ltr,
                         )..layout(maxWidth: constraints.maxWidth);
@@ -85,17 +92,15 @@ class CommentNudgeBanner extends ConsumerWidget {
                                       ],
                                       stops: const [0.0, 0.7, 1.0],
                                     ).createShader(bounds),
-                                    child: Text(
-                                      comment.content,
-                                      style: textStyle,
+                                    child: Text.rich(
+                                      contentSpan,
                                       maxLines: 1,
                                       overflow: TextOverflow.clip,
                                       softWrap: false,
                                     ),
                                   )
-                                : Text(
-                                    comment.content,
-                                    style: textStyle,
+                                : Text.rich(
+                                    contentSpan,
                                     maxLines: 1,
                                     overflow: TextOverflow.clip,
                                     softWrap: false,

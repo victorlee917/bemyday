@@ -16,6 +16,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+bool _postIdEquals(String a, String b) =>
+    a.toLowerCase() == b.toLowerCase();
+
 class PostScreen extends ConsumerStatefulWidget {
   const PostScreen({
     super.key,
@@ -52,6 +55,11 @@ class _PostScreenState extends ConsumerState<PostScreen>
   /// 이 화면 인스턴스에서 주 목록을 처음 받은 뒤 한 번만 상세를 강제 새로고침 (다시 들어올 때는 항상 최신).
   bool _didInitialPostDetailsInvalidate = false;
 
+  /// 포스팅 직후 `focusPostId`가 목록에 안 보일 때 짧게 재요청 (디바이스/네트워크 타이밍)
+  int _focusPostListRetryCount = 0;
+  bool _focusPostListRetryScheduled = false;
+  static const int _focusPostListRetryMax = 12;
+
   double _dragOffset = 0;
   late final AnimationController _dragAnimController;
 
@@ -62,6 +70,34 @@ class _PostScreenState extends ConsumerState<PostScreen>
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
+    _applyFreshOpenFromPosting();
+  }
+
+  /// 포스팅 직후 열린 화면은 이전 스와이프 상태를 쓰지 않음
+  void _applyFreshOpenFromPosting() {
+    if (widget.focusPostId != null) {
+      _userNavigated = false;
+      _currentIndex = null;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PostScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final groupId = widget.group?.id;
+    final oldGroupId = oldWidget.group?.id;
+    if (widget.focusPostId != oldWidget.focusPostId ||
+        groupId != oldGroupId ||
+        widget.weekIndex != oldWidget.weekIndex) {
+      _userNavigated = false;
+      _currentIndex = null;
+      _didInitialPostDetailsInvalidate = false;
+      _focusPostListRetryCount = 0;
+      _focusPostListRetryScheduled = false;
+      _likeOverride = null;
+      _likeCountOverride = null;
+      _applyFreshOpenFromPosting();
+    }
   }
 
   bool _hasScheduledPop = false;
@@ -202,6 +238,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
         expand: false,
         builder: (context, scrollController) => CommentsSheet(
           postId: post.id,
+          groupId: post.groupId,
           autofocus: autofocus,
           scrollController: scrollController,
           scrollToCommentId: scrollToCommentId,
@@ -327,6 +364,28 @@ class _PostScreenState extends ConsumerState<PostScreen>
               }
               return Container(color: Colors.black);
             }
+            final focusId = widget.focusPostId;
+            if (focusId != null &&
+                !_userNavigated &&
+                !posts.any((p) => _postIdEquals(p.id, focusId)) &&
+                _focusPostListRetryCount < _focusPostListRetryMax &&
+                !_focusPostListRetryScheduled) {
+              _focusPostListRetryScheduled = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _focusPostListRetryScheduled = false;
+                if (!mounted) return;
+                setState(() => _focusPostListRetryCount++);
+                if (widget.weekIndex != null) {
+                  ref.invalidate(
+                    weekPostsProvider(
+                      (group: group, weekIndex: widget.weekIndex!),
+                    ),
+                  );
+                } else {
+                  ref.invalidate(currentWeekPostsProvider(group));
+                }
+              });
+            }
             if (!_didInitialPostDetailsInvalidate) {
               _didInitialPostDetailsInvalidate = true;
               // PostContent의 watch보다 먼저 호출해 첫 페치와 invalidate가 겹치지 않게 함.
@@ -338,7 +397,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
             if (!_userNavigated) {
               final focus = widget.focusPostId;
               if (focus != null) {
-                final i = posts.indexWhere((p) => p.id == focus);
+                final i = posts.indexWhere((p) => _postIdEquals(p.id, focus));
                 if (i >= 0) {
                   idx = i;
                 } else {

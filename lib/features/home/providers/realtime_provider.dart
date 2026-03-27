@@ -20,6 +20,7 @@ final homeRealtimeProvider = Provider<void>((ref) {
     ref.invalidate(groupMemberCountProvider);
     ref.invalidate(groupMemberNicknamesProvider);
     ref.invalidate(groupMemberAvatarsProvider);
+    ref.invalidate(groupMembersOrderedProvider);
     ref.invalidate(groupDisplayNameProvider);
   }
 

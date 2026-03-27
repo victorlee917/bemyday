@@ -8,7 +8,6 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/group/models/group.dart';
 import 'package:bemyday/features/group/providers/group_provider.dart';
-import 'package:bemyday/features/home/widgets/more_button.dart';
 import 'package:bemyday/features/home/widgets/post_empty.dart';
 import 'package:bemyday/features/home/widgets/post_stack.dart';
 import 'package:bemyday/features/party/party_screen.dart';
@@ -112,8 +111,6 @@ class WeekdayOccupied extends ConsumerWidget {
                   ),
             ),
           ),
-          Gaps.v14,
-          MoreButton(group: group),
         ],
       ),
     );

@@ -57,6 +57,13 @@ class AlarmPreferencesNotifier extends AsyncNotifier<AlarmPreferences> {
     await _repository.save(state.value!);
   }
 
+  Future<void> setCommentMention(bool value) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    state = AsyncData(current.copyWith(commentMention: value));
+    await _repository.save(state.value!);
+  }
+
   /// 푸시 권한 동의 시 모든 알람 ON
   Future<void> enableAll() async {
     final current = state.valueOrNull;
@@ -66,11 +73,13 @@ class AlarmPreferencesNotifier extends AsyncNotifier<AlarmPreferences> {
       newPost: true,
       newComment: true,
       newLike: true,
+      commentMention: true,
     );
     if (current.dailyReminder &&
         current.newPost &&
         current.newComment &&
-        current.newLike) {
+        current.newLike &&
+        current.commentMention) {
       return;
     }
     state = AsyncData(allOn);

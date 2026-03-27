@@ -3,6 +3,7 @@ import 'package:bemyday/constants/gaps.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/comments/providers/comment_provider.dart';
+import 'package:bemyday/features/comments/widgets/comment_mention_text_spans.dart';
 import 'package:bemyday/features/post/widgets/likes_sheet.dart';
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/utils.dart';
@@ -174,7 +175,14 @@ class _CommentTileState extends ConsumerState<CommentTile> {
                         ),
                       ],
                     ),
-                    Text(widget.content, style: TextStyle(fontSize: Sizes.size12)),
+                    Text.rich(
+                      TextSpan(
+                        children: commentMentionTextSpans(
+                          widget.content,
+                          TextStyle(fontSize: Sizes.size12),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

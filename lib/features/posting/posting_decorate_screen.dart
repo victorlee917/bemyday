@@ -199,9 +199,11 @@ class _PostingDecorateScreenState extends ConsumerState<PostingDecorateScreen>
               .timeout(const Duration(seconds: 5), onTimeout: () => <Post>[]);
         }
         if (!mounted) return;
+        // 첫 pop 이후 Decorate context가 무효화될 수 있으므로 Navigator는 한 번만 잡아서 두 번 pop
+        final navigator = Navigator.of(context);
         final router = GoRouter.of(context);
-        Navigator.of(context).pop(); // Decorate
-        Navigator.of(context).pop(); // Album
+        navigator.pop(); // Decorate
+        navigator.pop(); // Album
         final extra = <String, dynamic>{
           'group': group,
           'startFromLatest': true,

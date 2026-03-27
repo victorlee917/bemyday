@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// - New Post: 소속 그룹에 새 포스트 (본인 제외)
 /// - New Comment: 내 포스트에 새 댓글 (본인 제외)
 /// - New Like: 내 포스트에 새 좋아요 (본인 제외)
+/// - Comment mention: 그룹 댓글에서 @멘션 (본인 제외)
 ///
 /// SharedPreferences에 저장하고, 로그인 시 profiles 테이블에도 동기화하여
 /// 백엔드 푸시 발송 로직에서 대상 유저 판별에 사용.
@@ -16,6 +17,7 @@ class AlarmRepository {
   static const _keyNewPost = 'new_post';
   static const _keyNewComment = 'new_comment';
   static const _keyNewLike = 'new_like';
+  static const _keyCommentMention = 'comment_mention';
 
   final SharedPreferences _prefs;
 
@@ -33,6 +35,7 @@ class AlarmRepository {
       newPost: _prefs.getBool(_key(_keyNewPost)) ?? false,
       newComment: _prefs.getBool(_key(_keyNewComment)) ?? false,
       newLike: _prefs.getBool(_key(_keyNewLike)) ?? false,
+      commentMention: _prefs.getBool(_key(_keyCommentMention)) ?? true,
     );
   }
 
@@ -43,7 +46,9 @@ class AlarmRepository {
       try {
         final res = await Supabase.instance.client
             .from('profiles')
-            .select('alarm_daily_reminder, alarm_new_post, alarm_new_comment, alarm_new_like')
+            .select(
+              'alarm_daily_reminder, alarm_new_post, alarm_new_comment, alarm_new_like, alarm_comment_mention',
+            )
             .eq('id', userId)
             .maybeSingle();
         if (res != null) {
@@ -52,6 +57,7 @@ class AlarmRepository {
             newPost: res['alarm_new_post'] as bool? ?? false,
             newComment: res['alarm_new_comment'] as bool? ?? false,
             newLike: res['alarm_new_like'] as bool? ?? false,
+            commentMention: res['alarm_comment_mention'] as bool? ?? true,
           );
           await _syncToLocal(prefs);
           return prefs;
@@ -69,6 +75,7 @@ class AlarmRepository {
       _prefs.setBool(_key(_keyNewPost), prefs.newPost),
       _prefs.setBool(_key(_keyNewComment), prefs.newComment),
       _prefs.setBool(_key(_keyNewLike), prefs.newLike),
+      _prefs.setBool(_key(_keyCommentMention), prefs.commentMention),
     ]);
   }
 
@@ -84,6 +91,7 @@ class AlarmRepository {
           'alarm_new_post': prefs.newPost,
           'alarm_new_comment': prefs.newComment,
           'alarm_new_like': prefs.newLike,
+          'alarm_comment_mention': prefs.commentMention,
         }).eq('id', userId);
       } catch (_) {
         // 마이그레이션 미적용 등으로 컬럼 없으면 무시
@@ -98,24 +106,28 @@ class AlarmPreferences {
     this.newPost = false,
     this.newComment = false,
     this.newLike = false,
+    this.commentMention = true,
   });
 
   final bool dailyReminder;
   final bool newPost;
   final bool newComment;
   final bool newLike;
+  final bool commentMention;
 
   AlarmPreferences copyWith({
     bool? dailyReminder,
     bool? newPost,
     bool? newComment,
     bool? newLike,
+    bool? commentMention,
   }) {
     return AlarmPreferences(
       dailyReminder: dailyReminder ?? this.dailyReminder,
       newPost: newPost ?? this.newPost,
       newComment: newComment ?? this.newComment,
       newLike: newLike ?? this.newLike,
+      commentMention: commentMention ?? this.commentMention,
     );
   }
 }

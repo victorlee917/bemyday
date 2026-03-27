@@ -69,6 +69,13 @@ final groupMemberCountProvider =
   return ref.read(groupRepositoryProvider).getGroupMemberCount(groupId);
 });
 
+/// 그룹 멤버 (user_id, nickname, avatar_url) — 멘션·정렬 등
+final groupMembersOrderedProvider = FutureProvider.family<
+    List<({String userId, String? avatarUrl, String nickname})>,
+    String>((ref, groupId) async {
+  return ref.read(groupRepositoryProvider).getGroupMembersOrdered(groupId);
+});
+
 /// 그룹 멤버 닉네임 목록 (쉼표 구분 표시용)
 final groupMemberNicknamesProvider =
     FutureProvider.family<List<String>, String>((ref, groupId) async {

@@ -262,6 +262,18 @@ abstract class AppLocalizations {
   /// **'When someone likes your post'**
   String get alarmTileNewLikeSubtitle;
 
+  /// Alarm tile when someone @mentions you in a comment
+  ///
+  /// In en, this message translates to:
+  /// **'Mentions'**
+  String get alarmTileCommentMention;
+
+  /// Alarm tile subtitle for comment mentions
+  ///
+  /// In en, this message translates to:
+  /// **'When someone mentions you in a comment'**
+  String get alarmTileCommentMentionSubtitle;
+
   /// Banner when system notifications are disabled
   ///
   /// In en, this message translates to:

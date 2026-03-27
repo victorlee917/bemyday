@@ -96,6 +96,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alarmTileNewLikeSubtitle => 'When someone likes your post';
 
   @override
+  String get alarmTileCommentMention => 'Mentions';
+
+  @override
+  String get alarmTileCommentMentionSubtitle =>
+      'When someone mentions you in a comment';
+
+  @override
   String get alarmNotificationsDisabled =>
       'Notifications are off. Enable Be My Day in Settings to receive alerts.';
 
