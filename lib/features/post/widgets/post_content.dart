@@ -145,7 +145,7 @@ class PostContent extends ConsumerWidget {
                   right: 0,
                   child: PostHeaderBar(
                     weekdayName: weekdays[weekdayIndex].name,
-                    weekNumber: groupWeekNumber(group),
+                    weekNumber: post.weekIndex,
                     currentIndex: currentIndex,
                     itemCount: itemCount,
                     onCloseTap: onCloseTap,

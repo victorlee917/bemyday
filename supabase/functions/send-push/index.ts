@@ -50,6 +50,41 @@ async function getFcmAccessToken(serviceAccount: {
   return tokens!.access_token!;
 }
 
+/** 수신자가 행위자 본인인 알림은 발송하지 않음 (큐 오염·구 payload 대비) */
+function shouldSkipSelfNotification(
+  notificationType: string,
+  recipientUserId: string,
+  payload: Record<string, unknown> | null,
+): boolean {
+  if (!payload) return false;
+  const r = String(recipientUserId);
+  const id = (k: string): string | null => {
+    const v = payload[k];
+    if (v == null) return null;
+    return String(v);
+  };
+  switch (notificationType) {
+    case "new_post": {
+      const actor = id("author_id");
+      return actor != null && actor === r;
+    }
+    case "new_comment": {
+      const commentAuthor = id("comment_author_id");
+      return commentAuthor != null && commentAuthor === r;
+    }
+    case "new_like": {
+      const liker = id("liker_user_id");
+      return liker != null && liker === r;
+    }
+    case "comment_mention": {
+      const mentioner = id("mentioner_user_id");
+      return mentioner != null && mentioner === r;
+    }
+    default:
+      return false;
+  }
+}
+
 async function sendFcm(
   accessToken: string,
   projectId: string,
@@ -117,7 +152,24 @@ Deno.serve(async (req) => {
     }
 
     let sent = 0;
+    let skippedSelf = 0;
     for (const row of pending) {
+      const payload = (row.payload as Record<string, unknown>) ?? null;
+      if (
+        shouldSkipSelfNotification(
+          row.notification_type,
+          row.recipient_user_id,
+          payload,
+        )
+      ) {
+        await supabase
+          .from("notification_queue")
+          .update({ sent_at: new Date().toISOString() })
+          .eq("id", row.id);
+        skippedSelf++;
+        continue;
+      }
+
       const { data: tokens } = await supabase
         .from("device_tokens")
         .select("token")
@@ -125,7 +177,7 @@ Deno.serve(async (req) => {
 
       const builder = MESSAGES[row.notification_type];
       const { title, body } = builder
-        ? builder((row.payload as Record<string, unknown>) ?? {})
+        ? builder(payload ?? {})
         : { title: "Be My Day", body: "You have a new notification" };
 
       if (tokens && tokens.length > 0) {
@@ -143,10 +195,17 @@ Deno.serve(async (req) => {
         .eq("id", row.id);
     }
 
-    return new Response(JSON.stringify({ sent, processed: pending.length }), {
-      status: 200,
-      headers: { ...corsHeaders(), "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        sent,
+        processed: pending.length,
+        skipped_self: skippedSelf,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      },
+    );
   } catch (err) {
     console.error(err);
     return new Response(JSON.stringify({ error: String(err) }), {
