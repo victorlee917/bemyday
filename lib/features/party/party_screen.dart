@@ -153,7 +153,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen> {
             .where((s) => s.weekIndex == currentWeek)
             .firstOrNull;
         final pastWeeks = summaries
-            .where((s) => s.weekIndex != currentWeek)
+            .where((s) => s.weekIndex != currentWeek && s.postCount > 0)
             .toList();
 
         final items = <WeekGridItem>[

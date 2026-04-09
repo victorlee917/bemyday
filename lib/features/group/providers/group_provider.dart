@@ -77,16 +77,22 @@ final groupMembersOrderedProvider = FutureProvider.family<
 });
 
 /// 그룹 멤버 닉네임 목록 (쉼표 구분 표시용)
+///
+/// groupMembersOrderedProvider에서 파생 — 별도 RPC 호출 없음
 final groupMemberNicknamesProvider =
     FutureProvider.family<List<String>, String>((ref, groupId) async {
-  return ref.read(groupRepositoryProvider).getGroupMemberNicknames(groupId);
+  final members = await ref.watch(groupMembersOrderedProvider(groupId).future);
+  return members.map((e) => e.nickname).toList();
 });
 
 /// 그룹 멤버 아바타 정보 (avatar_url, nickname) - AvatarBubble용
+///
+/// groupMembersOrderedProvider에서 파생 — 별도 RPC 호출 없음
 final groupMemberAvatarsProvider =
     FutureProvider.family<List<({String? avatarUrl, String nickname})>, String>(
         (ref, groupId) async {
-  return ref.read(groupRepositoryProvider).getGroupMemberAvatars(groupId);
+  final members = await ref.watch(groupMembersOrderedProvider(groupId).future);
+  return members.map((e) => (avatarUrl: e.avatarUrl, nickname: e.nickname)).toList();
 });
 
 /// 그룹 표시명 (group.name ?? 첫 멤버 닉네임)
@@ -99,9 +105,8 @@ final groupDisplayNameProvider =
   if (group != null && group.name != null && group.name!.trim().isNotEmpty) {
     return group.name!.trim();
   }
-  final nicknames =
-      await ref.read(groupMemberNicknamesProvider(groupId).future);
-  return nicknames.isNotEmpty ? nicknames.first : 'My Day';
+  final members = await ref.watch(groupMembersOrderedProvider(groupId).future);
+  return members.isNotEmpty ? members.first.nickname : 'My Day';
 });
 
 /// 그룹 첫 멤버 프로필 사진 URL

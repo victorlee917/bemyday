@@ -27,6 +27,7 @@ class PostBottomSection extends ConsumerWidget {
     required this.onLikeTap,
     required this.onCommentTap,
     required this.onPostTap,
+    this.onCaptionTap,
   });
 
   final Post post;
@@ -43,6 +44,7 @@ class PostBottomSection extends ConsumerWidget {
   final void Function(Post post, {bool autofocus, String? scrollToCommentId})
       onCommentTap;
   final VoidCallback onPostTap;
+  final VoidCallback? onCaptionTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -108,6 +110,8 @@ class PostBottomSection extends ConsumerWidget {
           commentCount: d?.commentCount ?? 0,
           isLiked: likeOverride ?? d?.isLiked ?? false,
           likedUserIds: d?.likedUserIds ?? [],
+          caption: post.caption,
+          isOwnPost: post.authorId == currentUserId,
           postIndex: authorPostIndex,
           postCount: authorPostCount,
           onLikeTap: () => onLikeTap(
@@ -116,6 +120,10 @@ class PostBottomSection extends ConsumerWidget {
             likeCountOverride ?? d?.likeCount ?? 0,
           ),
           onCommentTap: () => onCommentTap(post, autofocus: true),
+          onAvatarTap: post.authorId != currentUserId
+              ? () => onCommentTap(post, autofocus: false)
+              : onCaptionTap,
+          onCaptionTap: onCaptionTap,
         ),
       ],
     );

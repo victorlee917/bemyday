@@ -108,11 +108,26 @@ export default function Terms() {
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-2">5. Acceptable use</h2>
+        <p className="mb-2 font-semibold">
+          Be My Day maintains a <strong>zero-tolerance policy</strong> for
+          objectionable content and abusive users. Any content or behavior that
+          violates these guidelines will result in immediate removal of the
+          content and termination of the offending user&apos;s account.
+        </p>
         <p className="mb-2">You agree not to:</p>
         <ul className="list-disc pl-6 space-y-2">
           <li>
-            Harass, threaten, defame, or harm other users, or post unlawful,
-            hateful, sexually exploitative, or violent content.
+            Harass, threaten, defame, bully, stalk, or harm other users in any
+            way.
+          </li>
+          <li>
+            Post unlawful, hateful, discriminatory, sexually exploitative,
+            pornographic, or violent content, including content that promotes
+            self-harm or terrorism.
+          </li>
+          <li>
+            Post objectionable content of any kind, including but not limited to
+            content that is offensive, inappropriate, or harmful to others.
           </li>
           <li>
             Misuse invitations, impersonate others, or misrepresent your
@@ -127,6 +142,14 @@ export default function Terms() {
             gambling or other unlawful commercial activity.
           </li>
         </ul>
+        <p className="mt-3 font-semibold">
+          Users may report objectionable content or abusive users directly
+          within the app. Users may also block other users, which immediately
+          removes the blocked user&apos;s content from their feed and notifies
+          the Operator. All reports are reviewed and acted upon within 24 hours.
+          The Operator will remove offending content and permanently eject users
+          who violate these guidelines.
+        </p>
         <p className="mt-3">
           We may suspend or terminate access, remove content, or take other
           reasonable action for violations or risk to the Service or users,

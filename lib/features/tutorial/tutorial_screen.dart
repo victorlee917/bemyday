@@ -41,7 +41,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     final router = GoRouter.of(context);
     // iOS: Apple + Google + Kakao 3개 버튼 → 바텀시트 높이 확대
     final heightFactor = defaultTargetPlatform == TargetPlatform.iOS
-        ? 0.60
+        ? 0.50
         : 0.50;
     showModalBottomSheet(
       context: context,

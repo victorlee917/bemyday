@@ -561,5 +561,89 @@
   "commentsHint": "Leave a comment...",
   "@commentsHint": {
     "description": "Comment input hint"
+  },
+  "report": "Report",
+  "@report": {
+    "description": "Report action button"
+  },
+  "reportPost": "Report Post",
+  "@reportPost": {
+    "description": "Report post option"
+  },
+  "reportComment": "Report Comment",
+  "@reportComment": {
+    "description": "Report comment option"
+  },
+  "reportUser": "Report User",
+  "@reportUser": {
+    "description": "Report user option"
+  },
+  "reportReasonTitle": "Why are you reporting this?",
+  "@reportReasonTitle": {
+    "description": "Report reason selection title"
+  },
+  "reportReasonHarassment": "Harassment or bullying",
+  "@reportReasonHarassment": {
+    "description": "Report reason: harassment"
+  },
+  "reportReasonHateSpeech": "Hate speech",
+  "@reportReasonHateSpeech": {
+    "description": "Report reason: hate speech"
+  },
+  "reportReasonViolence": "Violence or threats",
+  "@reportReasonViolence": {
+    "description": "Report reason: violence"
+  },
+  "reportReasonSexualContent": "Sexual content",
+  "@reportReasonSexualContent": {
+    "description": "Report reason: sexual content"
+  },
+  "reportReasonSpam": "Spam",
+  "@reportReasonSpam": {
+    "description": "Report reason: spam"
+  },
+  "reportReasonSelfHarm": "Self-harm",
+  "@reportReasonSelfHarm": {
+    "description": "Report reason: self harm"
+  },
+  "reportReasonImpersonation": "Impersonation",
+  "@reportReasonImpersonation": {
+    "description": "Report reason: impersonation"
+  },
+  "reportReasonOther": "Other",
+  "@reportReasonOther": {
+    "description": "Report reason: other"
+  },
+  "reportSubmitted": "Report submitted. Thank you.",
+  "@reportSubmitted": {
+    "description": "Report success snackbar"
+  },
+  "reportFailed": "Failed to submit report. Please try again.",
+  "@reportFailed": {
+    "description": "Report error snackbar"
+  },
+  "blockUser": "Block User",
+  "@blockUser": {
+    "description": "Block user option"
+  },
+  "unblockUser": "Unblock User",
+  "@unblockUser": {
+    "description": "Unblock user option"
+  },
+  "blockUserConfirmTitle": "Block User",
+  "@blockUserConfirmTitle": {
+    "description": "Block user confirmation dialog title"
+  },
+  "blockUserConfirmMessage": "You will no longer see their posts or comments. They won't be notified.",
+  "@blockUserConfirmMessage": {
+    "description": "Block user confirmation message"
+  },
+  "blockUserSuccess": "User blocked",
+  "@blockUserSuccess": {
+    "description": "Block user success snackbar"
+  },
+  "blockUserFailed": "Failed to block user. Please try again.",
+  "@blockUserFailed": {
+    "description": "Block user error snackbar"
   }
 }

@@ -41,7 +41,7 @@ class CommentRepository {
   Future<int> getCommentLikeCount(String commentId) async {
     final res = await _client
         .from('comment_likes')
-        .select()
+        .select('user_id')
         .eq('comment_id', commentId)
         .count(CountOption.exact);
     return res.count;

@@ -19,6 +19,7 @@ Future<bool?> showConfirmDialog(
   BuildContext context, {
   required String title,
   String? message,
+  Widget? content,
   String cancelLabel = 'Cancel',
   required String confirmLabel,
   bool isDestructive = false,
@@ -29,6 +30,7 @@ Future<bool?> showConfirmDialog(
     builder: (context) => ConfirmDialog(
       title: title,
       message: message,
+      content: content,
       cancelLabel: cancelLabel,
       confirmLabel: confirmLabel,
       isDestructive: isDestructive,
@@ -41,6 +43,7 @@ class ConfirmDialog extends StatelessWidget {
     super.key,
     required this.title,
     this.message,
+    this.content,
     this.cancelLabel = 'Cancel',
     required this.confirmLabel,
     this.isDestructive = false,
@@ -48,6 +51,7 @@ class ConfirmDialog extends StatelessWidget {
 
   final String title;
   final String? message;
+  final Widget? content;
   final String cancelLabel;
   final String confirmLabel;
   final bool isDestructive;
@@ -76,14 +80,18 @@ class ConfirmDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
-            ),
-            if (message != null && message!.isNotEmpty) ...[
+            if (title.isNotEmpty)
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+            if (content != null) ...[
+              Gaps.v10,
+              content!,
+            ] else if (message != null && message!.isNotEmpty) ...[
               Gaps.v10,
               Text(
                 message!,
@@ -132,22 +140,28 @@ class ConfirmDialog extends StatelessWidget {
                         vertical: Paddings.buttonV,
                       ),
                       decoration: BoxDecoration(
-                        color: dark
-                            ? CustomColors.clickableAreaDark
-                            : CustomColors.clickableAreaLight,
+                        color: isDestructive
+                            ? (dark
+                                ? CustomColors.clickableAreaDark
+                                : CustomColors.clickableAreaLight)
+                            : (dark ? Colors.white : Colors.black),
                         borderRadius: BorderRadius.circular(RValues.button),
-                        border: Border.all(
-                          color: dark
-                              ? CustomColors.borderDark
-                              : CustomColors.borderLight,
-                        ),
+                        border: isDestructive
+                            ? Border.all(
+                                color: dark
+                                    ? CustomColors.borderDark
+                                    : CustomColors.borderLight,
+                              )
+                            : null,
                       ),
                       child: Text(
                         confirmLabel,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelMedium!
                             .copyWith(
-                              color: isDestructive ? destructiveColor : null,
+                              color: isDestructive
+                                  ? destructiveColor
+                                  : (dark ? Colors.black : Colors.white),
                               fontWeight: FontWeight.w600,
                             ),
                       ),

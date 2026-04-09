@@ -1,6 +1,7 @@
 import 'package:bemyday/common/widgets/avatar/avatar_default.dart';
 import 'package:bemyday/constants/sizes.dart';
 import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/features/profile/providers/profile_provider.dart';
 import 'package:bemyday/features/comments/providers/comment_provider.dart';
 import 'package:bemyday/features/comments/widgets/comment_input_avatar.dart';
 import 'package:bemyday/features/comments/widgets/comment_tile.dart';
@@ -22,6 +23,11 @@ class CommentsSheet extends ConsumerStatefulWidget {
     required this.autofocus,
     this.onCommentAdded,
     this.scrollToCommentId,
+    this.caption,
+    this.postAuthorId,
+    this.onPostLikeTap,
+    this.isPostLiked,
+    this.postLikeCount,
   });
 
   final String postId;
@@ -29,6 +35,11 @@ class CommentsSheet extends ConsumerStatefulWidget {
   final bool autofocus;
   final ScrollController? scrollController;
   final VoidCallback? onCommentAdded;
+  final String? caption;
+  final String? postAuthorId;
+  final VoidCallback? onPostLikeTap;
+  final bool? isPostLiked;
+  final int? postLikeCount;
 
   /// 이 댓글이 최상단에 보이도록 스크롤
   final String? scrollToCommentId;
@@ -346,6 +357,15 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                       ),
                     ],
                   ),
+                  if (widget.caption != null &&
+                      widget.caption!.trim().isNotEmpty &&
+                      widget.postAuthorId != null)
+                    SliverToBoxAdapter(
+                      child: _CaptionTile(
+                        postAuthorId: widget.postAuthorId!,
+                        caption: widget.caption!,
+                      ),
+                    ),
                   SliverPadding(
                     padding: EdgeInsets.only(
                       bottom:
@@ -508,6 +528,69 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CaptionTile extends ConsumerWidget {
+  const _CaptionTile({
+    required this.postAuthorId,
+    required this.caption,
+  });
+
+  final String postAuthorId;
+  final String caption;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(profileProvider(postAuthorId));
+    return profileAsync.when(
+      data: (profile) {
+        final nickname = profile?.nickname ?? '?';
+        return Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: isDarkMode(context)
+                    ? CustomColors.borderDark
+                    : CustomColors.borderLight,
+                width: Widths.devider,
+              ),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Paddings.scaffoldH,
+            vertical: Sizes.size12,
+          ),
+          child: Row(
+            children: [
+              AvatarDefault(
+                nickname: nickname,
+                avatarUrl: profile?.avatarUrl,
+                radius: CustomSizes.avatarComment,
+              ),
+              CustomSizes.commentLeadingGap,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nickname,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      caption,
+                      style: TextStyle(fontSize: Sizes.size12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => SizedBox.shrink(),
+      error: (_, __) => SizedBox.shrink(),
     );
   }
 }

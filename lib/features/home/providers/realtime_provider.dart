@@ -17,14 +17,34 @@ final homeRealtimeProvider = Provider<void>((ref) {
 
   void invalidateGroupProviders(String? groupId) {
     ref.invalidate(currentUserGroupsProvider);
-    ref.invalidate(groupMemberCountProvider);
-    ref.invalidate(groupMemberNicknamesProvider);
-    ref.invalidate(groupMemberAvatarsProvider);
-    ref.invalidate(groupMembersOrderedProvider);
-    ref.invalidate(groupDisplayNameProvider);
+    if (groupId != null) {
+      ref.invalidate(groupMemberCountProvider(groupId));
+      ref.invalidate(groupMemberNicknamesProvider(groupId));
+      ref.invalidate(groupMemberAvatarsProvider(groupId));
+      ref.invalidate(groupMembersOrderedProvider(groupId));
+      ref.invalidate(groupDisplayNameProvider(groupId));
+    } else {
+      ref.invalidate(groupMemberCountProvider);
+      ref.invalidate(groupMemberNicknamesProvider);
+      ref.invalidate(groupMemberAvatarsProvider);
+      ref.invalidate(groupMembersOrderedProvider);
+      ref.invalidate(groupDisplayNameProvider);
+    }
   }
 
   void invalidatePostProviders(String? groupId) {
+    if (groupId != null) {
+      final groups = ref.read(currentUserGroupsProvider).valueOrNull ?? [];
+      final group = groups.where((g) => g.id == groupId).firstOrNull;
+      if (group != null) {
+        ref.invalidate(groupLatestPostsProvider(group));
+        ref.invalidate(groupLatestRevealedPostsProvider(group));
+        ref.invalidate(hasCurrentWeekPostsProvider(group));
+        ref.invalidate(currentWeekPostsProvider(group));
+        ref.invalidate(weekPostSummariesProvider(group));
+        return;
+      }
+    }
     ref.invalidate(groupLatestPostsProvider);
     ref.invalidate(groupLatestRevealedPostsProvider);
     ref.invalidate(hasCurrentWeekPostsProvider);

@@ -151,8 +151,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Batch fetch all device tokens upfront
+    const recipientIds = [
+      ...new Set(pending.map((r) => r.recipient_user_id)),
+    ];
+    const { data: allTokenRows } = await supabase
+      .from("device_tokens")
+      .select("user_id, token")
+      .in("user_id", recipientIds);
+
+    const tokensByUser: Record<string, string[]> = {};
+    for (const row of allTokenRows ?? []) {
+      if (!tokensByUser[row.user_id]) tokensByUser[row.user_id] = [];
+      tokensByUser[row.user_id].push(row.token);
+    }
+
     let sent = 0;
     let skippedSelf = 0;
+    const processedIds: string[] = [];
+
     for (const row of pending) {
       const payload = (row.payload as Record<string, unknown>) ?? null;
       if (
@@ -162,37 +179,33 @@ Deno.serve(async (req) => {
           payload,
         )
       ) {
-        await supabase
-          .from("notification_queue")
-          .update({ sent_at: new Date().toISOString() })
-          .eq("id", row.id);
+        processedIds.push(row.id);
         skippedSelf++;
         continue;
       }
-
-      const { data: tokens } = await supabase
-        .from("device_tokens")
-        .select("token")
-        .eq("user_id", row.recipient_user_id);
 
       const builder = MESSAGES[row.notification_type];
       const { title, body } = builder
         ? builder(payload ?? {})
         : { title: "Be My Day", body: "You have a new notification" };
 
-      if (tokens && tokens.length > 0) {
-        for (const { token } of tokens) {
-          const ok = await sendFcm(accessToken, projectId, token, title, body, {
-            notification_type: row.notification_type,
-          });
-          if (ok) sent++;
-        }
+      const userTokens = tokensByUser[row.recipient_user_id] ?? [];
+      for (const token of userTokens) {
+        const ok = await sendFcm(accessToken, projectId, token, title, body, {
+          notification_type: row.notification_type,
+        });
+        if (ok) sent++;
       }
 
+      processedIds.push(row.id);
+    }
+
+    // Batch update sent_at for all processed notifications
+    if (processedIds.length > 0) {
       await supabase
         .from("notification_queue")
         .update({ sent_at: new Date().toISOString() })
-        .eq("id", row.id);
+        .in("id", processedIds);
     }
 
     return new Response(

@@ -807,6 +807,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave a comment...'**
   String get commentsHint;
+
+  /// Report action button
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get report;
+
+  /// Report post option
+  ///
+  /// In en, this message translates to:
+  /// **'Report Post'**
+  String get reportPost;
+
+  /// Report comment option
+  ///
+  /// In en, this message translates to:
+  /// **'Report Comment'**
+  String get reportComment;
+
+  /// Report user option
+  ///
+  /// In en, this message translates to:
+  /// **'Report User'**
+  String get reportUser;
+
+  /// Report reason selection title
+  ///
+  /// In en, this message translates to:
+  /// **'Why are you reporting this?'**
+  String get reportReasonTitle;
+
+  /// Report reason: harassment
+  ///
+  /// In en, this message translates to:
+  /// **'Harassment or bullying'**
+  String get reportReasonHarassment;
+
+  /// Report reason: hate speech
+  ///
+  /// In en, this message translates to:
+  /// **'Hate speech'**
+  String get reportReasonHateSpeech;
+
+  /// Report reason: violence
+  ///
+  /// In en, this message translates to:
+  /// **'Violence or threats'**
+  String get reportReasonViolence;
+
+  /// Report reason: sexual content
+  ///
+  /// In en, this message translates to:
+  /// **'Sexual content'**
+  String get reportReasonSexualContent;
+
+  /// Report reason: spam
+  ///
+  /// In en, this message translates to:
+  /// **'Spam'**
+  String get reportReasonSpam;
+
+  /// Report reason: self harm
+  ///
+  /// In en, this message translates to:
+  /// **'Self-harm'**
+  String get reportReasonSelfHarm;
+
+  /// Report reason: impersonation
+  ///
+  /// In en, this message translates to:
+  /// **'Impersonation'**
+  String get reportReasonImpersonation;
+
+  /// Report reason: other
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get reportReasonOther;
+
+  /// Report success snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Report submitted. Thank you.'**
+  String get reportSubmitted;
+
+  /// Report error snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit report. Please try again.'**
+  String get reportFailed;
+
+  /// Block user option
+  ///
+  /// In en, this message translates to:
+  /// **'Block User'**
+  String get blockUser;
+
+  /// Unblock user option
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock User'**
+  String get unblockUser;
+
+  /// Block user confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Block User'**
+  String get blockUserConfirmTitle;
+
+  /// Block user confirmation message
+  ///
+  /// In en, this message translates to:
+  /// **'You will no longer see their posts or comments. They won\'t be notified.'**
+  String get blockUserConfirmMessage;
+
+  /// Block user success snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'User blocked'**
+  String get blockUserSuccess;
+
+  /// Block user error snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to block user. Please try again.'**
+  String get blockUserFailed;
 }
 
 class _AppLocalizationsDelegate

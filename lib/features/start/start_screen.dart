@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:bemyday/common/widgets/confirm_dialog.dart';
 import 'package:bemyday/config/supabase_config.dart';
 import 'package:bemyday/constants/gaps.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -32,7 +33,7 @@ class StartScreen extends StatefulWidget {
   final bool authErrorRetry;
   final String? inviteToken;
 
-  /// 바텀시트 등 GoRouter가 context 상위에 없을 때 전달. 있으면 router.go() 사용.
+  /// Pass when GoRouter is not above context (e.g. bottom sheet). Uses router.go() if set.
   final GoRouter? router;
 
   @override
@@ -65,14 +66,85 @@ class _StartScreenState extends State<StartScreen> {
     if (widget.authErrorRetry) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          showAppSnackBar(context, '로그인이 완료되지 않았습니다. 다시 시도해 주세요.');
+          showAppSnackBar(
+            context,
+            'Sign-in was not completed. Please try again.',
+          );
         }
       });
     }
   }
 
+  /// Record EULA acceptance in user metadata
+  Future<void> _recordEulaAcceptance() async {
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(
+          data: {'eula_accepted_at': DateTime.now().toIso8601String()},
+        ),
+      );
+    } catch (_) {
+      // Non-critical — don't block login
+    }
+  }
+
+  /// EULA agreement dialog. Returns true if agreed, false if cancelled.
+  Future<bool> _confirmEula() async {
+    final theme = Theme.of(context);
+    final linkStyle = theme.textTheme.bodyMedium!.copyWith(
+      decoration: TextDecoration.underline,
+      fontWeight: FontWeight.w600,
+    );
+    final normalStyle = theme.textTheme.bodyMedium!;
+
+    final privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        launchUrl(Uri.parse('https://www.bemyday.app/privacy'));
+      };
+    final termsRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        launchUrl(Uri.parse('https://www.bemyday.app/terms'));
+      };
+
+    final agreed = await showConfirmDialog(
+      context,
+      title: '',
+      content: Text.rich(
+        textAlign: TextAlign.center,
+        TextSpan(
+          children: [
+            TextSpan(
+              text: 'By continuing, you agree to BMD\'s\n',
+              style: normalStyle,
+            ),
+            TextSpan(
+              text: 'Privacy Policy',
+              style: linkStyle,
+              recognizer: privacyRecognizer,
+            ),
+            TextSpan(text: ' and ', style: normalStyle),
+            TextSpan(
+              text: 'Terms of Service (EULA)',
+              style: linkStyle,
+              recognizer: termsRecognizer,
+            ),
+            TextSpan(text: '.', style: normalStyle),
+          ],
+        ),
+      ),
+      confirmLabel: 'Agree',
+      cancelLabel: 'Cancel',
+    );
+
+    privacyRecognizer.dispose();
+    termsRecognizer.dispose();
+
+    return agreed == true;
+  }
+
   Future<void> _signInWithApple(BuildContext context) async {
     if (_isSigningIn) return;
+    if (!await _confirmEula()) return;
     setState(() => _isSigningIn = true);
     try {
       final rawNonce = Supabase.instance.client.auth.generateRawNonce();
@@ -99,11 +171,10 @@ class _StartScreenState extends State<StartScreen> {
           )
           .timeout(
             const Duration(seconds: 30),
-            onTimeout: () =>
-                throw Exception('로그인 요청이 시간 초과되었습니다 (30초)'),
+            onTimeout: () => throw Exception('Sign-in request timed out (30s)'),
           );
       if (response.session == null) {
-        throw Exception('세션이 생성되지 않았습니다');
+        throw Exception('Session was not created');
       }
 
       if (credential.givenName != null || credential.familyName != null) {
@@ -122,6 +193,7 @@ class _StartScreenState extends State<StartScreen> {
           );
         }
       }
+      await _recordEulaAcceptance();
       if (context.mounted) {
         _navigateAfterLogin(context);
       }
@@ -154,12 +226,12 @@ class _StartScreenState extends State<StartScreen> {
       context: context,
       barrierDismissible: true,
       builder: (ctx) => AlertDialog(
-        title: const Text('로그인 실패'),
+        title: const Text('Sign-in Failed'),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('확인'),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -168,6 +240,7 @@ class _StartScreenState extends State<StartScreen> {
 
   Future<void> _signInWithGoogle() async {
     if (_isSigningIn) return;
+    if (!await _confirmEula()) return;
     setState(() => _isSigningIn = true);
     try {
       final googleSignIn = GoogleSignIn(
@@ -187,7 +260,7 @@ class _StartScreenState extends State<StartScreen> {
       final accessToken = googleAuth.accessToken;
 
       if (idToken == null) {
-        throw Exception('Google ID 토큰을 받지 못했습니다');
+        throw Exception('Could not retrieve Google ID token');
       }
 
       final response = await Supabase.instance.client.auth
@@ -198,12 +271,12 @@ class _StartScreenState extends State<StartScreen> {
           )
           .timeout(
             const Duration(seconds: 30),
-            onTimeout: () =>
-                throw Exception('로그인 요청이 시간 초과되었습니다 (30초)'),
+            onTimeout: () => throw Exception('Sign-in request timed out (30s)'),
           );
       if (response.session == null) {
-        throw Exception('세션이 생성되지 않았습니다');
+        throw Exception('Session was not created');
       }
+      await _recordEulaAcceptance();
       if (context.mounted) {
         _navigateAfterLogin(context);
       }
@@ -227,9 +300,10 @@ class _StartScreenState extends State<StartScreen> {
 
   Future<void> _signInWithKakao() async {
     if (_isSigningIn) return;
+    if (!await _confirmEula()) return;
     setState(() => _isSigningIn = true);
     try {
-      // 카카오톡 앱이 있으면 카카오톡으로 로그인, 없으면 OAuth(웹) 폴백
+      // Try KakaoTalk app login first, fall back to OAuth (web) if unavailable
       if (!kIsWeb && kakaoNativeAppKey.isNotEmpty) {
         try {
           final token = await UserApi.instance.loginWithKakaoTalk();
@@ -243,18 +317,19 @@ class _StartScreenState extends State<StartScreen> {
                 .timeout(
                   const Duration(seconds: 30),
                   onTimeout: () =>
-                      throw Exception('로그인 요청이 시간 초과되었습니다 (30초)'),
+                      throw Exception('Sign-in request timed out (30s)'),
                 );
             if (response.session == null) {
-              throw Exception('세션이 생성되지 않았습니다');
+              throw Exception('Session was not created');
             }
+            await _recordEulaAcceptance();
             if (context.mounted) {
               _navigateAfterLogin(context);
             }
             return;
           }
         } catch (_) {
-          // 카카오톡 미설치/취소 등 → OAuth 폴백
+          // KakaoTalk not installed / cancelled → OAuth fallback
         }
       }
 
@@ -263,9 +338,9 @@ class _StartScreenState extends State<StartScreen> {
         redirectTo: kIsWeb ? null : 'com.bemyday://login-callback',
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
-      // OAuth는 브라우저에서 완료 후 com.bemyday://login-callback으로 앱 복귀.
+      // OAuth completes in browser, then returns to app via com.bemyday://login-callback
     } catch (e) {
-      if (mounted) _showLoginError('카카오: $e');
+      if (mounted) _showLoginError('Kakao: $e');
     } finally {
       if (mounted) setState(() => _isSigningIn = false);
     }
@@ -278,42 +353,36 @@ class _StartScreenState extends State<StartScreen> {
       SafeArea(
         child: Column(
           children: [
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "Be My Day",
-                        style: GoogleFonts.darumadropOne(
-                          textStyle: TextStyle(fontSize: Sizes.size48),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      Gaps.v2,
-                      Opacity(
-                        opacity: 0.5,
-                        child: Text(
-                          "Besties who make my day",
-                          style: GoogleFonts.darumadropOne(
-                            textStyle: TextStyle(fontSize: Sizes.size16),
-                          ),
-                        ),
-                      ),
-                    ],
+            const Spacer(flex: 1),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Be My Day",
+                    style: GoogleFonts.darumadropOne(
+                      textStyle: TextStyle(fontSize: Sizes.size48),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                  Gaps.v2,
+                  Opacity(
+                    opacity: 0.5,
+                    child: Text(
+                      "Besties who make my day",
+                      style: GoogleFonts.darumadropOne(
+                        textStyle: TextStyle(fontSize: Sizes.size16),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            // Gap between title and buttons. Adjust flex values (top Spacer flex:2 / bottom flex:3)
+            const Spacer(flex: 1),
             Padding(
-              padding: EdgeInsets.only(
-                top: Paddings.scaffoldV,
-                left: Paddings.scaffoldH,
-                right: Paddings.scaffoldH,
-                bottom: Paddings.scaffoldV,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: Paddings.scaffoldH),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -361,63 +430,6 @@ class _StartScreenState extends State<StartScreen> {
                         fit: BoxFit.contain,
                       ),
                       label: "Continue with Kakao",
-                    ),
-                  ),
-                  Gaps.v16,
-                  Opacity(
-                    opacity: 0.5,
-                    child: Text.rich(
-                      textAlign: TextAlign.center,
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: "By continuing, you agree to BMD's\n",
-                                style: Theme.of(context).textTheme.labelSmall!
-                                    .copyWith(fontWeight: FontWeight.w500),
-                              ),
-                              TextSpan(
-                                text: "Privacy Policy",
-                                style: Theme.of(context).textTheme.labelSmall!
-                                    .copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    launchUrl(
-                                      Uri.parse(
-                                        "https://www.bemyday.app/privacy",
-                                      ),
-                                    );
-                                  },
-                              ),
-                              TextSpan(
-                                text: " and ",
-                                style: Theme.of(context).textTheme.labelSmall!
-                                    .copyWith(fontWeight: FontWeight.w500),
-                              ),
-                              TextSpan(
-                                text: "Terms of Service",
-                                style: Theme.of(context).textTheme.labelSmall!
-                                    .copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    launchUrl(
-                                      Uri.parse(
-                                        "https://www.bemyday.app/terms",
-                                      ),
-                                    );
-                                  },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ],

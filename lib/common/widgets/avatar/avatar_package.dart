@@ -13,7 +13,9 @@ class AvatarPackage extends StatelessWidget {
     this.avatarWidget,
     this.childTitle,
     this.subTitle,
+    this.subTitleWidget,
     this.isDarkOnly = false,
+    this.onTap,
   });
 
   final String nickname;
@@ -22,12 +24,17 @@ class AvatarPackage extends StatelessWidget {
   final Widget? avatarWidget;
   final String? childTitle;
   final String? subTitle;
+  final Widget? subTitleWidget;
   final bool isDarkOnly;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: LayoutBuilder(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: LayoutBuilder(
         builder: (context, constraints) {
           final maxTitleWidth = constraints.maxWidth * 0.6;
           return Row(
@@ -39,8 +46,9 @@ class AvatarPackage extends StatelessWidget {
                     radius: CustomSizes.avatarComment,
                   ),
               CustomSizes.commentLeadingGap,
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -78,27 +86,27 @@ class AvatarPackage extends StatelessWidget {
                       ],
                     ],
                   ),
-                  if (subTitle != null && subTitle!.isNotEmpty)
-                    Opacity(
-                      opacity: 0.5,
-                      child: Text(
-                        subTitle!,
-                        style: TextStyle(
-                          fontSize: Sizes.size12,
-                          color: isDarkMode(context) || isDarkOnly
-                              ? Colors.white
-                              : Colors.black,
-                        ),
-                        overflow: TextOverflow.fade,
-                        maxLines: 1,
-                        softWrap: false,
+                  if (subTitleWidget != null)
+                    subTitleWidget!
+                  else if (subTitle != null && subTitle!.isNotEmpty)
+                    Text(
+                      subTitle!,
+                      style: TextStyle(
+                        fontSize: Sizes.size12,
+                        color: isDarkMode(context) || isDarkOnly
+                            ? Colors.white.withValues(alpha: 0.5)
+                            : Colors.black.withValues(alpha: 0.5),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                 ],
+              ),
               ),
             ],
           );
         },
+      ),
       ),
     );
   }

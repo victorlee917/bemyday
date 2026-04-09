@@ -7,14 +7,21 @@ import 'package:bemyday/features/group/providers/group_provider.dart';
 import 'package:bemyday/features/post/models/post.dart';
 import 'package:bemyday/features/post/providers/post_provider.dart';
 import 'package:bemyday/features/post/widgets/post_content.dart';
+import 'package:bemyday/features/post/widgets/report_reason_sheet.dart' show showReportReasonSheet;
 import 'package:bemyday/features/posting/posting_album_screen.dart';
+import 'package:bemyday/features/report/providers/report_provider.dart';
 import 'package:bemyday/generated/l10n/app_localizations.dart';
+import 'package:bemyday/constants/sizes.dart';
+import 'package:bemyday/constants/styles.dart';
+import 'package:bemyday/utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 bool _postIdEquals(String a, String b) =>
     a.toLowerCase() == b.toLowerCase();
@@ -61,6 +68,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
   static const int _focusPostListRetryMax = 12;
 
   double _dragOffset = 0;
+  bool _photoOnly = false;
   late final AnimationController _dragAnimController;
 
   @override
@@ -242,6 +250,8 @@ class _PostScreenState extends ConsumerState<PostScreen>
           autofocus: autofocus,
           scrollController: scrollController,
           scrollToCommentId: scrollToCommentId,
+          caption: post.caption,
+          postAuthorId: post.authorId,
           onCommentAdded: () => ref.invalidate(postWithDetailsProvider(post)),
         ),
       ),
@@ -268,22 +278,92 @@ class _PostScreenState extends ConsumerState<PostScreen>
 
   void _onMoreTap(Post post) async {
     final l10n = AppLocalizations.of(context)!;
-    bool deleteRequested = false;
+    final currentUserId =
+        Supabase.instance.client.auth.currentUser?.id;
+    final isOwnPost = post.authorId == currentUserId;
+
+    String? action;
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => SheetSelect(
         items: [
-          SheetItem(
-            title: l10n.postDeleteTitle,
-            onTap: () => deleteRequested = true,
-            isDestructive: true,
-          ),
+          if (isOwnPost)
+            SheetItem(
+              title: l10n.postDeleteTitle,
+              onTap: () => action = 'delete',
+              isDestructive: true,
+            ),
+          if (!isOwnPost) ...[
+            SheetItem(
+              title: l10n.reportPost,
+              onTap: () => action = 'report',
+            ),
+            SheetItem(
+              title: l10n.blockUser,
+              onTap: () => action = 'block',
+              isDestructive: true,
+            ),
+          ],
         ],
       ),
     );
-    if (deleteRequested && mounted) {
-      _confirmDelete(post);
+    if (!mounted) return;
+    switch (action) {
+      case 'delete':
+        _confirmDelete(post);
+        break;
+      case 'report':
+        _reportPost(post);
+        break;
+      case 'block':
+        _blockPostAuthor(post);
+        break;
+    }
+  }
+
+  void _reportPost(Post post) async {
+    final l10n = AppLocalizations.of(context)!;
+    final reason = await showReportReasonSheet(context);
+    if (reason == null || !mounted) return;
+    try {
+      await ref.read(reportRepositoryProvider).report(
+            targetType: 'post',
+            targetId: post.id,
+            reason: reason,
+          );
+      if (mounted) showAppSnackBar(context, l10n.reportSubmitted, hasBottomNavBar: false);
+    } catch (_) {
+      if (mounted) showAppSnackBar(context, l10n.reportFailed, hasBottomNavBar: false);
+    }
+  }
+
+  void _blockPostAuthor(Post post) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: l10n.blockUserConfirmTitle,
+      message: l10n.blockUserConfirmMessage,
+      confirmLabel: l10n.blockUser,
+      isDestructive: true,
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(blockRepositoryProvider).blockUser(post.authorId);
+      ref.invalidate(blockedUserIdsProvider);
+      ref.invalidate(currentWeekPostsProvider(widget.group!));
+      ref.invalidate(weekPostSummariesProvider(widget.group!));
+      ref.invalidate(groupLatestPostsProvider(widget.group!));
+      ref.invalidate(groupLatestRevealedPostsProvider(widget.group!));
+      if (widget.weekIndex != null) {
+        ref.invalidate(
+          weekPostsProvider(
+              (group: widget.group!, weekIndex: widget.weekIndex!)),
+        );
+      }
+      if (mounted) showAppSnackBar(context, l10n.blockUserSuccess, hasBottomNavBar: false);
+    } catch (_) {
+      if (mounted) showAppSnackBar(context, l10n.blockUserFailed, hasBottomNavBar: false);
     }
   }
 
@@ -311,6 +391,32 @@ class _PostScreenState extends ConsumerState<PostScreen>
       ref.invalidate(
         weekPostsProvider((group: widget.group!, weekIndex: widget.weekIndex!)),
       );
+    }
+  }
+
+  void _onCaptionTap(Post post) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
+        child: _CaptionSheet(initialCaption: post.caption),
+      ),
+    );
+    if (result == null || !mounted) return;
+    final caption = result.isEmpty ? null : result;
+    await ref.read(postRepositoryProvider).updateCaption(post.id, caption);
+    ref.invalidate(postWithDetailsProvider(post));
+    if (widget.weekIndex != null) {
+      ref.invalidate(
+        weekPostsProvider((group: widget.group!, weekIndex: widget.weekIndex!)),
+      );
+    } else {
+      ref.invalidate(currentWeekPostsProvider(widget.group!));
     }
   }
 
@@ -425,6 +531,9 @@ class _PostScreenState extends ConsumerState<PostScreen>
               currentIndex: clampedIdx,
               weekIndex: widget.weekIndex,
               dragOffset: _dragOffset,
+              photoOnly: _photoOnly,
+              onLongPressStart: () => setState(() => _photoOnly = true),
+              onLongPressEnd: () => setState(() => _photoOnly = false),
               likeOverride: _likeOverride,
               likeCountOverride: _likeCountOverride,
               dismissedCommentIdByPost: _dismissedCommentIdByPost,
@@ -446,6 +555,7 @@ class _PostScreenState extends ConsumerState<PostScreen>
               onCommentNudgeDismiss: (postId, commentId) {
                 setState(() => _dismissedCommentIdByPost[postId] = commentId);
               },
+              onCaptionTap: () => _onCaptionTap(post),
             );
           },
           loading: () =>
@@ -454,6 +564,119 @@ class _PostScreenState extends ConsumerState<PostScreen>
             child: Text(
               l10n.postError(e.toString()),
               style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CaptionSheet extends StatefulWidget {
+  const _CaptionSheet({this.initialCaption});
+
+  final String? initialCaption;
+
+  @override
+  State<_CaptionSheet> createState() => _CaptionSheetState();
+}
+
+class _CaptionSheetState extends State<_CaptionSheet> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialCaption ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: Paddings.scaffoldH,
+        vertical: Paddings.scaffoldV,
+      ),
+      child: SafeArea(
+        top: false,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(RValues.button),
+          child: BackdropFilter(
+            filter: Blurs.backdrop,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDarkMode(context)
+                    ? Blurs.overlayColorDark
+                    : Blurs.overlayColorLight,
+                borderRadius: BorderRadius.circular(RValues.button),
+                border: Border.all(
+                  color: isDarkMode(context)
+                      ? CustomColors.borderDark
+                      : CustomColors.borderLight,
+                ),
+              ),
+              child: TextField(
+                controller: _controller,
+                autofocus: true,
+                textInputAction: TextInputAction.send,
+                keyboardType: TextInputType.text,
+                maxLines: 1,
+                maxLength: 100,
+                style: TextStyle(fontSize: Sizes.size14),
+                cursorHeight: Sizes.size14,
+                cursorColor: isDarkMode(context) ? Colors.white : Colors.black,
+                decoration: InputDecoration(
+                  counterText: '',
+                  hintText: 'Caption this..',
+                  hintStyle: TextStyle(
+                    color: isDarkMode(context)
+                        ? CustomColors.hintColorDark
+                        : CustomColors.hintColorLight,
+                  ),
+                  suffixIcon: _controller.text.trim().isNotEmpty
+                      ? GestureDetector(
+                          onTap: _submit,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              right: Paddings.buttonH,
+                              left: Sizes.size8,
+                            ),
+                            child: FaIcon(
+                              FontAwesomeIcons.circleArrowUp,
+                              size: Sizes.size20,
+                            ),
+                          ),
+                        )
+                      : null,
+                  suffixIconConstraints: BoxConstraints(
+                    minWidth: 0,
+                    minHeight: 0,
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: Paddings.buttonH,
+                    vertical: Paddings.buttonV,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(RValues.button),
+                  ),
+                ),
+                autocorrect: false,
+                onSubmitted: (_) => _submit(),
+                onChanged: (_) => setState(() {}),
+              ),
             ),
           ),
         ),

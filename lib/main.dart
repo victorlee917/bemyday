@@ -227,12 +227,15 @@ class BeMyDay extends ConsumerWidget {
     ref.listen(authStateProvider, (prev, next) {
       final prevUserId = prev?.valueOrNull?.session?.user.id;
       final nextUserId = next.valueOrNull?.session?.user.id;
+      if (nextUserId != null) {
+        // 세션 유지 재시작 또는 로그인 시 항상 토큰 등록
+        push.PushNotificationService.ensureTokenRegistered();
+      }
       if (prevUserId != nextUserId) {
         ref.invalidate(currentProfileProvider);
         ref.invalidate(currentUserGroupsProvider);
         ref.invalidate(alarmPreferencesProvider);
         if (nextUserId != null) {
-          push.PushNotificationService.registerTokenIfNeeded();
           ref.read(alarmPreferencesProvider.future).then((prefs) {
             push.PushNotificationService.syncDailyReminder(prefs.dailyReminder);
           });

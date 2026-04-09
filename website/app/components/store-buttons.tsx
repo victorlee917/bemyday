@@ -1,7 +1,7 @@
 const BORDER_CLASS = "border border-[rgba(13,13,13,0.05)]";
 const CLICKABLE_AREA_LIGHT = "#f2f2f2"; // CustomColors.clickableAreaLight
 
-const APP_STORE_URL = "https://apps.apple.com/app/bemyday";
+const APP_STORE_URL = "https://apps.apple.com/app/be-my-day/id6760583737";
 const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.bemyday";
 
@@ -52,20 +52,17 @@ export function AppStoreButton() {
 
 export function GooglePlayButton() {
   return (
-    <a
-      href={PLAY_STORE_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`${BORDER_CLASS} relative flex flex-row items-center justify-center bg-[#f2f2f2] text-black rounded-4xl h-[44px] overflow-hidden w-[240px] cursor-pointer no-underline hover:opacity-90 transition-opacity`}
+    <div
+      className={`${BORDER_CLASS} relative flex flex-row items-center justify-center bg-[#f2f2f2] text-black/40 rounded-4xl h-[44px] overflow-hidden w-[240px] cursor-default`}
     >
       <img
         src="/images/google_play.png"
         alt="Google Play"
         width={44}
         height={44}
-        className="absolute left-0 top-0"
+        className="absolute left-0 top-0 opacity-40"
       />
-      <span className="text-sm z-10 font-bold">Google Play</span>
-    </a>
+      <span className="text-sm z-10 font-bold">Coming Soon</span>
+    </div>
   );
 }

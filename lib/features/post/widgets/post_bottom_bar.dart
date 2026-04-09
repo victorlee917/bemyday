@@ -7,9 +7,10 @@ import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class PostBottomBar extends StatelessWidget {
+class PostBottomBar extends StatefulWidget {
   final String nickname;
   final String? avatarUrl;
+  final String? caption;
   final String date;
   final int likeCount;
   final int commentCount;
@@ -17,14 +18,18 @@ class PostBottomBar extends StatelessWidget {
   final List<String> likedUserIds;
   final int? postIndex;
   final int? postCount;
+  final bool isOwnPost;
   final VoidCallback? onLikeTap;
   final VoidCallback? onCommentTap;
+  final VoidCallback? onAvatarTap;
+  final VoidCallback? onCaptionTap;
   final bool hideLikeComment;
 
   const PostBottomBar({
     super.key,
     required this.nickname,
     this.avatarUrl,
+    this.caption,
     required this.date,
     required this.likeCount,
     required this.commentCount,
@@ -32,13 +37,43 @@ class PostBottomBar extends StatelessWidget {
     this.likedUserIds = const [],
     this.postIndex,
     this.postCount,
+    this.isOwnPost = false,
     this.onLikeTap,
     this.onCommentTap,
+    this.onAvatarTap,
+    this.onCaptionTap,
     this.hideLikeComment = false,
   });
 
+  @override
+  State<PostBottomBar> createState() => _PostBottomBarState();
+}
+
+class _PostBottomBarState extends State<PostBottomBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  bool get _showCaptionShimmer =>
+      widget.isOwnPost &&
+      (widget.caption == null || widget.caption!.trim().isEmpty);
+
   void _onLikeLongPress(BuildContext context) {
-    if (likedUserIds.isEmpty) return;
+    if (widget.likedUserIds.isEmpty) return;
 
     showModalBottomSheet(
       context: context,
@@ -50,7 +85,50 @@ class PostBottomBar extends StatelessWidget {
         maxChildSize: 0.8,
         expand: false,
         builder: (context, scrollController) =>
-            LikesSheet(likedUserIds: likedUserIds),
+            LikesSheet(likedUserIds: widget.likedUserIds),
+      ),
+    );
+  }
+
+  Widget _buildShimmerText() {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, child) {
+        final offset = _shimmerController.value * 3 - 1;
+        return Opacity(
+          opacity: 0.5,
+          child: ShaderMask(
+            shaderCallback: (bounds) {
+              return LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: const [
+                  Colors.white38,
+                  Colors.white,
+                  Colors.white38,
+                ],
+                stops: [
+                  (offset - 0.3).clamp(0.0, 1.0),
+                  offset.clamp(0.0, 1.0),
+                  (offset + 0.3).clamp(0.0, 1.0),
+                ],
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.srcIn,
+            child: child,
+          ),
+        );
+      },
+      child: Text(
+        'Caption this..',
+        style: TextStyle(
+          fontSize: Sizes.size12,
+          color: Colors.white,
+          fontStyle: FontStyle.italic,
+        ),
+        overflow: TextOverflow.fade,
+        maxLines: 1,
+        softWrap: false,
       ),
     );
   }
@@ -63,34 +141,46 @@ class PostBottomBar extends StatelessWidget {
       child: Row(
         children: [
           AvatarPackage(
-            nickname: nickname,
-            avatarUrl: avatarUrl,
-            title: nickname,
+            nickname: widget.nickname,
+            avatarUrl: widget.avatarUrl,
+            title: widget.nickname,
             isDarkOnly: true,
-            subTitle: postIndex != null && postCount != null
-                ? l10n.postIndexOfCount(postIndex!, postCount!)
+            subTitle: !_showCaptionShimmer
+                ? (widget.caption != null && widget.caption!.trim().isNotEmpty
+                    ? widget.caption!
+                    : widget.postIndex != null && widget.postCount != null
+                        ? l10n.postIndexOfCount(widget.postIndex!, widget.postCount!)
+                        : null)
                 : null,
-            childTitle: date,
+            subTitleWidget: _showCaptionShimmer
+                ? GestureDetector(
+                    onTap: widget.onCaptionTap,
+                    child: _buildShimmerText(),
+                  )
+                : null,
+            childTitle: widget.date,
+            onTap: widget.onAvatarTap,
           ),
-          if (!hideLikeComment)
+          if (!widget.hideLikeComment) ...[
+            Gaps.h16,
             Row(
               children: [
                 GestureDetector(
-                  onTap: onLikeTap,
+                  onTap: widget.onLikeTap,
                   onLongPress: () => _onLikeLongPress(context),
                   child: Row(
                     children: [
                       FaIcon(
-                        isLiked
+                        widget.isLiked
                             ? FontAwesomeIcons.solidHeart
                             : FontAwesomeIcons.heart,
                         size: Sizes.size24,
-                        color: isLiked ? Colors.redAccent : Colors.white,
+                        color: widget.isLiked ? Colors.redAccent : Colors.white,
                       ),
                       Gaps.h10,
-                      if (likeCount > 0) ...[
+                      if (widget.likeCount > 0) ...[
                         Text(
-                          "$likeCount",
+                          "${widget.likeCount}",
                           style: TextStyle(color: Colors.white),
                         ),
                       ],
@@ -99,7 +189,7 @@ class PostBottomBar extends StatelessWidget {
                 ),
                 Gaps.h16,
                 GestureDetector(
-                  onTap: onCommentTap,
+                  onTap: widget.onCommentTap,
                   child: Row(
                     children: [
                       FaIcon(
@@ -107,10 +197,10 @@ class PostBottomBar extends StatelessWidget {
                         size: Sizes.size24,
                         color: Colors.white,
                       ),
-                      if (commentCount > 0) ...[
+                      if (widget.commentCount > 0) ...[
                         Gaps.h10,
                         Text(
-                          "$commentCount",
+                          "${widget.commentCount}",
                           style: TextStyle(color: Colors.white),
                         ),
                       ],
@@ -119,6 +209,7 @@ class PostBottomBar extends StatelessWidget {
                 ),
               ],
             ),
+          ],
         ],
       ),
     );

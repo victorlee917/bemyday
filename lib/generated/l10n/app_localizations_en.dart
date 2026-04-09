@@ -414,4 +414,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commentsHint => 'Leave a comment...';
+
+  @override
+  String get report => 'Report';
+
+  @override
+  String get reportPost => 'Report Post';
+
+  @override
+  String get reportComment => 'Report Comment';
+
+  @override
+  String get reportUser => 'Report User';
+
+  @override
+  String get reportReasonTitle => 'Why are you reporting this?';
+
+  @override
+  String get reportReasonHarassment => 'Harassment or bullying';
+
+  @override
+  String get reportReasonHateSpeech => 'Hate speech';
+
+  @override
+  String get reportReasonViolence => 'Violence or threats';
+
+  @override
+  String get reportReasonSexualContent => 'Sexual content';
+
+  @override
+  String get reportReasonSpam => 'Spam';
+
+  @override
+  String get reportReasonSelfHarm => 'Self-harm';
+
+  @override
+  String get reportReasonImpersonation => 'Impersonation';
+
+  @override
+  String get reportReasonOther => 'Other';
+
+  @override
+  String get reportSubmitted => 'Report submitted. Thank you.';
+
+  @override
+  String get reportFailed => 'Failed to submit report. Please try again.';
+
+  @override
+  String get blockUser => 'Block User';
+
+  @override
+  String get unblockUser => 'Unblock User';
+
+  @override
+  String get blockUserConfirmTitle => 'Block User';
+
+  @override
+  String get blockUserConfirmMessage =>
+      'You will no longer see their posts or comments. They won\'t be notified.';
+
+  @override
+  String get blockUserSuccess => 'User blocked';
+
+  @override
+  String get blockUserFailed => 'Failed to block user. Please try again.';
 }

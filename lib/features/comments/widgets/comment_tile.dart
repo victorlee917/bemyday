@@ -5,7 +5,11 @@ import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/features/comments/providers/comment_provider.dart';
 import 'package:bemyday/features/comments/widgets/comment_mention_text_spans.dart';
 import 'package:bemyday/features/post/widgets/likes_sheet.dart';
+import 'package:bemyday/features/post/widgets/report_reason_sheet.dart'
+    show showReportReasonSheet;
 import 'package:bemyday/features/profile/providers/profile_provider.dart';
+import 'package:bemyday/features/report/providers/report_provider.dart';
+import 'package:bemyday/generated/l10n/app_localizations.dart';
 import 'package:bemyday/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,33 +42,38 @@ class _CommentTileState extends ConsumerState<CommentTile> {
   int? _likeCountOverride;
   bool? _isLikedOverride;
 
-  Future<void> _onLikeTap() async {
+  /// Swipe reveal state
+  double _swipeOffset = 0;
+  static const _actionButtonWidth = 64.0;
+
+  void _onLikeTap() {
     final likeAsync = ref.read(commentLikeProvider(widget.commentId));
     final current = likeAsync.valueOrNull;
-    if (current == null) return;
 
-    final newLiked = !current.isLiked;
-    final newCount = current.likeCount + (newLiked ? 1 : -1);
+    final currentlyLiked = _isLikedOverride ?? current?.isLiked;
+    final currentCount = _likeCountOverride ?? current?.likeCount;
+    if (currentlyLiked == null || currentCount == null) return;
+
+    final newLiked = !currentlyLiked;
+    final newCount = currentCount + (newLiked ? 1 : -1);
 
     setState(() {
       _isLikedOverride = newLiked;
       _likeCountOverride = newCount.clamp(0, 0x7FFFFFFF);
     });
 
-    try {
-      await ref.read(commentRepositoryProvider).toggleCommentLike(
-            widget.commentId,
-            currentlyLiked: current.isLiked,
-          );
-      ref.invalidate(commentLikeProvider(widget.commentId));
-    } catch (_) {
+    ref.read(commentRepositoryProvider).toggleCommentLike(
+          widget.commentId,
+          currentlyLiked: currentlyLiked,
+        ).catchError((_) {
       if (mounted) {
         setState(() {
           _isLikedOverride = null;
           _likeCountOverride = null;
         });
       }
-    }
+      return false;
+    });
   }
 
   void _onLikeLongPress() {
@@ -102,6 +111,59 @@ class _CommentTileState extends ConsumerState<CommentTile> {
             LikesSheet(likedUserIds: likedUserIds),
       ),
     );
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _swipeOffset = (_swipeOffset + details.delta.dx).clamp(
+        -_actionButtonWidth,
+        0,
+      );
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final snapOpen = velocity < -200 || _swipeOffset < -_actionButtonWidth / 2;
+    setState(() {
+      _swipeOffset = snapOpen ? -_actionButtonWidth : 0;
+    });
+  }
+
+  void _resetSwipe() {
+    setState(() => _swipeOffset = 0);
+  }
+
+  Future<void> _onDeleteTap() async {
+    _resetSwipe();
+    try {
+      await ref
+          .read(commentRepositoryProvider)
+          .deleteComment(widget.commentId);
+      ref.invalidate(commentsProvider(widget.postId));
+      widget.onCommentDeleted?.call();
+    } catch (e) {
+      if (context.mounted) {
+        showAppSnackBar(context, 'Failed to delete comment.');
+      }
+    }
+  }
+
+  Future<void> _onReportTap() async {
+    _resetSwipe();
+    final l10n = AppLocalizations.of(context)!;
+    final reason = await showReportReasonSheet(context);
+    if (reason == null || !mounted) return;
+    try {
+      await ref.read(reportRepositoryProvider).report(
+            targetType: 'comment',
+            targetId: widget.commentId,
+            reason: reason,
+          );
+      if (mounted) showAppSnackBar(context, l10n.reportSubmitted);
+    } catch (_) {
+      if (mounted) showAppSnackBar(context, l10n.reportFailed);
+    }
   }
 
   @override
@@ -192,40 +254,60 @@ class _CommentTileState extends ConsumerState<CommentTile> {
           ),
         );
 
-        if (isOwnComment) {
-          return Dismissible(
-            key: ValueKey(widget.commentId),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              alignment: Alignment.centerRight,
-              padding: EdgeInsets.only(right: Sizes.size24),
-              color: CustomColors.destructiveColorDark,
-              child: FaIcon(
-                FontAwesomeIcons.trash,
-                color: Colors.white,
-                size: Sizes.size20,
-              ),
-            ),
-            confirmDismiss: (direction) async {
-              try {
-                await ref
-                    .read(commentRepositoryProvider)
-                    .deleteComment(widget.commentId);
-                ref.invalidate(commentsProvider(widget.postId));
-                widget.onCommentDeleted?.call();
-                return true;
-              } catch (e) {
-                if (context.mounted) {
-                  showAppSnackBar(context, '삭제에 실패했습니다.');
-                }
-                return false;
-              }
-            },
-            child: tile,
-          );
-        }
+        // Action button behind the tile
+        final actionButton = isOwnComment
+            ? GestureDetector(
+                onTap: _onDeleteTap,
+                child: Container(
+                  width: _actionButtonWidth,
+                  color: CustomColors.destructiveColorDark,
+                  alignment: Alignment.center,
+                  child: FaIcon(
+                    FontAwesomeIcons.trash,
+                    color: Colors.white,
+                    size: Sizes.size16,
+                  ),
+                ),
+              )
+            : GestureDetector(
+                onTap: _onReportTap,
+                child: Container(
+                  width: _actionButtonWidth,
+                  color: Colors.orange,
+                  alignment: Alignment.center,
+                  child: FaIcon(
+                    FontAwesomeIcons.flag,
+                    color: Colors.white,
+                    size: Sizes.size16,
+                  ),
+                ),
+              );
 
-        return tile;
+        return GestureDetector(
+          onHorizontalDragUpdate: _onHorizontalDragUpdate,
+          onHorizontalDragEnd: _onHorizontalDragEnd,
+          child: Stack(
+            children: [
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: actionButton,
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                transform: Matrix4.translationValues(_swipeOffset, 0, 0),
+                child: Container(
+                  color: isDarkMode(context)
+                      ? CustomColors.sheetColorDark
+                      : CustomColors.sheetColorLight,
+                  child: tile,
+                ),
+              ),
+            ],
+          ),
+        );
       },
       loading: () => SizedBox.shrink(),
       error: (_, __) => SizedBox.shrink(),

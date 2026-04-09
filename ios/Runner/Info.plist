@@ -78,9 +78,10 @@
 		<key>UISupportedInterfaceOrientations~ipad</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>UIRequiredDeviceCapabilities</key>
+		<array>
+			<string>arm64</string>
 		</array>
 		<key>UIBackgroundModes</key>
 		<array>

@@ -85,18 +85,7 @@ export function InviteCard({
   const colors = parseGradientColors(gradientColors);
   const hasGradient = colors && colors.length >= 3;
   const defaultBg = "#f5f5f5";
-  const hasAvatar = !!inviterAvatarUrl;
-  const textColor = hasGradient || hasAvatar ? "white" : "black";
-
-  const overlayStyle = hasGradient
-    ? {
-        background: `linear-gradient(to bottom right, ${colors
-          .map((c) => `${c}da`)
-          .join(", ")})`,
-      }
-    : hasAvatar
-      ? { backgroundColor: "rgba(0,0,0,0.3)" }
-      : { backgroundColor: defaultBg };
+  const textColor = hasGradient ? "white" : "black";
 
   const sizeStyle = fillContainer
     ? { width: "100%", height: "100%" }
@@ -109,24 +98,29 @@ export function InviteCard({
         ...sizeStyle,
         containerType: "size",
         borderColor: "rgba(13,13,13,0.05)",
-        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+        boxShadow: hasGradient ? "0 6px 12px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.1)" : "0 4px 8px rgba(0,0,0,0.1)",
+        backgroundColor: hasGradient ? undefined : defaultBg,
       } as React.CSSProperties}
     >
-      {/* Blurred avatar background (when avatar exists) */}
-      {hasAvatar && (
-        <div
-          className="absolute inset-0"
-          style={{ transform: "scale(1.15)" }}
-        >
-          <img
-            src={inviterAvatarUrl!}
-            alt=""
-            className="w-full h-full object-cover blur-md"
+      {/* Gradient background (extracted from avatar palette) */}
+      {hasGradient && (
+        <>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(to bottom right, ${colors
+                .map((c) => `${c}e6`)
+                .join(", ")})`,
+            }}
           />
-        </div>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(circle at center, transparent, rgba(0,0,0,0.12))",
+            }}
+          />
+        </>
       )}
-      {/* Gradient or overlay */}
-      <div className="absolute inset-0" style={overlayStyle} />
       {/* Content (cqh로 카드 높이에 맞춰 스케일) */}
       <div className="relative h-full flex flex-col justify-between p-[clamp(8px,3cqh,16px)]">
         <span

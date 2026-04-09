@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:bemyday/common/widgets/cached_post_image.dart';
-import 'package:bemyday/common/widgets/gradient_overlay.dart';
 import 'package:bemyday/constants/styles.dart';
 import 'package:bemyday/data/weekdays.dart';
 import 'package:bemyday/features/group/models/group.dart';
@@ -28,6 +27,9 @@ class PostContent extends ConsumerWidget {
     required this.currentIndex,
     required this.weekIndex,
     required this.dragOffset,
+    required this.photoOnly,
+    required this.onLongPressStart,
+    required this.onLongPressEnd,
     required this.likeOverride,
     required this.likeCountOverride,
     required this.dismissedCommentIdByPost,
@@ -40,6 +42,7 @@ class PostContent extends ConsumerWidget {
     required this.onLikeTap,
     required this.onCommentTap,
     required this.onCommentNudgeDismiss,
+    this.onCaptionTap,
   });
 
   final Group group;
@@ -48,6 +51,9 @@ class PostContent extends ConsumerWidget {
   final int currentIndex;
   final int? weekIndex;
   final double dragOffset;
+  final bool photoOnly;
+  final VoidCallback onLongPressStart;
+  final VoidCallback onLongPressEnd;
   final bool? likeOverride;
   final int? likeCountOverride;
   final Map<String, String> dismissedCommentIdByPost;
@@ -62,6 +68,7 @@ class PostContent extends ConsumerWidget {
   final void Function(Post post, {bool autofocus, String? scrollToCommentId})
   onCommentTap;
   final void Function(String postId, String commentId) onCommentNudgeDismiss;
+  final VoidCallback? onCaptionTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,11 +97,17 @@ class PostContent extends ConsumerWidget {
         ? BorderRadius.vertical(top: Radius.circular(16))
         : BorderRadius.zero;
 
+    final overlayOpacity = photoOnly ? 0.0 : 1.0;
+
     return GestureDetector(
-      onTapUp: (d) => onTapUp(d, allPosts),
-      onVerticalDragUpdate: onVerticalDragUpdate,
-      onVerticalDragEnd: onVerticalDragEnd,
-      child: ColoredBox(
+      onLongPressStart: (_) => onLongPressStart(),
+      onLongPressEnd: (_) => onLongPressEnd(),
+      onLongPressCancel: onLongPressEnd,
+      child: GestureDetector(
+        onTapUp: photoOnly ? null : (d) => onTapUp(d, allPosts),
+        onVerticalDragUpdate: photoOnly ? null : onVerticalDragUpdate,
+        onVerticalDragEnd: photoOnly ? null : onVerticalDragEnd,
+        child: ColoredBox(
         color: Colors.black.withValues(alpha: opacity),
         child: Transform.translate(
           offset: Offset(0, dragOffset),
@@ -127,40 +140,83 @@ class PostContent extends ConsumerWidget {
                     ),
                   ),
                 ),
-                GradientOverlay(
+                Positioned(
+                  top: 0, left: 0, right: 0,
                   height: MediaQuery.of(context).padding.top + 120,
-                  alignment: Alignment.topCenter,
-                  opacity: 0.55,
+                  child: AnimatedOpacity(
+                    opacity: overlayOpacity,
+                    duration: const Duration(milliseconds: 200),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.55),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                GradientOverlay(
+                Positioned(
+                  bottom: 0, left: 0, right: 0,
                   height: 200,
-                  alignment: Alignment.bottomCenter,
-                  opacity: 0.55,
+                  child: AnimatedOpacity(
+                    opacity: overlayOpacity,
+                    duration: const Duration(milliseconds: 200),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.55),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
                 if (shouldBlur)
-                  Center(child: RevealCountdown(targetWeekday: group.weekday)),
+                  Positioned.fill(
+                    child: AnimatedOpacity(
+                      opacity: overlayOpacity,
+                      duration: const Duration(milliseconds: 200),
+                      child: Center(child: RevealCountdown(targetWeekday: group.weekday)),
+                    ),
+                  ),
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
-                  child: PostHeaderBar(
+                  child: AnimatedOpacity(
+                    opacity: overlayOpacity,
+                    duration: const Duration(milliseconds: 200),
+                    child: PostHeaderBar(
                     weekdayName: weekdays[weekdayIndex].name,
                     weekNumber: post.weekIndex,
                     currentIndex: currentIndex,
                     itemCount: itemCount,
                     onCloseTap: onCloseTap,
-                    onMoreTap: isOwnPost ? () => onMoreTap(post) : null,
+                    onMoreTap: () => onMoreTap(post),
                     onPostTap:
                         weekIndex == null || weekIndex == groupWeekNumber(group)
                         ? onPostTap
                         : null,
+                  ),
                   ),
                 ),
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: SafeArea(
+                  child: AnimatedOpacity(
+                    opacity: overlayOpacity,
+                    duration: const Duration(milliseconds: 200),
+                    child: SafeArea(
                     child: Padding(
                       padding: EdgeInsets.only(
                         bottom: Platform.isAndroid ? Paddings.scaffoldV : 0,
@@ -179,14 +235,17 @@ class PostContent extends ConsumerWidget {
                         onLikeTap: onLikeTap,
                         onCommentTap: onCommentTap,
                         onPostTap: onPostTap ?? () {},
+                        onCaptionTap: onCaptionTap,
                       ),
                     ),
+                  ),
                   ),
                 ),
               ],
             ),
           ),
         ),
+      ),
       ),
     );
   }

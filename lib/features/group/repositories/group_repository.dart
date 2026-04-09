@@ -40,25 +40,6 @@ class GroupRepository {
     }).where((e) => e.nickname.isNotEmpty).toList();
   }
 
-  /// 그룹 멤버 아바타 정보 (avatar_url, nickname)
-  ///
-  /// - [다른 멤버..., 현재 유저] 순. RPC get_group_members_ordered가 서버 auth.uid()로 정렬.
-  Future<List<({String? avatarUrl, String nickname})>> getGroupMemberAvatars(
-      String groupId) async {
-    final members = await getGroupMembersOrdered(groupId);
-    return members
-        .map((e) => (avatarUrl: e.avatarUrl, nickname: e.nickname))
-        .toList();
-  }
-
-  /// 그룹 멤버 닉네임 목록 (group.name fallback용)
-  ///
-  /// - [다른 멤버..., 현재 유저] 순. RPC get_group_members_ordered가 서버 auth.uid()로 정렬.
-  Future<List<String>> getGroupMemberNicknames(String groupId) async {
-    final members = await getGroupMembersOrdered(groupId);
-    return members.map((e) => e.nickname).toList();
-  }
-
   /// 그룹 탈퇴 (현재 유저를 group_members에서 삭제)
   ///
   /// - RPC [leave_group]: RLS 때문에 클라이언트에서 delete 후 groups.update가 실패하거나

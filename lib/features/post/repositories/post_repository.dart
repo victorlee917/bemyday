@@ -142,7 +142,7 @@ class PostRepository {
   ///
   /// 반환: weekIndex 내림차순 (최신 주 먼저)
   Future<List<({int weekIndex, int postCount, List<String> authorIds, Post? latestPost})>>
-      getWeekPostSummaries(Group group) async {
+      getWeekPostSummaries(Group group, {List<String> excludeAuthorIds = const []}) async {
     final rows = await _client
         .from('posts')
         .select('id, group_id, author_id, week_index, photo_url, caption, created_at')
@@ -150,7 +150,10 @@ class PostRepository {
         .isFilter('deleted_at', null)
         .order('created_at', ascending: false);
 
-    final allPosts = (rows as List).map((r) => Post.fromJson(r)).toList();
+    var allPosts = (rows as List).map((r) => Post.fromJson(r)).toList();
+    if (excludeAuthorIds.isNotEmpty) {
+      allPosts = allPosts.where((p) => !excludeAuthorIds.contains(p.authorId)).toList();
+    }
     if (allPosts.isEmpty) return [];
 
     final byWeek = <int, List<Post>>{};
@@ -193,7 +196,7 @@ class PostRepository {
   Future<int> getPostLikeCount(String postId) async {
     final res = await _client
         .from('post_likes')
-        .select()
+        .select('user_id')
         .eq('post_id', postId)
         .count(CountOption.exact);
     return res.count;
@@ -213,7 +216,7 @@ class PostRepository {
   Future<int> getPostCommentCount(String postId) async {
     final res = await _client
         .from('comments')
-        .select()
+        .select('id')
         .eq('post_id', postId)
         .isFilter('deleted_at', null)
         .count(CountOption.exact);
@@ -256,6 +259,17 @@ class PostRepository {
       });
       return true;
     }
+  }
+
+  /// 포스트 캡션 업데이트
+  Future<void> updateCaption(String postId, String? caption) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('로그인이 필요합니다');
+    await _client
+        .from('posts')
+        .update({'caption': caption})
+        .eq('id', postId)
+        .eq('author_id', userId);
   }
 
   /// 포스트 삭제

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:bemyday/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -89,6 +90,15 @@ class PushNotificationService {
     _messaging.onTokenRefresh.listen(_registerToken);
 
     // 초기 토큰 등록 (iOS: APNS 토큰 대기 후 getToken)
+    // 세션 복원 전이면 userId가 null → 로그인 후 registerTokenIfNeeded()로 재시도
+    final token = await _getFcmToken();
+    if (token != null) await _registerToken(token);
+  }
+
+  /// 앱 시작 시 세션이 이미 복원된 상태에서 토큰을 확실히 등록
+  static Future<void> ensureTokenRegistered() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
     final token = await _getFcmToken();
     if (token != null) await _registerToken(token);
   }
@@ -99,12 +109,19 @@ class PushNotificationService {
         // iOS: APNS 토큰이 준비될 때까지 대기 (시뮬레이터에서는 미지원)
         for (var i = 0; i < 5; i++) {
           final apnsToken = await _messaging.getAPNSToken();
-          if (apnsToken != null) break;
+          if (apnsToken != null) {
+            debugPrint('[Push] APNS token ready');
+            break;
+          }
+          debugPrint('[Push] waiting for APNS token... ($i)');
           await Future.delayed(const Duration(seconds: 1));
         }
       }
-      return _messaging.getToken();
-    } catch (_) {
+      final token = await _messaging.getToken();
+      debugPrint('[Push] FCM token: ${token != null ? '${token.substring(0, 20)}...' : 'null'}');
+      return token;
+    } catch (e) {
+      debugPrint('[Push] _getFcmToken failed: $e');
       return null;
     }
   }
@@ -140,20 +157,20 @@ class PushNotificationService {
 
   static Future<void> _registerToken(String token) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      debugPrint('[Push] _registerToken skipped: userId is null');
+      return;
+    }
 
     final platform = Platform.isIOS ? 'ios' : 'android';
     try {
-      await Supabase.instance.client.from('device_tokens').upsert(
-            {
-              'user_id': userId,
-              'token': token,
-              'platform': platform,
-            },
-            onConflict: 'token',
-          );
-    } catch (_) {
-      // RLS 등으로 실패 시 무시
+      await Supabase.instance.client.rpc('upsert_device_token', params: {
+        'p_token': token,
+        'p_platform': platform,
+      });
+      debugPrint('[Push] token registered for $userId');
+    } catch (e) {
+      debugPrint('[Push] _registerToken failed: $e');
     }
   }
 
